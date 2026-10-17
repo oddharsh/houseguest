@@ -1,0 +1,15 @@
+{
+  "name": "houseguest",
+  "version": "0.1.0",
+  "description": "Contribute to repos you don't own like a good houseguest: recon before code, the repo's style first, cross-language deslop, red-green proof, and PR copy built from real logs.",
+  "author": {
+    "name": "Aadharsh Pannirselvam"
+  },
+  "keywords": [
+    "open-source",
+    "pull-request",
+    "contributing",
+    "code-quality",
+    "deslop"
+  ]
+}

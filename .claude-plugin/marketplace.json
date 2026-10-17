@@ -1,0 +1,16 @@
+{
+  "name": "houseguest",
+  "owner": {
+    "name": "Aadharsh Pannirselvam"
+  },
+  "metadata": {
+    "description": "Tooling for open-source contributions maintainers want to merge."
+  },
+  "plugins": [
+    {
+      "name": "houseguest",
+      "source": "./",
+      "description": "Open-source contributions that read like the maintainers wrote them."
+    }
+  ]
+}
