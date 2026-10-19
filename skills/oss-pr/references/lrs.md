@@ -75,7 +75,7 @@ LRS tracks **key term chains**: the terms the opening primes should recur where 
 LRS's **Frankenedit** is an opening that raises one problem while the body handles another, which readers experience as bait-and-switch. PRs can Frankenedit in two ways:
 
 - **The diff drifts from the title.** Map every hunk to the stated problem. A hunk that doesn't map goes in its own PR, or gets an explicit line ("Also renames `x` to `count`, which the fix touches").
-- **The description goes stale.** Review changes the fix, and the body still describes the first version. After every push in response to review, reread the body against the current diff and fix it.
+- **The description goes stale.** Review changes the fix, and the body still describes the first version. After every push in response to review, reread the body against the current diff and rewrite it for the current version, with no revision history (see "Replies to review comments" in `pr-copy.md`).
 
 ## 6. Argument: why the maintainer should believe it
 

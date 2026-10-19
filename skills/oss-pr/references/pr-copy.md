@@ -67,6 +67,7 @@ These cluster in 2025 to 2026 PRs, and maintainers have learned to spot them:
 - Arrows and labels inside code blocks (`<- BUG`), or prose labels like "Honest scope:".
 - Inventories of `file:line` sites the PR doesn't change.
 - Bullet-by-bullet narration of a diff the reviewer can read.
+- "Revised <date>" or "Update:" blocks narrating how the PR changed during review, and paragraph-per-test walkthroughs of what each new test asserts.
 - Promotion of the author's other projects. (The disclosure line is one line, at the end, about this PR only.)
 - The negate-then-correct sentence: "This isn't just a cleanup, it's a fix for X." State the positive claim and delete the negation.
 - Em dashes and scattered bold. Em dashes appeared in 0% of pre-2023 bodies in the corpus and 7% of recent ones.
@@ -154,7 +155,7 @@ Don't guess at causes you haven't verified; a wrong diagnosis in an issue costs 
 
 Draft them for the user to post; never post them. Keep each reply short. Concede plainly when the reviewer is right, push the change, and reply with what changed and the commit (`Done in abc1234, moved the check into prune()`). When you disagree, use the acknowledge-pivot-defer move in `lrs.md` section 7: concede what's right in the request, give one concrete reason for your approach, and defer to their call. Skip openers like "Great catch!" and "You're absolutely right"; reviewers recognize them as machine text immediately.
 
-After any push made in response to review, reread the PR body against the current diff and update it. A description of the first version sitting on top of the third version is the most common stale-PR smell.
+After any push made in response to review, reread the PR body against the current diff and rewrite it as if the current diff were the first version: what the PR does and why, at the repo's length budget. Never append "Revised <date>" or "Update:" sections, and never narrate what earlier versions did. That history already lives in the commits and the review thread, and the maintainer reading the body wants the PR as it stands. A workers-sdk maintainer asked for exactly this on a PR whose body had grown 2 dated revision blocks: "We don't need to know the history of changes to the PR." A description of the first version sitting on top of the third version is the most common stale-PR smell, and a changelog of all 3 is the second.
 
 ## Maintainer-reviewer pass
 
