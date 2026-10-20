@@ -11,6 +11,8 @@
 #      test assertions the file doesn't use, formatting-only changes
 #   K  changelog and commits: missing or long changesets, commit subject format
 #   L  license headers that neighboring files carry
+#   Z  size and scope (references/lean.md): a diff larger than 75% of PRs merged here,
+#      more than one concern, a new dependency, a new option or flag
 # FAIL items must be fixed. FLAG items must be fixed, or acknowledged with a reason
 # in <ledger>/house-ack.md as "KEY: reason" (KEY is printed with each flag).
 # --full also runs whole-project tools (clippy, tsc, golangci-lint).
@@ -317,6 +319,49 @@ for f in $added_files; do
   if [ "$n" -ge 3 ] && [ $((h * 10)) -ge $((n * 8)) ] && ! head -5 "$f" | grep -q -i -E 'SPDX-License-Identifier|copyright|licensed under'; then
     emit FLAG L1 "$f" "$h of $n neighboring .$e files open with a license header; this new file doesn't"
   fi
+done
+
+# --- Z: size and scope (references/lean.md) ---------------------------------------------
+# Z1 compares the diff with PRs other people got merged here; the sizes are cached in the ledger.
+slug=$(git remote get-url upstream 2>/dev/null || git remote get-url origin 2>/dev/null)
+slug=$(echo "$slug" | sed -E 's#^(git@|ssh://git@|https?://)github\.com[:/]##; s#\.git$##')
+stats="$ledger/lean-stats.json"
+if [ ! -s "$stats" ] && echo "$slug" | grep -q -E '^[^/]+/[^/]+$'; then
+  me=$(gh api user --jq .login 2>/dev/null)
+  gh pr list -R "$slug" --state merged --limit 100 --json additions,deletions,changedFiles,author 2>/dev/null \
+    | jq -c --arg me "$me" '[.[] | select((.author.is_bot // false) | not) | select((.author.login // "") | test("\\[bot\\]$|^app/|dependabot|renovate|github-actions|changeset|release-please"; "i") | not) | select(.author.login != $me)]
+      | (map(.additions + .deletions) | sort) as $l | (map(.changedFiles) | sort) as $f
+      | if length < 10 then {} else {n: length, med: $l[length/2|floor], p75: $l[(length*0.75)|floor], fmed: $f[length/2|floor], fp75: $f[(length*0.75)|floor]} end' > "$stats" 2>/dev/null || rm -f "$stats"
+fi
+size=$(git diff --numstat "$mb" HEAD | awk -F'\t' '$1 != "-"' | grep -v -E "$GEN_RE" | awk -F'\t' '{l += $1 + $2; f++} END {print l+0, f+0}')
+lines=${size% *}; nfiles=${size#* }
+if [ -s "$stats" ] && [ "$(jq -r '.n // 0' "$stats")" -gt 0 ]; then
+  read -r med p75 fp75 n <<< "$(jq -r '"\(.med) \(.p75) \(.fp75) \(.n)"' "$stats")"
+  if [ "$lines" -gt "$p75" ]; then
+    emit FLAG Z1 "(diff)" "$lines changed lines in $nfiles files; 75% of the last $n PRs merged here changed $p75 lines or fewer (median $med). Split it, or cut what the issue didn't ask for (lean.md)"
+  else emit OK Z1 "" "$lines changed lines in $nfiles files (median merged PR here: $med)"; fi
+else emit OK Z1 "" "$lines changed lines in $nfiles files (couldn't learn the repo's merged-PR sizes)"; fi
+# Z2: more than one concern. Source files in unrelated packages, or more than one changeset.
+area() { echo "$1" | awk -F/ '{ if ($1 ~ /^(packages|crates|apps|libs|plugins|extensions|services|modules|components|tools)$/ && NF > 2) print $1 "/" $2; else if (NF > 1) print $1; else print "(root)" }'; }
+areas=$(for f in $changed; do is_test "$f" && continue; echo "$f" | grep -q -i -E '\.(md|mdx|rst|txt|snap)$|^\.changeset/|(^|/)(CHANGELOG|package\.json|Cargo\.toml|go\.mod|pyproject\.toml)' && continue; area "$f"; done | sort -u)
+na=$(echo "$areas" | sed '/^$/d' | wc -l | tr -d ' ')
+[ "$na" -gt 1 ] && emit FLAG Z2 "(diff)" "source changes in $na areas ($(echo "$areas" | tr '\n' ' ' | sed 's/ $//')). If they're separate changes, they're separate PRs (lean.md, one concern per PR)"
+ncs=$(echo "${mine_cs:-}" | sed '/^$/d' | wc -l | tr -d ' ')
+[ "$ncs" -gt 1 ] && emit FLAG Z2 ".changeset" "$ncs changesets means $ncs changes. A fix riding on a feature usually goes faster as its own PR"
+# Z3: a new dependency. A version bump shows the name on both sides of the diff; a new one only on the added side.
+for m in $(echo "$changed" | grep -E '(^|/)(package\.json|Cargo\.toml|go\.mod|pyproject\.toml|requirements[^/]*\.txt|Gemfile)$'); do
+  d=$(git diff -U0 "$mb" HEAD -- "$m")
+  name_of() { sed -E 's/^[+-][[:space:]]*//; s/^"([^"]+)".*/\1/; s/^([A-Za-z0-9_.@/-]+)[[:space:]]*([=:<>~! ]|$).*/\1/'; }
+  add=$(echo "$d" | grep -E '^\+[[:space:]]*("[@A-Za-z0-9_./-]+"[[:space:]]*:[[:space:]]*"[~^<>=*0-9a-z]|[A-Za-z0-9_.-]+[[:space:]]*=[[:space:]]*["{]|[a-z0-9.-]+\.[a-z]+/[^ ]+ v[0-9]|[A-Za-z0-9_.-]+[[:space:]]*(==|>=|~=|<=)?[[:space:]]*[0-9])' | grep -v -E '^\+[[:space:]]*"(version|name|main|module|types|description|license|private|type|packageManager)"' | grep -v -E '^\+(version|name|edition|description|license|authors|rust-version)[[:space:]]*=' | name_of | sort -u)
+  del=$(echo "$d" | grep -E '^-[^-]' | name_of | sort -u)
+  new=$(comm -23 <(echo "$add" | sed '/^$/d') <(echo "$del" | sed '/^$/d') | head -5 | tr '\n' ' ' | sed 's/ $//')
+  [ -n "$new" ] && emit FLAG Z3 "$m" "new dependency: $new. Use what's already installed unless an issue asked for this (lean.md, rung 4)"
+done
+# Z4: a new command-line option or flag in source code.
+for f in $changed; do
+  is_test "$f" && continue
+  o=$(added "$f" | cut -f2- | grep -E '\.(option|addOption|positional)\(|#\[(arg|clap)\(|add_argument\(|flag\.(String|Bool|Int|Duration)(Var)?\(|\.Flags\(\)\.|@click\.option' | head -2 | sed 's/^[[:space:]]*//' | tr '\n' ' ' | cut -c1-140)
+  [ -n "$o" ] && emit FLAG Z4 "$f" "new option or flag: $o. Ack with the issue or maintainer comment that asked for it, or drop it (lean.md, rung 1)"
 done
 
 # --- Report -----------------------------------------------------------------------------

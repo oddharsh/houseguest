@@ -32,7 +32,7 @@ LEDGER="$(git rev-parse --git-dir)/houseguest/$(git branch --show-current)"
 mkdir -p "$LEDGER"
 ```
 
-Files: `recon.md`, `style.md`, `house.md` (from `housecheck.sh`), `proof.md`, and `pr-defaults.md` when joining an existing PR. The plugin's hook reads them before `gh pr create` runs and blocks the PR when one is missing. Keep each note short and concrete (paths, links, commands, exit codes); they also feed the PR description later.
+Files: `recon.md`, `codex.md` (from `codex.sh`), `style.md`, `house.md` (from `housecheck.sh`, including the lean size checks), `proof.md`, and `pr-defaults.md` when joining an existing PR. The plugin's hook reads them before `gh pr create` runs and blocks the PR when one is missing. Keep each note short and concrete (paths, links, commands, exit codes); they also feed the PR description later.
 
 The helper scripts live in `scripts/` next to this file. Wherever a reference says `<skill-dir>`, substitute the base directory shown when this skill loaded.
 
@@ -45,8 +45,8 @@ Work out where the user is and start there. Someone asking "write the PR descrip
 | # | Phase | Read | Writes | Can stop the job? |
 |---|-------|------|--------|-------------------|
 | 1 | Recon | `references/recon.md` | `recon.md` | Yes: duplicate, already fixed (on head, beta, or canary too, per `channels.sh`), won't-fix, AI ban, discussion-first |
-| 2 | Style fingerprint | `references/style.md`, `references/languages.md` | `style.md` (from `house.sh`) | No, but it shapes everything after |
-| 3 | Write the change | `references/style.md`, `references/deslop.md`, `references/defaults.md` | the diff | No |
+| 2 | Style fingerprint | `references/style.md`, `references/languages.md` | `codex.md` (from `codex.sh`), `style.md` (from `house.sh`) | No, but it shapes everything after |
+| 3 | Write the change | `references/lean.md` first, then `references/style.md`, `references/deslop.md`, `references/defaults.md` | the smallest diff that fully solves the issue | No, but a PR that does two things becomes two PRs |
 | 4 | Proof | `references/proof.md` | `proof.md` | Yes: if red-green fails, the fix or the test is wrong |
 | 5 | Copy and review | `references/pr-copy.md`, then `references/lrs.md` | PR/issue/commit text | Yes: if the maintainer-reviewer pass finds a closing reason |
 
