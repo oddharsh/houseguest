@@ -88,6 +88,13 @@ elif [ -n "$ttl" ] && [ ! -f "$ledger/titles.json" ]; then
   add "title not checked: run title.sh --save \"$ledger/titles.json\" first (see pr-copy.md)"
 fi
 
+# Recheck: nothing landed upstream since recon (another PR, a closing commit) that makes this moot.
+if [ ! -f "$ledger/recheck.md" ]; then
+  add "recheck.md missing: run recheck.sh --save \"$ledger/recheck.md\" right before opening the PR"
+elif ! grep -q -E '^STATUS:[[:space:]]*CLEAR' "$ledger/recheck.md"; then
+  add "recheck.sh found changes upstream since recon (see $ledger/recheck.md): act on each, then rerun it with --since set to its Checked: time"
+fi
+
 [ -z "$problems" ] && exit 0
 
 cat >&2 <<EOF
