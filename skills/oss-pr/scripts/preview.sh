@@ -8,7 +8,8 @@
 #     (Vercel, Netlify, Cloudflare Pages, Firebase, Surge, Chromatic, pkg.pr.new, uploaded
 #     build artifacts), and host config files (vercel.json, netlify.toml, .readthedocs.yaml),
 #     with any step that skips fork PRs;
-#   - what recent merged PRs actually got: a preview link from a bot comment or a check, on
+#   - what recent merged PRs actually got: a preview link from a GitHub App's comment (never a
+#     person's, since anyone can paste a link) or a check, on
 #     fork PRs and branch PRs separately, and fork PRs that waited on a maintainer to
 #     authorize the build;
 #   - how often outside contributors' merged PRs carried screenshots or recordings, overall
@@ -69,7 +70,7 @@ prs=$(gh api graphql -f q="$q" -f query='
 query($q:String!){search(query:$q,type:ISSUE,first:40){nodes{... on PullRequest{
   number url isCrossRepository authorAssociation author{login} body
   files(first:60){nodes{path}}
-  comments(first:30){nodes{author{login} body}}
+  comments(first:30){nodes{author{login __typename} body}}
   commits(last:1){nodes{commit{statusCheckRollup{contexts(first:50){nodes{
     ... on CheckRun{name detailsUrl} ... on StatusContext{context targetUrl}}}}}}}
 }}}}' --jq '.data.search.nodes' 2>/dev/null)
@@ -77,7 +78,7 @@ query($q:String!){search(query:$q,type:ISSUE,first:40){nodes{... on PullRequest{
 
 rows=$(echo "$prs" | jq --arg H "$HOSTS" --arg UI "$UI" '
   [.[] | select((.author.login // "") | test("\\[bot\\]$|dependabot|renovate|github-actions"; "i") | not)
-   | ([.comments.nodes[] | select((.author.login // "") | test("bot|vercel|netlify|cloudflare|pkg-pr-new|chromatic|render|railway|readthedocs"; "i"))]) as $bc
+   | ([.comments.nodes[] | select(.author.__typename == "Bot")]) as $bc
    | ([$bc[].body | scan("https?://[^\\s)\\]\"<>]*(?:" + $H + ")[^\\s)\\]\"<>]*")]) as $curls
    | ([.commits.nodes[].commit.statusCheckRollup.contexts.nodes[]? | select(((.name // .context) // "") | test("preview|deploy|vercel|netlify|pages|readthedocs|chromatic|pkg"; "i")) | (.detailsUrl // .targetUrl // empty) | select(test($H))]) as $surls
    | { number, url, fork: .isCrossRepository,
