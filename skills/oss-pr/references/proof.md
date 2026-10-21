@@ -30,7 +30,7 @@ The classic false proof: the test references a function the fix adds, so without
 
 ## Coverage: every hunk of the fix is tested
 
-A test that fails without the whole fix can still miss half of it. The script reverts each hunk of the fix on its own and runs the test once. A hunk whose reversal leaves the test green is one no test checks: a reviewer can delete it and nothing tells them it mattered. Comment-only hunks are skipped. `proof.md` gets a `COVERAGE:` line and lists each UNCOVERED hunk as `path:line`.
+A test that fails without the whole fix can still miss half of it. The script reverts each hunk of the fix on its own and runs the test once. A hunk whose reversal leaves the test green is one no test checks: a reviewer can delete it and nothing tells them it mattered. Comment-only hunks are skipped. When you pass `--suite`, a hunk your test misses is tried against the whole suite too, the way Meta's mutation testing asks whether any test can tell a planted fault apart. If the suite catches it, it counts as covered. If nothing catches it, the hunk may change no behavior at all, and the first answer below is the likely one. `proof.md` gets a `COVERAGE:` line and lists each UNCOVERED hunk as `path:line`.
 
 Each uncovered hunk gets one of three answers, in this order:
 

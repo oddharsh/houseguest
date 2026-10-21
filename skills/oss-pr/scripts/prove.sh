@@ -18,6 +18,8 @@
 #
 # Coverage: each hunk of the fix is reverted on its own, and the test command runs once.
 # A hunk the test doesn't notice is untested or unneeded. Comment-only hunks are skipped.
+# With --suite, a hunk the test misses is tried against the whole suite too: caught there,
+# it counts as covered; missed there as well, it's flagged as possibly changing nothing.
 # Uncovered hunks fail the proof unless coverage-ack.md in the ledger names them
 # (`- path:line <reason>`), the same way house-ack.md answers housecheck flags.
 # The added test lines are also scanned for flake risks (sleeps, clocks, unseeded
@@ -142,7 +144,7 @@ git diff -U0 --no-color "$cov_from" HEAD -- $(echo "$cov_files" | tr '\n' ' ') |
   /^@@ /{ n++; f=sprintf("%s/%03d.patch", d, n); printf "%s", hdr > f; print > f; inh=1; next }
   inh { print > f; next }
   { hdr=hdr $0 "\n" }'
-cov_total=0 cov_ok=0 cov_acked=0 cov_skipped=0 cov_lines=""
+cov_total=0 cov_ok=0 cov_acked=0 cov_suite=0 cov_skipped=0 cov_lines=""
 ack="$ledger/coverage-ack.md"
 [ "$max_hunks" -gt 0 ] || rm -f "$cov_dir"/*.patch
 for p in "$cov_dir"/*.patch; do
@@ -159,15 +161,24 @@ for p in "$cov_dir"/*.patch; do
 - $file:$line couldn't be reverted alone (it depends on another hunk); not checked"; continue
   fi
   run "hunk-$(basename "$p" .patch)" 1
+  # Missed by the narrow test: does anything in the wider suite notice? (Meta's ACH asks the
+  # same of a planted fault: a change no test anywhere can tell apart may change nothing.)
+  src_h=""
+  if [ "$rc" -eq 0 ] && [ -n "$suite" ]; then
+    bash -c "$suite" >"$ledger/logs/hunk-$(basename "$p" .patch)-suite.log" 2>&1; src_h=$?
+  fi
   git checkout -q HEAD -- "$file" 2>/dev/null || rm -f "$file"
   if [ "$rc" -ne 0 ]; then
     cov_ok=$((cov_ok + 1))
+  elif [ -n "$src_h" ] && [ "$src_h" -ne 0 ]; then
+    cov_ok=$((cov_ok + 1)); cov_suite=$((cov_suite + 1)); cov_lines="$cov_lines
+- $file:$line not caught by your test, but the wider suite fails without it (logs/hunk-$(basename "$p" .patch)-suite.log)"
   elif [ -f "$ack" ] && grep -q -F "$file:$line" "$ack"; then
     cov_acked=$((cov_acked + 1)); cov_lines="$cov_lines
 - $file:$line not caught by the test; acknowledged: $(grep -m1 -F "$file:$line" "$ack" | sed "s|.*$file:$line[[:space:]]*||" | cut -c1-160)"
   else
     cov_lines="$cov_lines
-- UNCOVERED $file:$line: reverting this hunk alone leaves the test green ($( { sed -n '/^@@ /,$p' "$p" | grep -E '^\+' ; sed -n '/^@@ /,$p' "$p" | grep -E '^-'; } | sed -E 's/^[-+][[:space:]]*//' | grep -v '^$' | head -1 | cut -c1-80))"
+- UNCOVERED $file:$line: reverting this hunk alone leaves $( [ -n "$src_h" ] && echo "the test and the whole suite green, so it may change nothing: delete it unless a new test shows otherwise" || echo "the test green") ($( { sed -n '/^@@ /,$p' "$p" | grep -E '^\+' ; sed -n '/^@@ /,$p' "$p" | grep -E '^-'; } | sed -E 's/^[-+][[:space:]]*//' | grep -v '^$' | head -1 | cut -c1-80))"
   fi
 done
 cov_missing=$((cov_total - cov_ok - cov_acked))
@@ -210,7 +221,7 @@ tail_of() { echo '```'; tail -n 25 "$1"; echo '```'; }
   echo "- Flake check (HEAD, extra runs): $( [ "$flake" -gt 0 ] && echo "passed $flake_pass/$flake" || echo "skipped (--flake 0)")"
   echo "- Wider suite on HEAD: $suite_line"
   if [ "$max_hunks" -eq 0 ]; then echo "COVERAGE: skipped (--max-hunks 0)"
-  else echo "COVERAGE: $cov_ok/$cov_total fix hunks caught by the test$( [ "$cov_acked" -gt 0 ] && echo ", $cov_acked acknowledged")$( [ "$cov_skipped" -gt 0 ] && echo ", $cov_skipped comment-only skipped")"; fi
+  else echo "COVERAGE: $cov_ok/$cov_total fix hunks caught by the test$( [ "$cov_suite" -gt 0 ] && echo ", $cov_suite of them only by the wider suite")$( [ "$cov_acked" -gt 0 ] && echo ", $cov_acked acknowledged")$( [ "$cov_skipped" -gt 0 ] && echo ", $cov_skipped comment-only skipped")"; fi
   echo
   echo "## Coverage"
   [ -n "$cov_lines" ] && echo "${cov_lines#?}" || echo "- every checked hunk turns the test red when reverted alone"
