@@ -3,7 +3,7 @@
 #
 # Blocks (exit 2) until the oss-pr ledger shows recon said GO, the blind intent
 # check found no deliberate choice in the way, a style note exists, and a proof
-# passed on the current HEAD. Stays silent everywhere else: other commands,
+# and the final check both passed on the current HEAD. Stays silent everywhere else: other commands,
 # repos that aren't forks, and your own repos.
 # A user who explicitly wants to skip can prefix the command with HOUSEGUEST_SKIP=1.
 
@@ -97,6 +97,19 @@ else
     *) add "proof status is '${status:-missing}'" ;;
   esac
   [ "$sha" = "$head" ] || add "proof.md is for ${sha:-no sha}, but HEAD is $head; rerun the proof on the current commit"
+fi
+
+# The final check: the problems the PR poses, reproduced as posed, on this HEAD.
+if [ ! -f "$ledger/final.md" ]; then
+  add "final.md missing: run the final check (oss-pr phase 7) on this commit, after review"
+else
+  fstat=$(grep -m1 -E '^STATUS:' "$ledger/final.md" | sed 's/^STATUS:[[:space:]]*//')
+  fsha=$(grep -m1 -E '^SHA:' "$ledger/final.md" | sed 's/^SHA:[[:space:]]*//')
+  case "$fstat" in
+    PASS*) ;;
+    *) add "final check is '${fstat:-missing}': the PR doesn't yet show it solves every problem it poses (see $ledger/final.md)" ;;
+  esac
+  [ "$fsha" = "$head" ] || add "final.md is for ${fsha:-no sha}, but HEAD is $head; rerun the final check"
 fi
 
 # The title, when one is passed: recheck it against the repo's title conventions.

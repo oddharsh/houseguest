@@ -167,7 +167,7 @@ Fix every finding that a written rule, a repo tool, or a direct conflict with ne
 
 ## Ship
 
-Write the final body to `$LEDGER/pr-body.md`. The session the user talks to shows them the title, the body, and the exact command:
+Write the final body to `$LEDGER/pr-body.md`. The final check (phase 7) then reproduces every problem this body poses, on the base and on HEAD, so claim only what the change solves. Once `final.md` says PASS, the session the user talks to shows them the title, the body, and the exact command:
 
 ```bash
 gh pr create -R <upstream> --head <fork-owner>:<branch> --title "$(cat <ledger>/pr-title.txt)" --body-file "<ledger>/pr-body.md"
