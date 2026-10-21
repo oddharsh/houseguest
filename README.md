@@ -12,6 +12,7 @@ Each phase runs in its own subagent, and the phases talk only through the ledger
 |---|---|
 | `skills/oss-pr` | The phases: intent check, recon, style fingerprint, write, proof, copy, maintainer review, and final check, each launched as its own subagent |
 | `agents/intent-check` | Decides whether a behavior is intended without being told anyone thinks it's a bug: reads the docs, tests that assert it, the commit and PR that introduced it, and earlier maintainer discussion, then writes a verdict (INTENDED, UNINTENDED, NO RECORD, or CONFLICTING) with a quote behind each claim. It also says whether the page a user reads first explains the behavior. Recon decides from it: the PR gate won't open a PR against an INTENDED verdict unless the choice rests on a factual error, and when the choice was never written down where users look, the job becomes a docs change so the next contributor doesn't make the same mistake |
+| `agents/second-fix` and `agents/compare` | An optional second opinion on non-trivial changes: one agent writes its own fix from the base without seeing yours, and another tests both on their exact trees, checks the alternative against five conditions (same problem, really different, verified, safeguards kept, scope fits), and says which a maintainer would merge. A smaller fix found blind is evidence yours is overbuilt. Adapted from withastro/factory's adversary teams |
 | `agents/maintainer-review` | Reviews the diff and drafted body as a busy maintainer would, from the ledger alone, before the user sees the PR |
 | `agents/final-check` | The last step: reproduces every problem the PR or issue poses, exactly as posed, on the base and on HEAD, through the interface the report used instead of the PR's own tests. For a docs change it runs every example the new text gives. The PR gate requires its PASS on the commit being pushed |
 | `scripts/gather.sh` | One pass over the upstream repo, before you clone: AI policy, contributor gates, workflows that police PRs, duplicate issues and PRs, open PRs touching your files, the commits that shaped them, the maintainer's reason for each rejected attempt, human-only length medians, and your own history in the repo. `--as-of` replays it at any past moment |
@@ -53,7 +54,7 @@ Needs `gh` (authenticated), `git`, and `jq`.
 
 ## The ledger
 
-`.git/houseguest/<branch>/` holds `intent.md`, `recon.md`, `style.md`, `proof.md`, `rounds.md`, `final.md`, logs, and the final `pr-body.md`. It's the only thing the phases share: each subagent reads the notes its phase needs and writes its own, and the intent check runs before anything else is written there. Git never tracks anything under `.git`, so none of it can leak into the upstream repo, and it disappears with the clone.
+`.git/houseguest/<branch>/` holds `intent.md`, `recon.md`, `style.md`, `proof.md`, `compare.md` when a second opinion ran, `rounds.md`, `final.md`, logs, and the final `pr-body.md`. It's the only thing the phases share: each subagent reads the notes its phase needs and writes its own, and the intent check runs before anything else is written there. Git never tracks anything under `.git`, so none of it can leak into the upstream repo, and it disappears with the clone.
 
 ## Disclosure
 
