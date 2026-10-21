@@ -35,6 +35,7 @@ else
   decision=$(grep -m1 -E '^DECISION:' "$ledger/recon.md" | sed 's/^DECISION:[[:space:]]*//')
   case "$decision" in
     GO*) ;;
+    DOCS*) grep -q -E '^VERDICT:[[:space:]]*INTENDED' "$ledger/intent.md" 2>/dev/null || add "recon decided DOCS, but intent.md doesn't say the behavior is INTENDED: a docs change needs the intent check's citation behind it" ;;
     JOIN*) [ -f "$ledger/pr-defaults.md" ] || add "recon decided JOIN but pr-defaults.md is missing: run prdefaults.sh on the PR you're adding to and follow references/existing-pr.md" ;;
     "") add "recon.md has no DECISION: line" ;;
     *) add "recon decided $decision: $(grep -m1 -E '^Reason:' "$ledger/recon.md" | sed 's/^Reason:[[:space:]]*//')" ;;

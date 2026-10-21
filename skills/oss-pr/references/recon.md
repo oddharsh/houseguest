@@ -47,10 +47,14 @@ Before deciding, find out why the code is the way it is. You can't do that check
 
 Apply the verdict:
 
-- **INTENDED:** the change reverses a deliberate choice, so it needs the maintainer's agreement first: ASK, and put the citation in the ASK comment. The exception is a choice resting on a factual error the intent check named on its `Factual error:` line (it misreads a spec, or assumes an API that doesn't exist), in a repo that sends bug fixes straight to a PR. Then GO, and make the error the center of the PR body. An escape hatch the docs already offer usually means a maintainer will point to it instead of merging, so name it in the predicted objections.
+- **INTENDED, docs CLEAR:** the docs already say this, so there's nothing to change and nothing to file. STOP, and give the user the doc link and any escape hatch.
+- **INTENDED, docs UNCLEAR or SILENT:** the behavior is deliberate, but nothing a user reads first says so. That's how this job started, and the next person will make the same mistake. DOCS: the contribution becomes the explanation the docs are missing (see "What DOCS produces" below). If the user still wants the behavior itself changed, that's ASK, and the ASK comment can offer the docs change too.
+- **INTENDED, resting on a factual error** the intent check named on its `Factual error:` line (it misreads a spec, or assumes an API that doesn't exist): in a repo that sends bug fixes straight to a PR, GO, and make the error the center of the PR body. Elsewhere, ASK, with the error as the new evidence.
 - **CONFLICTING:** the project hasn't settled what it wants, and a PR would settle it for them. ASK, quoting both sides.
 - **UNINTENDED:** the citation is the lineage link the PR body opens with or links.
 - **NO RECORD:** no decision stands in the way. The other ASK rules below still apply, including an unconfirmed issue that changes behavior someone might rely on.
+
+An escape hatch `intent.md` found usually means a maintainer will point to it instead of merging a change, so name it in the predicted objections.
 
 ## Predict the objections
 
@@ -111,6 +115,16 @@ ASK writes a short comment for the user to post on the issue (or a new issue or 
 
 If the change has a trivial, uncontroversial half with a clear precedent (a one-line fix matching an earlier merged PR) and a half that needs agreement, say so: the trivial half can be a PR now, and the rest waits for the answer.
 
+### What DOCS produces
+
+A small docs change, and sometimes a code comment, that would have stopped this job before it started. Write it from `intent.md`, never from what you first believed:
+
+- **Where:** the page `intent.md`'s `Docs cover it:` line names, the one a user of the feature reads first. Add to the entry that's there; don't start a FAQ or a new page.
+- **What:** in 1 to 3 sentences, in the page's own voice: what happens, the reason (link the decision when the docs link things), and the escape hatch if there is one.
+- **A code comment,** only when `Code says why:` found none and the file's own comments explain deliberate choices like this one. One line at the behavior, in the file's comment voice, pointing to the decision ("Intentional: see #812."). This one is for the next contributor reading the source.
+
+A docs PR is still a PR. Duplicates, gates, and the AI policy apply: rerun the gather searches with docs terms, and check for an open docs PR or an issue asking for the same text. It counts as trivial under the ASK rules when it states only what a maintainer already decided. Phase 4 writes `STATUS: N/A (docs-only)`. If an issue reports the behavior as a bug, draft a reply for the user to post: it's intended, with the link, and the docs PR that says so.
+
 ## Issues and feature requests
 
 The same go, stop, or ask logic applies to an issue, read as "is filing this here welcome?":
@@ -132,7 +146,7 @@ If you haven't cloned yet, write recon notes to `${TMPDIR:-/tmp}/houseguest/<own
 
 ```markdown
 # Recon: <repo> <issue or topic>
-DECISION: GO | STOP | ASK
+DECISION: GO | STOP | ASK | DOCS
 Reason: <one sentence, with link>
 
 - AI policy: <the sweep's verdict; the quoted binding rule with its path, or "none found in: <sources>"; and the mode it puts the job in (normal, author mode, or STOP)>

@@ -98,6 +98,8 @@ The collapsed block is how the proof stays complete while the prose stays at the
 
 **Without `proof.md`:** when there's no red-green run (docs, dependency bumps, or a phase you skipped), drop the collapsed block and state in prose exactly what was run and what it showed. Never write a result that isn't in front of you; use `[ASK USER: did X pass?]` instead.
 
+**Docs PRs from a DOCS decision:** the stake is real, so use it. Say what the docs led you to expect and what you found: "The `--max-width` docs don't say it counts bytes, and I took the CJK wrapping for a bug until I found #812, where that was chosen for speed. This adds that to the option's entry, with `--width-mode=display` for anyone who needs display width." Link the decision, and don't argue with it.
+
 **Dependency and security bumps:** one or two sentences. Name the advisory or changelog entry that motivates it, the version change, and what you checked (lockfile regenerated, tests run). Skip the stake sentence unless there's a real one.
 
 An invented example of the target shape, for a fictional formatter:

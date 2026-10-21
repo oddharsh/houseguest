@@ -51,7 +51,7 @@ Your job between phases:
 | # | Phase | Read | Writes | Give the subagent | Keep from it | Can stop the job? |
 |---|-------|------|--------|-------------------|--------------|-------------------|
 | 0 | Intent check | `agents/intent-check.md` | `intent.md` | The repo, a neutral statement of the behavior (below), and the files or symbols it lives in | The issue, the user's request, the proposed fix, and every other ledger note | No, but recon decides from it |
-| 1 | Recon | `references/recon.md` | `recon.md` | The user's request, the repo, the issue | Nothing | Yes: duplicate, already fixed (on head, beta, or canary too, per `channels.sh`), won't-fix, AI ban, discussion-first, behavior the project chose on purpose |
+| 1 | Recon | `references/recon.md` | `recon.md` | The user's request, the repo, the issue | Nothing | Yes: duplicate, already fixed (on head, beta, or canary too, per `channels.sh`), won't-fix, AI ban, discussion-first, behavior the project chose on purpose. Or it becomes a docs change, when that choice was never written down where users look |
 | 2 | Style fingerprint | `references/style.md`, `references/languages.md` | `codex.md` (from `codex.sh`), `style.md` (from `house.sh`) | The clone and the files it will touch | Nothing | No, but it shapes everything after |
 | 3 | Write the change | `references/lean.md` first, then `references/style.md`, `references/deslop.md`, `references/defaults.md` | the smallest diff that fully solves the issue, committed, then `house.md` | The user's request and the clone | Nothing | No, but a PR that does two things becomes two PRs |
 | 4 | Proof | `references/proof.md` | `proof.md` | The clone, the base ref, and the commit | How the change was written: it gets the diff, not the account of it | Yes: if red-green fails, the fix or the test is wrong |
@@ -81,6 +81,10 @@ It lists the user's open PRs and issues on others' repos where a human other tha
 ## Things that are always outward-facing
 
 Opening a PR or issue, pushing to a fork, and replying on GitHub publish text under the user's name to strangers. Show the final text and the exact command, and wait for a clear yes each time. Draft replies to reviewers; never auto-post them, because an AI-written reply to a maintainer's review is the single fastest way to lose their goodwill.
+
+## When recon says DOCS
+
+The behavior is deliberate and the docs never said so. Tell the user plainly that it isn't a bug, with the link, then run phases 2, 3, and 5 on the docs change `recon.md` describes. Writing it down is how the next guest avoids the mistake this one made.
 
 ## When recon says stop
 
