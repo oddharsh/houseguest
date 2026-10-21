@@ -29,6 +29,10 @@ Repo tooling beats written rules, which beat observed conventions in nearby code
 
 Before LLMs, outside contributors' PR bodies in 12 well-run repos had a median of 30 words; since mid-2025 the median is 95, with 2.5x the headings. The tool writes to each repo's pre-2023 baseline and borrows the moves those PRs made. Method, numbers, and caveats: [research/pre-llm-prs.md](research/pre-llm-prs.md).
 
+## What it borrows from software factories
+
+Houseguest is a small software factory that works for a guest, so every step that reaches upstream waits for the user's yes. Its phase design borrows from Astro's factory, StrongDM's holdout scenarios, and studies of why agent PRs go unmerged; [research/software-factories.md](research/software-factories.md) lists each source and what it changed.
+
 ## Install
 
 In Claude Code:
