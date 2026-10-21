@@ -43,10 +43,14 @@ The dump is raw. Read the files it points at, in this order:
 
 ## Check intent and lineage
 
-Before deciding, look at why the code is the way it is. A change that undoes a deliberate choice needs the maintainer's agreement first. The exception: the choice rests on a factual error you can show (it misreads a spec, or assumes an API that doesn't exist), and the repo sends bug fixes straight to a PR. Then GO, and make the error the center of the PR body.
+Before deciding, find out why the code is the way it is. You can't do that check yourself: you know what the user wants changed, and an agent that believes there's a bug reads the docs and history looking for confirmation. The intent check (`agents/intent-check.md`) runs first, in its own subagent, and isn't told there's a bug or what the fix is. Read its `intent.md` and don't edit it. If recon turns up a source it missed (a maintainer's reply on the issue, say), record that in `recon.md` and weigh both.
 
-- Read the commits the dump lists for your files (`--files`). Open the one that introduced the behavior you're changing, and its PR. If its message or review discussion says the behavior is intentional, treat your change as reversing a decision.
-- Search the docs (README, `docs/`, `website/`, the API reference) for the behavior. Look for two things: text describing it as intended, and an existing option that already gets the user what they want. An escape hatch the docs already offer usually means a maintainer will point to it instead of merging.
+Apply the verdict:
+
+- **INTENDED:** the change reverses a deliberate choice, so it needs the maintainer's agreement first: ASK, and put the citation in the ASK comment. The exception is a choice resting on a factual error the intent check named on its `Factual error:` line (it misreads a spec, or assumes an API that doesn't exist), in a repo that sends bug fixes straight to a PR. Then GO, and make the error the center of the PR body. An escape hatch the docs already offer usually means a maintainer will point to it instead of merging, so name it in the predicted objections.
+- **CONFLICTING:** the project hasn't settled what it wants, and a PR would settle it for them. ASK, quoting both sides.
+- **UNINTENDED:** the citation is the lineage link the PR body opens with or links.
+- **NO RECORD:** no decision stands in the way. The other ASK rules below still apply, including an unconfirmed issue that changes behavior someone might rely on.
 
 ## Predict the objections
 
@@ -90,7 +94,7 @@ Results decide the job. Fixed on head but not in prod: STOP for a PR, and for an
 - The repo has a gate the user must pass before opening a PR: vouch lists, a required discussion or issue before code, or a "discuss before non-trivial PRs" rule. Click-through CLAs that are signed on the PR itself (a bot asks after you open it) aren't gates; note them and move on.
   - **Trivial**, for these rules, means all of: no change to public behavior, API, config, or output format; the non-test diff is small (roughly 50 lines or fewer); and it follows a pattern the repo has already merged (link the precedent). Everything else is non-trivial. When the repo defines trivial itself, its definition wins.
   - Some repos invite unsolicited fixes ("we favor asking for forgiveness over permission"). Their stated stance overrides the generic ASK rules below for bug fixes.
-- The change reverses a deliberate choice (from the lineage check), or adds a public option, flag, or API that no maintainer has agreed to.
+- The change reverses a deliberate choice (`intent.md` says INTENDED or CONFLICTING), or adds a public option, flag, or API that no maintainer has agreed to.
 - The issue is unconfirmed (no maintainer reply), and the change alters behavior someone might rely on. This includes the user's own fresh issue: an issue filed minutes before the PR, with no maintainer reply, hasn't been agreed to. If that issue already asks for agreement ("happy to send a PR if you agree"), ASK means **wait** for the answer; don't post a second comment.
 - Someone is assigned or said "I'll take this" recently.
 
@@ -134,7 +138,7 @@ Reason: <one sentence, with link>
 - AI policy: <the sweep's verdict; the quoted binding rule with its path, or "none found in: <sources>"; and the mode it puts the job in (normal, author mode, or STOP)>
 - Gates: <discussion-first / vouch / DCO / CLA, and whether the user has passed them>
 - Duplicates and prior attempts: <#links with state and the maintainer's reason for each close; open PRs touching the same files>
-- Intent and lineage: <the commit or PR that made the current behavior, and whether it was deliberate; any documented escape hatch>
+- Intent and lineage: <intent.md's VERDICT and Basis lines, the commit or PR that made the current behavior, any escape hatch, and what the verdict means for the decision>
 - Predicted objections: <the top 3, each with its basis>
 - Reproduces on: <channels.sh's recon line with each result filled in: yes, no, or how it failed>; or "n/a: not a bug fix" for features and docs
 - Timing: <milestone, freeze, last outside merge, or "nothing pending">

@@ -159,15 +159,13 @@ After any push made in response to review, reread the PR body against the curren
 
 ## Maintainer-reviewer pass
 
-Before showing the final PR to the user, run a fresh-context review with the Agent tool, so the reviewer hasn't absorbed your reasoning. Give it the paths to whichever of `recon.md`, `style.md`, and `proof.md` exist, CONTRIBUTING and any AI policy, the diff (`git diff <base>...HEAD`), and the drafted body. Prompt:
-
-> You maintain <repo>. You've read hundreds of low-effort and AI-generated PRs and you close most within a minute. Review this PR as you would on a busy day. List every reason you'd close it or request changes, most likely first: rule violations from CONTRIBUTING or the AI policy, duplicated or already-rejected work, code that doesn't match how this codebase does things (cite the file that does it differently), tests that wouldn't catch a regression, claims in the description the proof doesn't support, and any line that reads as machine-written. Then read the diff the way the laziest senior developer would, using `lean.md`'s ladder on the contributor's lines only: code that needn't exist, a helper the repo already has (name the path), something the standard library or an installed dependency already does, an option or abstraction nobody asked for, near-copies that should be one, and a second concern that belongs in its own PR. Every finding needs a concrete case: the input or situation that goes wrong, or the existing helper by path. No case, no finding, and no style taste. Prefer fixes that delete lines. End with `Lean: -N lines possible` when there are lean findings. Be specific and cite lines. Say "would merge" only if you'd actually merge it.
+Once the draft is in `$LEDGER/pr-body.md`, the session that launched the copy phase runs the plugin's `maintainer-review` agent (`agents/maintainer-review.md` at the plugin root; if it isn't listed, a general-purpose agent with that file's body as its prompt). It gets the repo, the ledger path, CONTRIBUTING and any AI policy, the diff (`git diff <base>...HEAD`), and the drafted body, and nothing about how they were made: a reviewer who has read the author's reasoning finds what the author found. Its findings come back to a fresh write or copy phase, whichever owns them.
 
 Fix every finding that a written rule, a repo tool, or a direct conflict with neighboring code requires, or write down why it doesn't apply. Findings face the same bar as style revisions in `style.md`: "this could be cleaner" or "the repo has a helper for this" permits a change without requiring it. Moving code between files, renaming, or swapping in a helper needs a rule or a maintainer comment behind it, and a reviewer's "import X from Y" means leave X where it is. If the reviewer found a closing reason recon missed, go back to recon.
 
 ## Ship
 
-Write the final body to `$LEDGER/pr-body.md`. Show the user the title, the body, and the exact command:
+Write the final body to `$LEDGER/pr-body.md`. The session the user talks to shows them the title, the body, and the exact command:
 
 ```bash
 gh pr create -R <upstream> --head <fork-owner>:<branch> --title "$(cat <ledger>/pr-title.txt)" --body-file "<ledger>/pr-body.md"
