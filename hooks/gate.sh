@@ -51,6 +51,7 @@ if [ -f "$ledger/recon.md" ]; then
   rep=$(grep -m1 -E '^- Reproduces on:' "$ledger/recon.md" | sed 's/^- Reproduces on:[[:space:]]*//')
   case "$rep" in
     ""|"<"*|*"not yet checked"*) add "recon.md doesn't say where the bug reproduces: run channels.sh, reproduce on prod and each build it marks DIFFERS, and record the results (or \"n/a: not a bug fix\")" ;;
+    *BLOCKED:*) add "recon's reproduction is blocked by the setup ($(printf '%s' "$rep" | sed 's/.*BLOCKED:[[:space:]]*//' | cut -c1-160)): fix the environment and reproduce, since a broken setup says nothing about the bug" ;;
     *"<yes/no>"*|*"<reproduces?"*) add "recon.md's Reproduces on line still has unfilled results: reproduce on each listed build and replace every <yes/no>" ;;
   esac
 fi

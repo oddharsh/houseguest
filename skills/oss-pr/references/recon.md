@@ -73,6 +73,16 @@ bash "<skill-dir>/scripts/channels.sh" --repo <owner/name> --package <npm name, 
 - **UNKNOWN:** the script couldn't map a build to a commit or compare it. Reproduce on it.
 - **Choosing `--paths`:** the files in the stack trace, the module named in the error, or the files you expect to change. Too narrow misses the fix; a whole package root is fine. Add `--as-of` when replaying an old issue.
 
+### A result you can trust
+
+A "doesn't reproduce" is the result most likely to be wrong, because a broken setup produces it too. In a monorepo whose packages resolve through built output, an unbuilt checkout runs the old code or none at all, and "can't reproduce" is then a fact about your workspace, not the bug. Before any build's result counts:
+
+- **Build it the way the repo says.** Install and build with the commands its CONTRIBUTING or CI uses, not a guess.
+- **Check what's running.** Print the version or commit of the package your repro actually loads (`node -p "require('<pkg>/package.json').version"`, `python -c "import pkg; print(pkg.__version__)"`, `<tool> --version`). A repro that loads a cached or globally installed copy tested nothing.
+- **Prod first, same setup.** "Fixed on head" means something only when prod reproduces in the same environment, one step before. If prod doesn't reproduce either, the setup or the report is incomplete; it isn't evidence of a fix.
+- **Remove the trigger.** Once it reproduces, take out the one thing the report says causes it (the config line, the input, the call) and confirm the bug goes away. That proves the trigger is the cause and not something else in your repro.
+- **Two tries for broken tooling.** If an install, build, or server fails twice for reasons unrelated to the bug, stop. Write `BLOCKED: <stage> <command> <the error>` on the `Reproduces on:` line and ask the user; an environment failure is never a verdict on the bug.
+
 Results decide the job. Fixed on head but not in prod: STOP for a PR, and for an issue, look for the fixing commit and STOP (or ask about a backport per "Release lines" below). Reproduces everywhere it was run: GO, and the issue names each build. A build that fails differently: describe both failures.
 
 ## Decide: go, stop, or ask first
@@ -82,7 +92,7 @@ Results decide the job. Fixed on head but not in prod: STOP for a PR, and for an
 - The repo bans AI-assisted contributions, or requires something the user can't honestly provide.
 - An open PR already makes this change, or a superset of it. This holds whoever opened it (a bot, a maintainer, another contributor) and whatever state its CI is in. Maintainers usually finish their own bot's PR rather than review a second one. Offer to help on that PR instead: review it, test it, or add the missing piece the way `existing-pr.md` describes (`DECISION: JOIN`).
 - A maintainer closed the issue as won't-fix, or closed a previous PR for this change with a reason that still applies. Quote the reason.
-- The bug no longer reproduces on a build `channels.sh` marked DIFFERS (head, canary, nightly). Name the commit that fixed it; its list of commits touching your paths is the place to look.
+- The bug no longer reproduces on a build `channels.sh` marked DIFFERS (head, canary, nightly), while prod still reproduces it in the same setup (see "A result you can trust"). Name the commit that fixed it; its list of commits touching your paths is the place to look.
 - The repo is archived, or no outside PR has merged in 6 months and no maintainer has committed in 3. The dump prints the last fork merge date.
 
 **Ask first** when:
@@ -136,7 +146,7 @@ Reason: <one sentence, with link>
 - Duplicates and prior attempts: <#links with state and the maintainer's reason for each close; open PRs touching the same files>
 - Intent and lineage: <the commit or PR that made the current behavior, and whether it was deliberate; any documented escape hatch>
 - Predicted objections: <the top 3, each with its basis>
-- Reproduces on: <channels.sh's recon line with each result filled in: yes, no, or how it failed>; or "n/a: not a bug fix" for features and docs
+- Reproduces on: <channels.sh's recon line with each result filled in: yes, no, or how it failed, and the version each run loaded>; trigger removed: <gone / still there>; or "n/a: not a bug fix" for features and docs
 - Timing: <milestone, freeze, last outside merge, or "nothing pending">
 - Disclosure required: <their exact required format and when it applies, or "not required">
 ```
