@@ -54,6 +54,16 @@ Write the 3 objections this repo's maintainers would most likely raise, each wit
 
 **If the top objection would close the PR or issue** (duplicate, breaking change, works as designed, needs discussion first, out of scope), the decision can't be GO. Either fix the cause or decide STOP or ASK. Changing the framing doesn't fix the cause: a report against a recorded maintainer decision is still against it when it's filed as a feature request. Only new evidence the decision didn't weigh justifies ASK, posted in the thread where the decision was made.
 
+## Check what the report cites
+
+Before reproducing anything, check that what the report names exists:
+
+```bash
+bash "<skill-dir>/scripts/cites.sh" --issue <N> --repo <owner/name>   # in the clone; --file <draft> for text not on GitHub
+```
+
+It checks each file path (and `:line`), each function or identifier in backticks or followed by `()`, and each version against the tree. curl ended its bug bounty in 2026 after a flood of AI-written reports, one of which came with GDB sessions and register dumps for a function curl doesn't have. A MISSING name doesn't prove the report wrong (it may be the reporter's own code, or another version), but it's the first thing to settle, and it goes in recon.md. Run it on the user's own issue draft too: a draft citing a function that doesn't exist is the fastest way to lose a maintainer.
+
 ## Check the other builds before reproducing
 
 Prod is the build the user runs. Head, beta, canary, next, and nightly builds may already fix the bug, or break it differently. Find out which of them changed anything relevant before building any of them:
