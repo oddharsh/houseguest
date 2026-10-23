@@ -28,7 +28,7 @@ Settle this before anything else, because it decides whether houseguest may writ
   - Requires disclosure in a set form: use that form.
   - Requires LLM output to be quoted, labeled, or collapsed: follow the format exactly.
 - Maintainer comments in the sweep show how strictly the rule is applied. If they've pushed back on AI-shaped contributions recently, say so in the note, because it raises the bar for everything else.
-- **MENTIONS ONLY** or **NONE FOUND:** write that verdict and the sources checked into `recon.md`. If the README or CONTRIBUTING links to a contribution guide the sweep couldn't read (a site behind a login, a PDF), open it yourself before deciding.
+- **MENTIONS ONLY** or **NONE FOUND:** write that verdict and the sources checked into `recon.md`. If the README or CONTRIBUTING links to a contribution guide the sweep couldn't read (a site behind a login, a PDF), open it yourself before deciding. A live page outside GitHub counts as a rule only when its URL or title names contribution guidance, so a linked docs page listed under mentions may still hold a rule: skim it if the link text calls it a guide.
 
 Never decide GO with the AI policy line blank.
 
