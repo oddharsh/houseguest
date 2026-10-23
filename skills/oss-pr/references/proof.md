@@ -50,6 +50,26 @@ SHA: <git rev-parse HEAD>
 - Checked: <rendered the docs page / ran the CI job locally with act / built the package>
 ```
 
+## What reviewers can see
+
+Red-green convinces a reviewer the fix works; a preview lets them see it without checking out your branch. When the change is something a reviewer would want to look at or try (a UI, a docs site, a CLI's output, a package they'd install), find out what the repo gives them:
+
+```bash
+bash "<skill-dir>/scripts/preview.sh" --repo <owner/name> --files <your changed files> --save "$LEDGER/preview.md"
+```
+
+It lists the preview pipelines the repo runs, what recent fork PRs and branch PRs actually got, and how often outside contributors' PRs carried screenshots. Then:
+
+- **FORKS GET ONE:** the repo's own pipeline will post a link on your PR. Build nothing. Write one sentence for the PR body telling reviewers where on the preview to look ("On the preview, `/docs/install` below 600px wide shows the menu").
+- **BRANCHES ONLY:** the repo builds previews, but a fork PR waits for a maintainer to authorize the build, or never gets one. Don't ask for it in the body; maintainers know their pipeline and authorize it when they want to look. Do what NONE FOUND says.
+- **NONE FOUND:** show the change in the PR itself. For a visible change, take before and after screenshots, or a short recording for an interaction, from the base and from HEAD (`git worktree add <dir> <base>` gives you the base without touching your branch). For a CLI, the command and its output in a code block do the same job. Include them when the change is visual, or when the screenshot line shows this repo's outside contributors usually do.
+
+`gh` can't upload images. Save them to `$LEDGER/shots/`; after the PR opens, the user drags them into the description on GitHub. Write the body so it reads complete before they land, and add the caption with the images.
+
+Never host your own preview (your Vercel or Netlify, a `gh-pages` branch on your fork, a tunnel) unless the user asks. A reviewer can't tell what a stranger's deployment was built from, a link to an unknown domain in a first-time contributor's PR reads as spam, and it breaks the day the user deletes it. If the user asks anyway, name the commit it was built from beside the URL.
+
+Record the verdict and what reviewers will see in `proof.md` under `## Preview`.
+
 ## When the proof fails
 
 A FAIL is the useful outcome; it caught something before a maintainer did. Read which half failed:

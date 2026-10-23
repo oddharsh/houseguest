@@ -84,6 +84,8 @@ If a `writing-style` skill is installed, apply it as well.
 
 <One verification sentence with a number.> <Limits of testing, if any.> Fixes #<N>.
 
+<Where to look on the preview, from proof.md's Preview section, if the repo builds one for forks.>
+
 <details><summary>Red-green output</summary>
 
 ```
@@ -94,7 +96,7 @@ If a `writing-style` skill is installed, apply it as well.
 <disclosure line>
 ````
 
-The collapsed block is how the proof stays complete while the prose stays at the repo's baseline length. Leave out anything that would be empty. A typo fix is one sentence and the disclosure line.
+Screenshots from `$LEDGER/shots/` go in after the PR opens (see "What reviewers can see" in `proof.md`). The collapsed block is how the proof stays complete while the prose stays at the repo's baseline length. Leave out anything that would be empty. A typo fix is one sentence and the disclosure line.
 
 **Without `proof.md`:** when there's no red-green run (docs, dependency bumps, or a phase you skipped), drop the collapsed block and state in prose exactly what was run and what it showed. Never write a result that isn't in front of you; use `[ASK USER: did X pass?]` instead.
 
