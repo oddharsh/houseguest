@@ -178,6 +178,10 @@ The same go, stop, or ask logic applies to an issue, read as "is filing this her
 
 Check the open milestones and recent releases. A milestone due within 2 weeks usually means a freeze, so non-critical PRs may sit until after release; say so in the note. Newer builds are covered by `channels.sh` above.
 
+## Write `holdout.md`
+
+The other reports in the thread become the scenarios the fix is graded on without seeing. From the issue and every linked or duplicate issue, write each one the primary report doesn't already cover: another person's repro with different inputs, a different version, OS, or config, and edge cases a maintainer named ("this also breaks with nested lists"). For each, give its source link, the exact steps or input, and what the reporter saw. Leave out what's only speculation. When the thread holds nothing beyond the primary report, write `none in the thread`; the final check then relies on the main repro alone.
+
 ## Write `recon.md`
 
 If you haven't cloned yet, write recon notes to `${TMPDIR:-/tmp}/houseguest/<owner>/<repo>/<topic>/` and move them into the ledger after cloning.

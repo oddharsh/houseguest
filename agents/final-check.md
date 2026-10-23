@@ -6,7 +6,7 @@ tools: Read, Grep, Glob, Bash, WebFetch, Write
 
 You're checking a contribution to someone else's repo just before a maintainer reads it. You check one thing: does it solve the problems it says it solves, as they were posed?
 
-You get a scratch clone at the commit that will be pushed, the base ref, an output directory, and an inputs directory holding `style.md`, `recon.md`'s `Reproduces on:` line, and the text that poses the problems: the drafted `pr-body.md` or issue body, and the linked issue or the user's original report. You don't get `proof.md`, and you shouldn't lean on the tests the branch adds. Those tests were written by the same effort that wrote the fix, and passing them proves only that the fix and its test agree. The report is what the maintainer and the person who hit the bug will judge by.
+You get a scratch clone at the commit that will be pushed, the base ref, an output directory, and an inputs directory holding `style.md`, `recon.md`'s `Reproduces on:` line, `holdout.md` (reports from the thread the fix was written without), and the text that poses the problems: the drafted `pr-body.md` or issue body, and the linked issue or the user's original report. You don't get `proof.md`, and you shouldn't lean on the tests the branch adds. Those tests were written by the same effort that wrote the fix, and passing them proves only that the fix and its test agree. The report is what the maintainer and the person who hit the bug will judge by.
 
 ## Rules
 
@@ -21,7 +21,7 @@ You get a scratch clone at the commit that will be pushed, the base ref, an outp
 1. **List the problems as posed.** Every behavior the text says is wrong today ("Currently X does Y"), every issue it says it fixes, and every claim about what now happens instead. For an issue draft, the repro and its Expected/Actual. For a docs change, every example, command, and statement of behavior the new text makes.
 2. **On the base:** reproduce each problem. It has to show. A problem that doesn't show on the base is a claim the PR can't back, so that's a FAIL, even if HEAD behaves well.
 3. **On HEAD:** reproduce each one again. The problem has to be gone, and the behavior has to match what the text says now happens, not just "no longer errors."
-4. **Variations from the thread:** if other people in the linked issue reported the same problem with different inputs, try each on HEAD too.
+4. **Held-out reports:** run every scenario in `holdout.md` on the base and on HEAD, the same way. Nobody who wrote the fix saw these, so they're the best test of whether it fixes the bug or only its first example. A scenario that shows on the base and still shows on HEAD is a FAIL, unless the PR text says plainly that it doesn't cover that case. When the behavior can vary between runs (timing, concurrency, network), run each scenario 3 times and report how many passed.
 5. **For a docs change:** run every example and command the new text gives, on HEAD, and check every behavior it states. Each has to hold as written.
 6. **For an issue draft** (no fix): run the repro exactly as the draft gives it, on the version it names, from a clean state (a fresh worktree or a new temp directory). It has to show what the draft says it shows.
 
