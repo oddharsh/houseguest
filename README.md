@@ -10,9 +10,10 @@ Each phase runs in its own subagent, and the phases talk only through the ledger
 
 | Piece | What it does |
 |---|---|
-| `skills/oss-pr` | The phases: intent check, recon, style fingerprint, write, proof, copy, and maintainer review, each launched as its own subagent |
+| `skills/oss-pr` | The phases: intent check, recon, style fingerprint, write, proof, copy, maintainer review, and final check, each launched as its own subagent |
 | `agents/intent-check` | Decides whether a behavior is intended without being told anyone thinks it's a bug: reads the docs, tests that assert it, the commit and PR that introduced it, and earlier maintainer discussion, then writes a verdict (INTENDED, UNINTENDED, NO RECORD, or CONFLICTING) with a quote behind each claim. It also says whether the page a user reads first explains the behavior. Recon decides from it: the PR gate won't open a PR against an INTENDED verdict unless the choice rests on a factual error, and when the choice was never written down where users look, the job becomes a docs change so the next contributor doesn't make the same mistake |
 | `agents/maintainer-review` | Reviews the diff and drafted body as a busy maintainer would, from the ledger alone, before the user sees the PR |
+| `agents/final-check` | The last step: reproduces every problem the PR or issue poses, exactly as posed, on the base and on HEAD, through the interface the report used instead of the PR's own tests. For a docs change it runs every example the new text gives. The PR gate requires its PASS on the commit being pushed |
 | `scripts/gather.sh` | One pass over the upstream repo, before you clone: AI policy, contributor gates, workflows that police PRs, duplicate issues and PRs, open PRs touching your files, the commits that shaped them, the maintainer's reason for each rejected attempt, human-only length medians, and your own history in the repo. `--as-of` replays it at any past moment |
 | `scripts/policy.sh` | Finds the AI/LLM policy wherever it lives: anywhere in the repo, the org's `.github` repo, and contribution guides linked from the README or templates (image-rs keeps its LLM policy in a separate repo). Also checks whether maintainers have applied a rule in earlier threads. Ends with a verdict and every source checked |
 | `scripts/channels.sh` | Before anyone builds a beta, canary, or head to retry a bug, checks whether those builds differ from prod in any way that could matter: commits touching the bug's files, commit messages naming it, or a changed package manifest. Reads npm dist-tags, crates.io, PyPI, GitHub releases and prereleases, and beta/canary/next/nightly branches, and skips stale branches and older lines. Only the builds that differ get a repro |
@@ -24,7 +25,7 @@ Each phase runs in its own subagent, and the phases talk only through the ledger
 | `scripts/housecheck.sh` | Checks your diff against them: runs the repo's own tools on only your files, then flags what review comments usually flag (comment placement, repeated constants, removed guards, unfamiliar assertions, oversized changesets), and measures the diff against PRs other people got merged in the repo: too large, more than one concern, a new dependency, or a new option nobody asked for. Flags get fixed or acknowledged with a reason |
 | `scripts/title.sh` | Learns a repo's PR title conventions from titles other people got merged (prefix, length, which features they use) and flags what yours does that theirs rarely do: chained clauses, comparisons to other products, "as ..." and ", not X" clauses, excess length. The PR gate rechecks `--title` |
 | `scripts/prove.sh` | Red-green proof: the test fails without your fix (for the right reason) and passes with it, bound to a commit SHA. Then it reverts each hunk of the fix alone to show the test covers all of it, reruns the green test 10 times to catch flakes, and flags sleeps, clocks, randomness, and network calls in the new test lines |
-| `hooks/gate.sh` | Blocks `gh pr create` in forks until recon said GO, the intent check found no deliberate choice in the way, the style note exists, and the proof passed on HEAD |
+| `hooks/gate.sh` | Blocks `gh pr create` in forks until recon said GO, the intent check found no deliberate choice in the way, the style note exists, and the proof and final check passed on HEAD |
 
 ## Precedence
 
@@ -53,7 +54,7 @@ Needs `gh` (authenticated), `git`, and `jq`.
 
 ## The ledger
 
-`.git/houseguest/<branch>/` holds `intent.md`, `recon.md`, `style.md`, `proof.md`, logs, and the final `pr-body.md`. It's the only thing the phases share: each subagent reads the notes its phase needs and writes its own, and the intent check runs before anything else is written there. Git never tracks anything under `.git`, so none of it can leak into the upstream repo, and it disappears with the clone.
+`.git/houseguest/<branch>/` holds `intent.md`, `recon.md`, `style.md`, `proof.md`, `final.md`, logs, and the final `pr-body.md`. It's the only thing the phases share: each subagent reads the notes its phase needs and writes its own, and the intent check runs before anything else is written there. Git never tracks anything under `.git`, so none of it can leak into the upstream repo, and it disappears with the clone.
 
 ## Disclosure
 

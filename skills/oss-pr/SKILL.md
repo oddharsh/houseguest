@@ -32,7 +32,7 @@ LEDGER="$(git rev-parse --git-dir)/houseguest/$(git branch --show-current)"
 mkdir -p "$LEDGER"
 ```
 
-Files: `intent.md`, `recon.md`, `codex.md` (from `codex.sh`), `style.md`, `house.md` (from `housecheck.sh`, including the lean size checks), `proof.md`, and `pr-defaults.md` when joining an existing PR. The plugin's hook reads them before `gh pr create` runs and blocks the PR when one is missing. Keep each note short and concrete (paths, links, commands, exit codes); they also feed the PR description later.
+Files: `intent.md`, `recon.md`, `codex.md` (from `codex.sh`), `style.md`, `house.md` (from `housecheck.sh`, including the lean size checks), `proof.md`, `final.md`, and `pr-defaults.md` when joining an existing PR. The plugin's hook reads them before `gh pr create` runs and blocks the PR when one is missing. Keep each note short and concrete (paths, links, commands, exit codes); they also feed the PR description later.
 
 The helper scripts live in `scripts/` next to this file. Wherever a reference says `<skill-dir>`, substitute the base directory shown when this skill loaded.
 
@@ -57,8 +57,11 @@ Your job between phases:
 | 4 | Proof | `references/proof.md` | `proof.md` | The clone, the base ref, and the commit | How the change was written: it gets the diff, not the account of it | Yes: if red-green fails, the fix or the test is wrong |
 | 5 | Copy | `references/pr-copy.md`, then `references/lrs.md` | `pr-title.txt`, `pr-body.md`, or the issue or reply text | The clone and the user's answers to its questions | The conversation: it writes only what the ledger and the diff show | No |
 | 6 | Maintainer review | `agents/maintainer-review.md` | findings, returned to you | What "Maintainer-reviewer pass" in `pr-copy.md` lists | How the change and the text were made | Yes: if it finds a closing reason |
+| 7 | Final check | `agents/final-check.md` | `final.md` | The clone at the HEAD you'll push, the base ref, and the text that poses the problems: `pr-body.md` or the issue draft, plus the linked issue or the user's original report | `proof.md`, and the tests the branch adds: it reproduces the problems as posed, through the interface the report used | Yes: if a problem still shows on HEAD, or never showed on the base |
 
-The intent check and the maintainer reviewer ship as agents with this plugin (`houseguest:intent-check`, `houseguest:maintainer-review`); their files are in `agents/` at the plugin root, two levels above `<skill-dir>`. If the agents aren't listed, launch a general-purpose agent with the agent file's body as its prompt. The other phases run as general-purpose agents told to follow their reference file. A subagent can't launch another one, so you run phase 6 yourself and send its findings back to the phase that owns them: code findings to a fresh phase 3 (then 4 and 5 again), text findings to a fresh phase 5, each with the findings quoted in full. A closing reason recon missed sends the job back to phase 1.
+The intent check, the maintainer reviewer, and the final check ship as agents with this plugin (`houseguest:intent-check`, `houseguest:maintainer-review`, `houseguest:final-check`); their files are in `agents/` at the plugin root, two levels above `<skill-dir>`. If the agents aren't listed, launch a general-purpose agent with the agent file's body as its prompt. The other phases run as general-purpose agents told to follow their reference file. A subagent can't launch another one, so you run phase 6 yourself and send its findings back to the phase that owns them: code findings to a fresh phase 3 (then 4 and 5 again), text findings to a fresh phase 5, each with the findings quoted in full. A closing reason recon missed sends the job back to phase 1.
+
+Phase 7 runs last, once review is done, on the exact commit and text you'll show the user. It asks whether the work solves the problems it poses, as they were posed. A problem still showing on HEAD sends the job back to phase 3. A problem that never showed on the base means the text claims more than the change does: phase 5 cuts the claim, or recon was wrong about the bug. Any later commit or rewrite of the body makes `final.md` stale, so run it again. When it stops at BLOCKED (it needed hardware or an account it doesn't have), give the user its commands; if they run them and confirm the result, write `STATUS: PASS (checked by the user: <what they ran and saw>)`.
 
 **The neutral statement** for the intent check is one or two sentences of what the code does, with the inputs that make it happen: "With `--max-width 40`, a line of Japanese text wraps after 13 characters." Leave out every word that carries a verdict: bug, broken, wrong, should, expected, fix, regression, issue, and the issue number. Also leave out who hit it and why it matters. Write the statement down for the user before launching, so they can see it carries no verdict.
 
@@ -66,7 +69,7 @@ Run the intent check first, before recon writes anything to the ledger, so there
 
 Work out where the user is and start there. Someone asking "write the PR description" with a finished branch still needs the ledger checked, but not a redo of everything.
 
-Adding to someone else's open PR (recon's `DECISION: JOIN`, or the user asks to help on a PR) runs every phase through `references/existing-pr.md`: the PR's own choices and its reviewers' asks outrank the repo's neighbors, and the least intrusive way in wins. Issues and feature requests only need phases 0 and 1 and the issue section of phase 5. When recon says ASK, the job ends with the comment draft described in `recon.md`. Docs or typo PRs skip phase 4; say so in `proof.md` (`STATUS: N/A (docs-only)`), and don't invent a test.
+Adding to someone else's open PR (recon's `DECISION: JOIN`, or the user asks to help on a PR) runs every phase through `references/existing-pr.md`: the PR's own choices and its reviewers' asks outrank the repo's neighbors, and the least intrusive way in wins. Issues and feature requests only need phases 0 and 1, the issue section of phase 5, and phase 7, which runs the issue's repro exactly as written before anyone posts it. When recon says ASK, the job ends with the comment draft described in `recon.md`. Docs or typo PRs skip phase 4; say so in `proof.md` (`STATUS: N/A (docs-only)`), and don't invent a test.
 
 ## After posting
 
@@ -86,7 +89,7 @@ Opening a PR or issue, pushing to a fork, and replying on GitHub publish text un
 
 ## When recon says DOCS
 
-The behavior is deliberate and the docs never said so. Tell the user plainly that it isn't a bug, with the link, then run phases 2, 3, and 5 on the docs change `recon.md` describes. Writing it down is how the next guest avoids the mistake this one made.
+The behavior is deliberate and the docs never said so. Tell the user plainly that it isn't a bug, with the link, then run phases 2, 3, 5, and 7 on the docs change `recon.md` describes. Writing it down is how the next guest avoids the mistake this one made.
 
 ## When recon says stop
 
