@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # PreToolUse gate for `gh pr create` on repos you don't own.
 #
-# Blocks (exit 2) until the oss-pr ledger shows recon said GO, a style note
-# exists, and a proof passed on the current HEAD. Stays silent everywhere
-# else: other commands, repos that aren't forks, and your own repos.
+# Blocks (exit 2) until the oss-pr ledger shows recon said GO, the blind intent
+# check found no deliberate choice in the way, a style note exists, and a proof
+# passed on the current HEAD. Stays silent everywhere else: other commands,
+# repos that aren't forks, and your own repos.
 # A user who explicitly wants to skip can prefix the command with HOUSEGUEST_SKIP=1.
 
 input=$(cat)
@@ -54,6 +55,25 @@ if [ -f "$ledger/recon.md" ]; then
     *"<yes/no>"*|*"<reproduces?"*) add "recon.md's Reproduces on line still has unfilled results: reproduce on each listed build and replace every <yes/no>" ;;
   esac
 fi
+
+# The blind intent check. JOIN skips it: the PR being joined already has the maintainers' attention.
+case "$decision" in
+  GO*)
+    if [ ! -f "$ledger/intent.md" ]; then
+      add "intent.md missing: run the intent check (oss-pr phase 0) in its own subagent, or write VERDICT: N/A (<reason>) when the change alters no existing behavior"
+    else
+      verdict=$(grep -m1 -E '^VERDICT:' "$ledger/intent.md" | sed 's/^VERDICT:[[:space:]]*//')
+      ferr=$(grep -m1 -E '^- Factual error:' "$ledger/intent.md" | sed 's/^- Factual error:[[:space:]]*//')
+      case "$verdict" in
+        ""|"<"*|*"|"*) add "intent.md has no filled-in VERDICT: line" ;;
+        INTENDED*)
+          case "$ferr" in
+            ""|"<"*|none*|None*) add "the intent check found this behavior intended ($(grep -m1 -E '^Basis:' "$ledger/intent.md" | sed 's/^Basis:[[:space:]]*//' | cut -c1-200)), and names no factual error behind it: recon should ASK the maintainers first" ;;
+          esac ;;
+        CONFLICTING*) add "the intent check found conflicting sources on whether this behavior is intended: recon should ASK the maintainers first" ;;
+      esac
+    fi ;;
+esac
 
 [ -f "$ledger/style.md" ] || add "style.md missing: run oss-pr phase 2 (style fingerprint)"
 
