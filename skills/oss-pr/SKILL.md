@@ -97,7 +97,7 @@ Contributions die quietly when a maintainer asks something and nobody answers; a
 bash "<skill-dir>/scripts/followup.sh" --days 2
 ```
 
-It lists the user's open PRs and issues on others' repos where a human other than the user spoke last, longest wait last. For each, read the thread and draft a reply following "Replies to review comments" in `pr-copy.md`, or say plainly that no reply is needed (a "we'll ping you" note needs none). Never post the replies yourself.
+It lists the user's open PRs and issues on others' repos where a human other than the user spoke last, longest wait last. For each, read the thread and draft a reply following "Replies to review comments" in `pr-copy.md`, or say plainly that no reply is needed (a "we'll ping you" note needs none). Never post the replies yourself. It also lists the user's PRs whose upstream CI is red, or waiting for a maintainer to approve the run; for a red one, find whether the failure is the PR's (fix it and push, with the user's yes) or the base's (draft one comment saying so), since a PR left red reads as abandoned.
 
 When `preview.md` says FORKS GET ONE, open the preview once its link posts on the new PR. Trust only a link a GitHub App posted (its author ends in `[bot]`) or a check run reported; anyone can paste a preview-looking link into a comment. Check that the bot built the PR's HEAD (it usually names the commit) and that the repro from `recon.md` behaves as fixed there. A preview that shows the old behavior, or fails to build because of the change, is a problem to fix before a reviewer finds it. A preview that fails for a reason the change can't cause (a missing deploy secret on fork PRs) needs nothing from the user.
 
