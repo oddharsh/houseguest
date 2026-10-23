@@ -168,6 +168,16 @@ Once the draft is in `$LEDGER/pr-body.md`, the session that launched the copy ph
 
 Fix every finding that a written rule, a repo tool, or a direct conflict with neighboring code requires, or write down why it doesn't apply. Findings face the same bar as style revisions in `style.md`: "this could be cleaner" or "the repo has a helper for this" permits a change without requiring it. Moving code between files, renaming, or swapping in a helper needs a rule or a maintainer comment behind it, and a reviewer's "import X from Y" means leave X where it is. If the reviewer found a closing reason recon missed, go back to recon.
 
+## Recheck upstream
+
+Right before shipping, check whether the world moved since recon. Across five coding agents' PRs on GitHub, the most common reason a fix went unmerged, after failing tests, was that another PR had already fixed the same issue:
+
+```bash
+bash "<skill-dir>/scripts/recheck.sh" --repo <owner/name> --issue <N> --files <your changed files> --q "<recon's search terms>" --save "$LEDGER/recheck.md"
+```
+
+On CHANGED, act on each item: a merged fix or a closed issue ends the job (go back to recon); an open PR for the same change means JOIN or STOP; a new commit on your files means merging the base and rerunning the proof. Then rerun it with `--since` set to the previous run's `Checked:` time. The gate wants CLEAR.
+
 ## Ship
 
 Write the final body to `$LEDGER/pr-body.md`. The final check (phase 7) then reproduces every problem this body poses, on the base and on HEAD, so claim only what the change solves. Once `final.md` says PASS, the session the user talks to shows them the title, the body, and the exact command:
