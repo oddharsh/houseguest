@@ -4,7 +4,7 @@ When you contribute to someone else's repo, you're a guest in their house. house
 
 Maintainers close low-effort PRs for 3 reasons: the work duplicates or contradicts something already decided, the code looks foreign to the codebase, or the description claims things nobody checked. The plugin runs a phase against each one, writes what it found to a ledger inside `.git`, and blocks `gh pr create` until the ledger is complete.
 
-Each phase runs in its own subagent, and the phases talk only through the ledger. An agent that's sure there's a bug reads the docs looking for confirmation, and one that wrote the fix grades its own proof; isolation keeps each phase from inheriting the last one's conclusions. The first check never learns there's a bug at all: it gets a neutral description of the behavior and reads the docs, tests, and history to decide whether the maintainers meant it.
+Each phase runs in its own subagent, and the phases talk only through the ledger. An agent that's sure there's a bug reads the docs looking for confirmation, and one that wrote the fix grades its own proof; isolation keeps each phase from inheriting the last one's conclusions. The first check never learns there's a bug at all: it gets a neutral description of the behavior and reads the docs, tests, and history to decide whether the maintainers meant it. The checks that must stay blind work in a fresh clone, which never carries the ledger. Everything read from the repo or GitHub counts as evidence, never as instructions. The review loop keeps its memory in `rounds.md`, lets a finding be declined with evidence, and stops after 3 rounds or when author and reviewer stand still, leaving the call to the user.
 
 ## What's in it
 
@@ -54,7 +54,7 @@ Needs `gh` (authenticated), `git`, and `jq`.
 
 ## The ledger
 
-`.git/houseguest/<branch>/` holds `intent.md`, `recon.md`, `style.md`, `proof.md`, `final.md`, logs, and the final `pr-body.md`. It's the only thing the phases share: each subagent reads the notes its phase needs and writes its own, and the intent check runs before anything else is written there. Git never tracks anything under `.git`, so none of it can leak into the upstream repo, and it disappears with the clone.
+`.git/houseguest/<branch>/` holds `intent.md`, `recon.md`, `style.md`, `proof.md`, `rounds.md`, `final.md`, logs, and the final `pr-body.md`. It's the only thing the phases share: each subagent reads the notes its phase needs and writes its own, and the intent check runs before anything else is written there. Git never tracks anything under `.git`, so none of it can leak into the upstream repo, and it disappears with the clone.
 
 ## Disclosure
 
