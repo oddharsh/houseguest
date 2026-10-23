@@ -54,7 +54,7 @@ These moves showed up again and again in pre-LLM PRs that got merged. Each one t
 3. **Link the lineage.** The commit, issue, or PR that introduced the bug or tried to fix it before ("Regression from abc1234," "Builds on #812, which was reverted in #840").
 4. **Name one alternative and why you passed on it,** in one sentence, when there was an obvious one.
 5. **Verify in one sentence, with a number** when there is one ("binary size went from 2,544 KB to 2,084 KB"). The full output goes in a collapsed block below. When the evidence is a matrix (behavior across browsers, platforms, or versions), a small table says it faster than prose.
-6. **State the limits of what you checked** ("only tested on Linux," "I mostly relied on the existing tests").
+6. **State the limits of what you checked** ("only tested on Linux," "I mostly relied on the existing tests"). Take them from the ledger, not from memory: every problem `final.md` left BLOCKED, every build on recon's `Reproduces on:` line that wasn't run, and every `holdout.md` scenario the change doesn't cover. One sentence holds all of them; leaving one out claims a check that never ran.
 7. **Hand the maintainer a specific choice** ("Happy to drop the README change if you'd rather keep this to code"). A generic "open to feedback" adds nothing.
 8. **Credit people:** whoever reported it, whoever suggested the approach.
 
