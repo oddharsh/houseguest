@@ -383,5 +383,6 @@ else status="PASS"; fi
   echo
   echo "To acknowledge a flag you've decided to keep, add a line to $ack: \`KEY: why this is right for this repo\`."
 } > "$ledger/house.md"
+bash "$(dirname "$0")/receipt.sh" seal "$ledger/house.md"
 cat "$ledger/house.md"
 case "$status" in PASS) exit 0 ;; *) exit 1 ;; esac
