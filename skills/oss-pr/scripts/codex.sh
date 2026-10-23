@@ -9,6 +9,9 @@
 #     .clinerules, .roo rules, .kiro/steering, .agents/rules, .junie, .continue/rules, .rules
 #     (Zed), CONVENTIONS.md (aider). Maintainers write these for their own agents, so their
 #     rules about code are house rules.
+#   - agent skills: SKILL.md folders under .agents/skills, .claude/skills, .github/skills,
+#     .cursor/skills, .codex/skills, and .opencode/skills, tagged by the job each one does
+#     (writing PRs, code and tests, review, changesets) and whether it ships evals.
 #   - human style guides: STYLE, STYLEGUIDE, CONVENTIONS, CODING_GUIDELINES, CODE_REVIEW,
 #     REVIEWING, HACKING, DEVELOPMENT, and docs pages about style, conventions, or review.
 #   - the org's rules: its .github repo, and repos named like a style guide, handbook,
@@ -26,7 +29,7 @@ while [ $# -gt 0 ]; do
     --files) files="$2"; shift 2 ;;
     --as-of) asof="$2"; shift 2 ;;
     --save) save="$2"; shift 2 ;;
-    -h|--help) sed -n '2,20p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,23p' "$0"; exit 0 ;;
     *) echo "codex.sh: unknown argument $1" >&2; exit 2 ;;
   esac
 done
@@ -38,6 +41,7 @@ mine=$(printf '%s' "$files" | tr ',' '\n' | sed '/^$/d')
 AGENT_RE='(^|/)(AGENTS|AGENT|CLAUDE|GEMINI)\.md$|^\.cursorrules$|(^|/)\.cursor/rules/.+\.(mdc|md)$|^\.github/copilot-instructions\.md$|^\.github/instructions/.+\.instructions\.md$|^\.windsurfrules$|^\.windsurf/rules/.+\.md$|^\.clinerules(/.+\.md)?$|^\.roorules$|^\.roo/rules[^/]*/.+\.md$|^\.kiro/steering/.+\.md$|^\.agents/rules/.+\.md$|^\.qoder/rules/.+\.md$|^\.junie/guidelines\.md$|^\.continue/rules/.+\.md$|^\.rules$|^\.augment-guidelines$|^CONVENTIONS\.md$'
 STYLE_RE='(^|/)(STYLE|STYLEGUIDE|STYLE_GUIDE|CODING_STYLE|CODE_STYLE|CODING_GUIDELINES|CODING_STANDARDS|CONVENTIONS|CODE_REVIEW|REVIEWING|REVIEW_GUIDELINES|HACKING|DEVELOPMENT|CONTRIBUTING)(\.(md|rst|txt|adoc))?$|^(docs?|documentation|dev-?docs|contributing|\.github)/(.+/)?[^/]*(style|convention|guideline|coding|code-review|reviewing|contribut|hacking|developing|best-practice)[^/]*\.(md|rst|adoc|txt)$'
 SKIP_RE='(^|/)(node_modules|vendor|third_party|fixtures?|testdata|test-data|examples?|\.changeset)/|(^|/)(tests?|__tests__)/.*\.md$'
+SKILL_RE='^\.(agents|claude|github|cursor|codex|opencode)/skills/[^/]+/SKILL\.md$'
 ORG_REPO_RE='(^|[-_.])(style-?guides?|styleguide|conventions|guidelines|handbook|dev-?guide|engineering|coding-?standards|contributing|community|governance)([-_.]|$)|^\.github$|-dev-guide$'
 
 api() { gh api "$@" 2>/dev/null; }
@@ -107,6 +111,33 @@ $(heads "$body")
     done <<< "$agent"
     [ -n "$applied" ] && { echo "Apply to your change (read these in full; a nearer AGENTS.md beats the root one):"; printf '%s' "$applied"; }
     [ -n "$other" ] && { echo "Scoped elsewhere (skip unless your change grows into their paths):"; printf '%s' "$other"; }
+  fi
+
+  echo; echo "## Agent skills"
+  skills=$(echo "$tree" | grep -E "$SKILL_RE" | head -30)
+  if [ -z "$skills" ]; then echo "- none"; else
+    echo "The maintainers' written procedure for jobs their own agents do. Where one covers a phase, it's a written rule for that phase and beats houseguest's defaults. Its evals, when it has them, list what the maintainers count as correct output."
+    while IFS= read -r p; do
+      dir=$(dirname "$p"); body=$(raw "$repo" "$ref" "$p")
+      name=$(echo "$body" | sed -n '2,15p' | grep -m1 -E '^name:' | sed -E 's/^name:[[:space:]]*//; s/^["'"'"']|["'"'"']$//g')
+      desc=$(echo "$body" | sed -n '2,15p' | grep -m1 -E '^description:' | sed -E 's/^description:[[:space:]]*//; s/^["'"'"'>|-]+[[:space:]]*//' | cut -c1-200)
+      # Tag by the skill's name: descriptions mention PRs and reviews in passing.
+      key=$(printf '%s' "${name:-$(basename "$dir")}" | tr 'A-Z' 'a-z')
+      case "$key" in
+        *pr-writer*|*pull-request*|*pr-description*|*pr-body*|*commit-message*) use="the PR title and body (outranks pr-copy.md)" ;;
+        *code-review*|*reviewer*) use="the maintainer-reviewer pass: what their own reviewer checks" ;;
+        *changeset*|*changelog*|*release-note*) use="the changeset or changelog entry" ;;
+        *develop*|*contribut*|*testing*|*test-*|*style*|*comment*|*convention*|*architecture*|*coding*) use="writing the change: code, comments, and tests" ;;
+        *) use="probably the maintainers' own workflow (triage, merging, CI); read the description to be sure" ;;
+      esac
+      extra=$(echo "$tree" | grep -E "^$(printf '%s' "$dir" | sed 's/[.[\*^$]/\\&/g')/" | grep -v -E '/SKILL\.md$' | sed "s#^$dir/##")
+      evals=$(echo "$extra" | grep -c -E '(^|/)evals?/' )
+      echo "- \`$p\`: ${name:-$(basename "$dir")}. ${desc:-no description}"
+      echo "    - use for: $use"
+      docs=$(echo "$extra" | grep -v -E '(^|/)evals?/' | grep -E '\.md$' | head -6 | tr '\n' ' ')
+      [ -n "$docs" ] && echo "    - also read: $docs"
+      [ "$evals" -gt 0 ] && echo "    - evals: $(echo "$extra" | grep -E '(^|/)evals?/' | head -2 | tr '\n' ' ')"
+    done <<< "$skills"
   fi
 
   echo; echo "## Human style guides and review docs"
