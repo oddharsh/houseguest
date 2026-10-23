@@ -11,11 +11,34 @@ input=$(cat)
 cmd=$(printf '%s' "$input" | jq -r '.tool_input.command // empty')
 cwd=$(printf '%s' "$input" | jq -r '.cwd // empty')
 
-printf '%s' "$cmd" | grep -q -E '(^|[;&|[:space:]])gh[[:space:]]+pr[[:space:]]+create([[:space:]]|$)' || exit 0
+# A security report recon marked PRIVATE also blocks public issues and pushes.
+private_only=""
+if printf '%s' "$cmd" | grep -q -E '(^|[;&|[:space:]])(gh[[:space:]]+issue[[:space:]]+create|git[[:space:]]+push)([[:space:]]|$)'; then
+  private_only=1
+else
+  printf '%s' "$cmd" | grep -q -E '(^|[;&|[:space:]])gh[[:space:]]+pr[[:space:]]+create([[:space:]]|$)' || exit 0
+fi
 printf '%s' "$cmd" | grep -q 'HOUSEGUEST_SKIP=1' && exit 0
 
 [ -n "$cwd" ] && cd "$cwd" 2>/dev/null
 git rev-parse --git-dir >/dev/null 2>&1 || exit 0
+
+if [ -n "$private_only" ]; then
+  grep -q -E '^DECISION:[[:space:]]*PRIVATE' "$(git rev-parse --git-dir)/houseguest/$(git branch --show-current)/recon.md" 2>/dev/null || exit 0
+  # The advisory's temporary private fork (<repo>-ghsa-xxxx-xxxx-xxxx) is where the fix belongs.
+  for w in $(printf '%s' "$cmd" | sed -E 's/.*git[[:space:]]+push//'); do
+    case "$w" in -*) continue ;; esac
+    url=$(git remote get-url "$w" 2>/dev/null || printf '%s' "$w")
+    printf '%s' "$url" | grep -q -E -- '-ghsa(-[a-z0-9]{4}){3}' && exit 0
+  done
+  cat >&2 <<EOF
+houseguest blocked this: recon.md says this is a security vulnerability (DECISION: PRIVATE).
+Nothing about it goes public until the maintainers publish an advisory: report it through the
+channel in SECURITY.md, and push a fix only to the advisory's private fork (its name ends in
+-ghsa-...). If the user explicitly says to go ahead, rerun the command prefixed with HOUSEGUEST_SKIP=1.
+EOF
+  exit 2
+fi
 
 # Only gate contributions upstream: a fork, or a clone with an `upstream` remote.
 if ! git remote get-url upstream >/dev/null 2>&1; then

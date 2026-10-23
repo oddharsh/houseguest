@@ -93,6 +93,23 @@ A "doesn't reproduce" is the result most likely to be wrong, because a broken se
 
 Results decide the job. Fixed on head but not in prod: STOP for a PR, and for an issue, look for the fixing commit and STOP (or ask about a backport per "Release lines" below). Reproduces everywhere it was run: GO, and the issue names each build. A build that fails differently: describe both failures.
 
+## Security reports
+
+Run this check whenever the bug could let someone other than the site's or tool's own developer cause harm: injection, cross-site scripting, path traversal, an authentication or authorization bypass, request forgery, secret exposure, code execution, or a denial of service from one cheap request. Maintainers now get a stream of AI-written security reports that cite real code and use the right words, and most describe bugs nothing can exploit. A false alarm costs them a private triage; a real vulnerability posted publicly costs every user of the project.
+
+**Assume it isn't a vulnerability until you've shown otherwise.** Write down the attacker, what they control, the victim, and the harm. Then test the claim:
+
+- **Read the real path.** Read the code the report blames, its callers, and the layers before and after it (input normalization, routing, escaping, response headers). Projects defend in depth, and a flaw in one layer is often unreachable or neutralized by another.
+- **The attacker already controls it.** If the attack needs the project's config, source, build, or dependencies, the attacker already owns the app. That's not a vulnerability.
+- **The protection was switched off.** A repro that needs a wildcard allow list, sanitization turned off, or raw HTML opted in shows a user disabling a safeguard. It's a docs or defaults question.
+- **Development only.** A dev server isn't a production server. Show it on a production build with default or reasonable config.
+- **Show the harm itself:** a script that runs, protected data served to an unauthenticated request, a file read from outside the project. "The middleware saw an odd path" isn't harm.
+- **Duplicates and precedent:** read the project's published advisories (`gh api repos/<owner/name>/security-advisories`) and its SECURITY.md. A closed advisory of the same shape tells you how the maintainers already decided.
+
+**When it is a vulnerability: `DECISION: PRIVATE`.** Nothing about it goes anywhere public: no issue, no PR, no push to a public fork, no comment, no commit message that describes it. Follow SECURITY.md's channel (GitHub's private vulnerability reporting under the Security tab, an email address, a bug bounty). If the repo gives none, look for private reporting on the repo's Security tab, and otherwise ask the maintainers in a public comment for a private contact, without details. Draft the report for the user to submit: the claim, affected versions, the repro under default config, the harm, and a suggested fix. A fix, if the maintainers want one, goes in the advisory's temporary private fork (its name ends in `-ghsa-...`), never a public branch. The gate blocks `gh pr create`, `gh issue create`, and `git push` to anything but such a fork while `recon.md` says PRIVATE.
+
+**When it isn't:** it's an ordinary bug, and everything else in this file applies. Describe it as the bug it is, in the plain words the issue body uses, without "vulnerability," "exploit," or "attack." Calling a bug a security hole is the fastest way to lose a maintainer's attention.
+
 ## Decide: go, stop, or ask first
 
 **Stop** (report with links, write the note, end the job) when any of these hold:
@@ -140,6 +157,7 @@ A docs PR is still a PR. Duplicates, gates, and the AI policy apply: rerun the g
 The same go, stop, or ask logic applies to an issue, read as "is filing this here welcome?":
 
 - **GO:** a bug that reproduces on the latest release or default branch, with no duplicate. A feature request is also GO when the repo takes feature requests as issues (it has a template or label for them) and no recorded decision covers it. A feature request isn't ASK just because no one has agreed yet; agreement is what the issue asks for.
+- **PRIVATE:** a vulnerability, per "Security reports" above. Never a public issue.
 - **STOP:** a duplicate (comment on the existing issue instead, adding only what's new), a recorded decision that covers it, or a bug already fixed in the release line the user is on.
 - **ASK, meaning post somewhere else first:**
   - The repo routes questions or proposals to Discussions or a forum (check the issue template `config.yml` contact links).
@@ -169,4 +187,4 @@ Reason: <one sentence, with link>
 - Disclosure required: <their exact required format and when it applies, or "not required">
 ```
 
-The `DECISION:` line is machine-read by the PR gate hook, so keep that exact spelling.
+The `DECISION:` line is machine-read by the PR gate hook, so keep that exact spelling. `PRIVATE`, from "Security reports," is a valid value too.

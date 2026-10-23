@@ -148,7 +148,7 @@ Searched for duplicates: <the terms you searched, and closest matches with links
 <disclosure line>
 ```
 
-Don't guess at causes you haven't verified; a wrong diagnosis in an issue costs a maintainer more time than none. Use the repo's issue form when it has one, field for field.
+Don't guess at causes you haven't verified; a wrong diagnosis in an issue costs a maintainer more time than none. A bug that recon checked under "Security reports" and found not exploitable is described as a bug, without security words. One that is exploitable never gets this template; `recon.md` says PRIVATE, and the report goes through SECURITY.md's channel. Use the repo's issue form when it has one, field for field.
 
 **Feature requests** replace Repro/Expected/Actual with: what you're trying to do, what blocks it today (the closest current workaround, and why it falls short), and the smallest change that would unblock you. Ask whether it fits the project before offering a PR.
 
