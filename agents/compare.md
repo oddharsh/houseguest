@@ -37,18 +37,29 @@ Run the reported repro and each side's new test on both trees. Then compare, usi
 - safeguards and compatibility;
 - scope.
 
+## 4. Where they disagree
+
+Two fixes that both pass their tests often still behave differently: in a 2026 study, 29.6% of patches that passed SWE-bench's tests differed in behavior from the developers' own fix. Find those differences directly:
+
+- **Cross-test.** Run ours' new test on the alternative's tree, and the alternative's on ours.
+- **Differential tests.** Write small tests in `<out>/difftests/` that call the changed code with inputs chosen to split the two: boundaries (empty, one, many), the error paths, unusual types and encodings, and inputs one diff handles explicitly and the other doesn't. Run each on both trees and record each side's output.
+
+For every input where the outputs differ, decide which matches the contract, citing the docs or tests that settle it. When nothing settles it, mark it **undecided**: that's a question for the maintainer, not a bug in either fix.
+
 ## Write `<out>/compare.md`
 
 ```markdown
 # Compare: ours vs alternative
 ALTERNATIVE QUALIFIES: yes | no
 PREFER: OURS | ALTERNATIVE | EITHER
+DISAGREE: <count of inputs where the trees behave differently>
 Basis: <one sentence>
 
 - Contract: <what a correct fix must do>
 - Qualification: <each of the five fields, true or false, with its evidence>
 - Comparison: <each point above, for both sides, with commands and output>
+- Disagreements: <each input where the trees differ: the input, each side's output, which matches the contract and why, or "undecided"; the test file in difftests/ that shows it>
 - Worth borrowing: <a specific hunk, test case, or simplification from the side you don't prefer, with path:line, or "nothing">
 ```
 
-PREFER ALTERNATIVE needs a concrete reason a maintainer would care about: ours fails part of the contract, misses a case the alternative's test catches, or changes clearly more than the problem needs. "Neater" isn't one. Then reply with the three lines under the heading and nothing else.
+PREFER ALTERNATIVE needs a concrete reason a maintainer would care about: ours fails part of the contract, misses a case the alternative's test catches, or changes clearly more than the problem needs. "Neater" isn't one. Then reply with the four lines under the heading and nothing else.

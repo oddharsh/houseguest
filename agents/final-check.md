@@ -25,6 +25,8 @@ You get a scratch clone at the commit that will be pushed, the base ref, an outp
 5. **For a docs change:** run every example and command the new text gives, on HEAD, and check every behavior it states. Each has to hold as written.
 6. **For an issue draft** (no fix): run the repro exactly as the draft gives it, on the version it names, from a clean state (a fresh worktree or a new temp directory). It has to show what the draft says it shows.
 
+7. **What else changed:** a PR can fix its problem and also change behavior nobody mentioned. Write a few differential tests in `<out>/difftests/` that call the changed code on base and HEAD with inputs near the problem but outside it: boundaries, the error paths, and the cases the old code handled explicitly. Every input where base and HEAD differ, other than the problems as posed, goes in `final.md` as an unannounced change. Each one is either part of the fix (the PR text should say so) or a regression. It doesn't fail the check by itself, but the session that launched you has to answer each before shipping.
+
 If a step needs something you don't have (hardware, an account, an OS, a paid service), stop that problem at BLOCKED and write `[ASK USER: <the exact commands for the user to run, and what to look for>]`.
 
 ## Write `<out>/final.md`
@@ -33,6 +35,9 @@ If a step needs something you don't have (hardware, an account, an OS, a paid se
 # Final check: <branch>
 STATUS: PASS | FAIL | BLOCKED
 SHA: <git rev-parse HEAD>
+
+## Unannounced changes
+- <input: base output vs HEAD output, the difftests/ file that shows it, or "none found in <N> inputs tried">
 
 ## <problem 1, quoted from where it was posed, with its source>
 - Repro: <the commands and inputs, as run>
