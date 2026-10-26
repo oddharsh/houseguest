@@ -10,9 +10,10 @@
 #   - PRs opened since that touch --files, or match a --q search;
 #   - commits on the default branch since that touch --files.
 # Your own PRs are left out. Ends with STATUS: CLEAR or STATUS: CHANGED, and exits 1 on
-# CHANGED. --save writes the report to FILE (the ledger's recheck.md).
+# CHANGED. --save writes the report to FILE (the ledger's recheck.md) and seals it (receipt.sh).
 
 set -uo pipefail
+. "$(dirname "$0")/lib.sh"
 repo="" issue="" files="" since="" save=""
 queries=()
 while [ $# -gt 0 ]; do
@@ -37,6 +38,23 @@ case "$since" in *T*) ;; *) since="${since}T00:00:00Z" ;; esac
 me=$(gh api user --jq .login 2>/dev/null)
 changed=0
 flag() { changed=1; echo "- $1"; }
+
+# The searches and per-file commit lookups run in parallel; report() reads their lines in order.
+search_hits() {  # search_hits <query> -> one line per PR hit, or "FAILED"
+  local res
+  res=$(gh api graphql -f q="$1" -f query='query($q:String!){search(query:$q,type:ISSUE,first:50){nodes{... on PullRequest{number url state title author{login} files(first:100){nodes{path}}}}}}' --jq '.data.search.nodes' 2>/dev/null) || { echo "FAILED"; return; }
+  echo "$res" | jq -r --arg f "$files" --arg me "$me" --arg q "$1" '
+    ($f | split(",") | map(select(length > 0))) as $mine
+    | .[] | select(.number != null and (.author.login // "") != $me)
+    | ([.files.nodes[].path] | map(select(. as $x | $mine | index($x)))) as $hit
+    | select(($q | test(" created:>=[^ ]+ ")) or ($hit | length) > 0)
+    | "#\(.number) (\(.state | ascii_downcase)) \(.title): \(.url)\(if ($hit | length) > 0 then " touches \($hit | join(", "))" else " matches the search" end)"'
+}
+file_hits() {  # file_hits <path> -> "<path>: <commit>" per commit since $since
+  gh api "repos/$repo/commits?path=$(printf '%s' "$1" | jq -sRr @uri)&since=$since&per_page=20" \
+    --jq '.[] | "\(.sha[:10]) \(.commit.author.date[:10]) \(.author.login // .commit.author.name): \(.commit.message | split("\n")[0])"' 2>/dev/null \
+    | sed "s#^#$1: #"
+}
 
 report() {
   echo "# Recheck: $repo since $since"
@@ -65,13 +83,13 @@ query($o:String!,$r:String!,$n:Int!){repository(owner:$o,name:$r){issue(number:$
   [ -n "$files" ] && qs+=("repo:$repo is:pr created:>=$since")
   for q in "${queries[@]+"${queries[@]}"}"; do qs+=("repo:$repo is:pr created:>=$since $q"); done
   for q in "${qs[@]+"${qs[@]}"}"; do
-    res=$(gh api graphql -f q="$q" -f query='query($q:String!){search(query:$q,type:ISSUE,first:50){nodes{... on PullRequest{number url state title author{login} files(first:100){nodes{path}}}}}}' --jq '.data.search.nodes' 2>/dev/null) || { flag "search failed: $q"; continue; }
-    hits=$(echo "$res" | jq -r --arg f "$files" --arg me "$me" --arg q "$q" '
-      ($f | split(",") | map(select(length > 0))) as $mine
-      | .[] | select(.number != null and (.author.login // "") != $me)
-      | ([.files.nodes[].path] | map(select(. as $x | $mine | index($x)))) as $hit
-      | select(($q | test(" created:>=[^ ]+ ")) or ($hit | length) > 0)
-      | "#\(.number) (\(.state | ascii_downcase)) \(.title): \(.url)\(if ($hit | length) > 0 then " touches \($hit | join(", "))" else " matches the search" end)"')
+    # One job per search, so a failure stays tied to its query.
+    ( hits=$(search_hits "$q"); printf '%s\n' "$hits" > "$tmp/q.$(printf '%s' "$q" | cksum | cut -d' ' -f1)" ) &
+  done
+  wait
+  for q in "${qs[@]+"${qs[@]}"}"; do
+    hits=$(cat "$tmp/q.$(printf '%s' "$q" | cksum | cut -d' ' -f1)")
+    if [ "$hits" = "FAILED" ]; then flag "search failed: $q"; continue; fi
     [ -n "$hits" ] && while IFS= read -r h; do any=1; flag "$h"; done <<< "$hits"
   done
   [ -n "$any" ] || echo "- none touching your files or matching your searches"
@@ -79,11 +97,8 @@ query($o:String!,$r:String!,$n:Int!){repository(owner:$o,name:$r){issue(number:$
   if [ -n "$files" ]; then
     echo; echo "## Commits on the default branch since"
     anyc=""
-    for f in $(echo "$files" | tr ',' ' '); do
-      hits=$(gh api "repos/$repo/commits?path=$(printf '%s' "$f" | jq -sRr @uri)&since=$since&per_page=20" \
-        --jq '.[] | "\(.sha[:10]) \(.commit.author.date[:10]) \(.author.login // .commit.author.name): \(.commit.message | split("\n")[0])"' 2>/dev/null)
-      [ -n "$hits" ] && while IFS= read -r h; do anyc=1; flag "$f: $h"; done <<< "$hits"
-    done
+    hits=$(echo "$files" | tr ',' '\n' | pmap 6 file_hits)
+    [ -n "$hits" ] && while IFS= read -r h; do anyc=1; flag "$h"; done <<< "$hits"
     [ -n "$anyc" ] || echo "- none on your files"
   fi
 
@@ -96,6 +111,7 @@ query($o:String!,$r:String!,$n:Int!){repository(owner:$o,name:$r){issue(number:$
   fi
 }
 
+tmp=$(mktemp -d); trap 'rm -rf "$tmp"' EXIT
 out=$(report); echo "$out"
-[ -n "$save" ] && echo "$out" > "$save"
+[ -n "$save" ] && echo "$out" > "$save" && bash "$(dirname "$0")/receipt.sh" seal "$save"
 echo "$out" | grep -q '^STATUS: CLEAR' || exit 1

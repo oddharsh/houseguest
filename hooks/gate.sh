@@ -51,6 +51,12 @@ head=$(git rev-parse HEAD)
 problems=""
 add() { problems="${problems}  - $1
 "; }
+# Verdicts written by houseguest's scripts carry a seal (receipt.sh); a hand-edited one doesn't.
+receipt="${CLAUDE_PLUGIN_ROOT:-$(dirname "$0")/..}/skills/oss-pr/scripts/receipt.sh"
+sealed() {  # sealed <file> <what to do instead>
+  local why
+  why=$(bash "$receipt" check "$1" 2>&1) || add "$why. $2"
+}
 
 if [ ! -f "$ledger/recon.md" ]; then
   add "recon.md missing: run oss-pr phase 1 (recon)"
@@ -107,7 +113,7 @@ if [ ! -f "$ledger/house.md" ]; then
 else
   hstat=$(grep -m1 -E '^STATUS:' "$ledger/house.md" | sed 's/^STATUS:[[:space:]]*//')
   hsha=$(grep -m1 -E '^SHA:' "$ledger/house.md" | sed 's/^SHA:[[:space:]]*//')
-  case "$hstat" in PASS*) ;; *) add "house rules check is '${hstat:-missing}': fix the FAILs, run the missing tools, and fix or acknowledge each flag" ;; esac
+  case "$hstat" in PASS*) sealed "$ledger/house.md" "Rerun housecheck.sh rather than editing its verdict" ;; *) add "house rules check is '${hstat:-missing}': fix the FAILs, run the missing tools, and fix or acknowledge each flag" ;; esac
   [ "$hsha" = "$head" ] || add "house.md is for ${hsha:-no sha}, but HEAD is $head; rerun housecheck.sh"
 fi
 
@@ -117,7 +123,8 @@ else
   status=$(grep -m1 -E '^STATUS:' "$ledger/proof.md" | sed 's/^STATUS:[[:space:]]*//')
   sha=$(grep -m1 -E '^SHA:' "$ledger/proof.md" | sed 's/^SHA:[[:space:]]*//')
   case "$status" in
-    PASS*|N/A*) ;;
+    PASS*) sealed "$ledger/proof.md" "Rerun prove.sh rather than editing its verdict" ;;
+    N/A*) ;;
     *) add "proof status is '${status:-missing}'" ;;
   esac
   [ "$sha" = "$head" ] || add "proof.md is for ${sha:-no sha}, but HEAD is $head; rerun the proof on the current commit"
@@ -130,7 +137,19 @@ else
   fstat=$(grep -m1 -E '^STATUS:' "$ledger/final.md" | sed 's/^STATUS:[[:space:]]*//')
   fsha=$(grep -m1 -E '^SHA:' "$ledger/final.md" | sed 's/^SHA:[[:space:]]*//')
   case "$fstat" in
-    PASS*) ;;
+    PASS*"checked by the user"*) ;;
+    PASS*)
+      sealed "$ledger/final.md" "Rerun the final check rather than editing final.md"
+      # The final check runs every repro through receipt.sh run: its log shows what ran, and where.
+      if ! runs=$(bash "$receipt" verify "$ledger/runs.log" 2>&1); then
+        add "runs.log: $runs. The final check runs each repro through receipt.sh run; rerun it"
+      else
+        echo "$runs" | awk '{print $1}' | grep -q -x "$head" || add "runs.log shows nothing run on HEAD ($head): the final check reproduces on the commit being pushed"
+        case "${status:-}" in N/A*) ;; *)
+          echo "$runs" | awk '{print $1}' | grep -v -x -e "$head" -e none | grep -q . \
+            || add "runs.log shows nothing run on the base: the final check shows each problem on the base before showing it's gone on HEAD" ;;
+        esac
+      fi ;;
     *) add "final check is '${fstat:-missing}': the PR doesn't yet show it solves every problem it poses (see $ledger/final.md)" ;;
   esac
   [ "$fsha" = "$head" ] || add "final.md is for ${fsha:-no sha}, but HEAD is $head; rerun the final check"
@@ -151,6 +170,8 @@ if [ ! -f "$ledger/recheck.md" ]; then
   add "recheck.md missing: run recheck.sh --save \"$ledger/recheck.md\" right before opening the PR"
 elif ! grep -q -E '^STATUS:[[:space:]]*CLEAR' "$ledger/recheck.md"; then
   add "recheck.sh found changes upstream since recon (see $ledger/recheck.md): act on each, then rerun it with --since set to its Checked: time"
+else
+  sealed "$ledger/recheck.md" "Rerun recheck.sh --save rather than editing its report"
 fi
 
 [ -z "$problems" ] && exit 0
