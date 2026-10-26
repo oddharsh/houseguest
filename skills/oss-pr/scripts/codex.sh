@@ -12,8 +12,11 @@
 #   - agent skills: SKILL.md folders under .agents/skills, .claude/skills, .github/skills,
 #     .cursor/skills, .codex/skills, and .opencode/skills, tagged by the job each one does
 #     (writing PRs, code and tests, review, changesets) and whether it ships evals.
-#   - human style guides: STYLE, STYLEGUIDE, CONVENTIONS, CODING_GUIDELINES, CODE_REVIEW,
-#     REVIEWING, HACKING, DEVELOPMENT, and docs pages about style, conventions, or review.
+#   - review guides: REVIEW.md (what Claude Code Review and similar bots read), CODE_REVIEW,
+#     REVIEWING, REVIEW_GUIDELINES, and docs pages about code review. A nested one covers its
+#     folder, like AGENTS.md. These go to the maintainer-reviewer pass.
+#   - human style guides: STYLE, STYLEGUIDE, CONVENTIONS, CODING_GUIDELINES, HACKING,
+#     DEVELOPMENT, and docs pages about style or conventions.
 #   - the org's rules: its .github repo, and repos named like a style guide, handbook,
 #     dev guide, or conventions repo.
 #   - style guides that contribution docs link to.
@@ -29,7 +32,7 @@ while [ $# -gt 0 ]; do
     --files) files="$2"; shift 2 ;;
     --as-of) asof="$2"; shift 2 ;;
     --save) save="$2"; shift 2 ;;
-    -h|--help) sed -n '2,23p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,26p' "$0"; exit 0 ;;
     *) echo "codex.sh: unknown argument $1" >&2; exit 2 ;;
   esac
 done
@@ -39,7 +42,8 @@ T="9999"; [ -n "$asof" ] && { case "$asof" in *T*) T="$asof" ;; *) T="${asof}T00
 mine=$(printf '%s' "$files" | tr ',' '\n' | sed '/^$/d')
 
 AGENT_RE='(^|/)(AGENTS|AGENT|CLAUDE|GEMINI)\.md$|^\.cursorrules$|(^|/)\.cursor/rules/.+\.(mdc|md)$|^\.github/copilot-instructions\.md$|^\.github/instructions/.+\.instructions\.md$|^\.windsurfrules$|^\.windsurf/rules/.+\.md$|^\.clinerules(/.+\.md)?$|^\.roorules$|^\.roo/rules[^/]*/.+\.md$|^\.kiro/steering/.+\.md$|^\.agents/rules/.+\.md$|^\.qoder/rules/.+\.md$|^\.junie/guidelines\.md$|^\.continue/rules/.+\.md$|^\.rules$|^\.augment-guidelines$|^CONVENTIONS\.md$'
-STYLE_RE='(^|/)(STYLE|STYLEGUIDE|STYLE_GUIDE|CODING_STYLE|CODE_STYLE|CODING_GUIDELINES|CODING_STANDARDS|CONVENTIONS|CODE_REVIEW|REVIEWING|REVIEW_GUIDELINES|HACKING|DEVELOPMENT|CONTRIBUTING)(\.(md|rst|txt|adoc))?$|^(docs?|documentation|dev-?docs|contributing|\.github)/(.+/)?[^/]*(style|convention|guideline|coding|code-review|reviewing|contribut|hacking|developing|best-practice)[^/]*\.(md|rst|adoc|txt)$'
+STYLE_RE='(^|/)(STYLE|STYLEGUIDE|STYLE_GUIDE|CODING_STYLE|CODE_STYLE|CODING_GUIDELINES|CODING_STANDARDS|CONVENTIONS|HACKING|DEVELOPMENT|CONTRIBUTING)(\.(md|rst|txt|adoc))?$|^(docs?|documentation|dev-?docs|contributing|\.github)/(.+/)?[^/]*(style|convention|guideline|coding|contribut|hacking|developing|best-practice)[^/]*\.(md|rst|adoc|txt)$'
+REVIEW_RE='(^|/)(REVIEW|CODE_REVIEW|REVIEWING|REVIEW_GUIDELINES)(\.(md|rst|txt|adoc))?$|^(docs?|documentation|dev-?docs|contributing|\.github)/(.+/)?[^/]*(code-review|reviewing)[^/]*\.(md|rst|adoc|txt)$'
 SKIP_RE='(^|/)(node_modules|vendor|third_party|fixtures?|testdata|test-data|examples?|\.changeset)/|(^|/)(tests?|__tests__)/.*\.md$'
 SKILL_RE='^\.(agents|claude|github|cursor|codex|opencode)/skills/[^/]+/SKILL\.md$'
 ORG_REPO_RE='(^|[-_.])(style-?guides?|styleguide|conventions|guidelines|handbook|dev-?guide|engineering|coding-?standards|contributing|community|governance)([-_.]|$)|^\.github$|-dev-guide$'
@@ -70,7 +74,7 @@ applies() {
   local p="$1" body="$2" dir g re hit="" globs
   [ -n "$mine" ] || { echo "all files (no --files given)"; return; }
   case "$p" in
-    *AGENTS.md|*AGENT.md|*CLAUDE.md|*GEMINI.md)
+    *AGENTS.md|*AGENT.md|*CLAUDE.md|*GEMINI.md|*REVIEW|*REVIEW.*|*REVIEWING|*REVIEWING.*|*REVIEW_GUIDELINES|*REVIEW_GUIDELINES.*)
       dir=$(dirname "$p"); [ "$dir" = . ] && { echo "the whole repo (root file)"; return; }
       echo "$mine" | grep -q -E "^$(printf '%s' "$dir" | sed 's/[.[\*^$]/\\&/g')/" && echo "your files under $dir/"; return ;;
   esac
@@ -140,8 +144,26 @@ $(heads "$body")
     done <<< "$skills"
   fi
 
+  echo; echo "## Review guides"
+  review=$(echo "$tree" | grep -E "$REVIEW_RE" | grep -v -E "$SKIP_RE" | head -15)
+  if [ -z "$review" ]; then echo "- none"; else
+    echo "What the maintainers tell their own reviewer, human or bot, to check: use for the maintainer-reviewer pass. Its priorities, ignored paths, and bar for nits outrank the plugin reviewer's defaults."
+    applied="" other=""
+    while IFS= read -r p; do
+      body=$(raw "$repo" "$ref" "$p")
+      why=$(applies "$p" "$body")
+      line="- \`$p\` ($(lines_of "$body") lines)" h=$(heads "$body")
+      if [ -n "$why" ]; then applied="$applied$line: applies to $why
+${h:+$h
+}"; else other="$other$line
+"; fi
+    done <<< "$review"
+    [ -n "$applied" ] && { echo "Apply to your change (the reviewer reads these in full; a nearer one beats the root one):"; printf '%s' "$applied"; }
+    [ -n "$other" ] && { echo "Scoped elsewhere (skip unless your change grows into their paths):"; printf '%s' "$other"; }
+  fi
+
   echo; echo "## Human style guides and review docs"
-  style=$(echo "$tree" | grep -E "$STYLE_RE" | grep -v -E "$SKIP_RE" | grep -v -E "$AGENT_RE" | head -25)
+  style=$(echo "$tree" | grep -E "$STYLE_RE" | grep -v -E "$SKIP_RE" | grep -v -E "$AGENT_RE" | grep -v -E "$REVIEW_RE" | head -25)
   if [ -z "$style" ]; then echo "- none beyond what gather.sh lists"; else
     # A guide inside a subproject (src/tools/clippy/CONTRIBUTING.md) governs only that subtree.
     far=""
@@ -158,7 +180,7 @@ $(heads "$body")
   echo; echo "## The org's rules"
   gref=$(ref_of "$owner/.github")
   if [ -n "$gref" ]; then
-    org=$(tree_of "$owner/.github" "$gref" | grep -E "$AGENT_RE|$STYLE_RE" | grep -v -E "$SKIP_RE" | head -15)
+    org=$(tree_of "$owner/.github" "$gref" | grep -E "$AGENT_RE|$REVIEW_RE|$STYLE_RE" | grep -v -E "$SKIP_RE" | head -15)
     if [ -n "$org" ]; then echo "From $owner/.github (defaults for every repo without its own):"; echo "$org" | sed "s#^#- \`$owner/.github/#; s#\$#\`#"; else echo "- $owner/.github has no rule files"; fi
   else echo "- no $owner/.github repo"; fi
   orgrepos=$(api "users/$owner/repos?per_page=100&sort=pushed" | jq -r --arg t "$T" '.[] | select(.created_at < $t and (.archived | not)) | "\(.name)\t\(.description // "")"' 2>/dev/null \
