@@ -52,6 +52,24 @@ It also lists lines your test adds that commonly cause flakes: sleeps and timeou
 
 When a flake shows up, fix the test. Don't raise retries, and don't drop `--flake`. When the repo's runner can shuffle test order (`go test -shuffle=on`, `pytest -p randomly`, `vitest --sequence.shuffle`, `rspec --order random`) and CI uses it, pass the same flag in the test command so an order dependency shows up here too.
 
+## Checks beyond the example
+
+Red-green proves the fix for one input. Many repos already run checks that cover far more: properties over thousands of generated inputs, fuzzers, snapshots, type tests, simulators, and proofs. These used to be expensive to write and keep green. seL4's proof took about 25 person-years for 8,700 lines of C. An agent changes that math for running and repairing them. Introducing one stays the maintainers' call, since they'd own it forever. The style phase saved what's there to `checks.md`; rerun it with the files your diff actually changed:
+
+```bash
+bash "<skill-dir>/scripts/checks.sh" --files <your changed files> --save "$LEDGER/checks.md"
+```
+
+It lists each kind it finds, the files nearest yours, and the CI line that runs it, or says nothing in CI does. A check CI never runs, or runs only when a maintainer adds a label (tokio's loom jobs), is one your PR's CI won't catch, so run it here. For each kind near your change:
+
+- **Property tests and fuzzers.** Run the properties and fuzz targets that reach your code on the base and on HEAD, with a time bound (`go test -fuzz FuzzX -fuzztime 60s`, `cargo fuzz run <target> -- -max_total_time=60`). A counterexample on the base is a second red; pin its shrunk form in the repo's own regression mechanism (Hypothesis `@example(...)`, a `proptest-regressions/` file, a `testdata/fuzz/FuzzX/` entry) so it reruns forever. When the neighbors already state properties of this function, add one for the rule your fix restores, beside your literal case: the case shows the bug, the property states the rule. Seed any property you hand to `prove.sh` (Hypothesis `derandomize=True` or `@seed`, fast-check's `seed`, or `go test -run FuzzX`, which replays only the corpus). An unseeded one can pass the red run by luck, and fails the flake check for the same reason.
+- **Expect and snapshot tests.** When the tests for your function snapshot, red's output is a diff of wrong output against right, the most legible evidence a reviewer gets. Quote it in `proof.md` and pass the snapshot's name to `--expect`. Create or update only your test's snapshot (run that one test in the tool's update mode), then read it as you'd read a hand-written literal. Never accept snapshots in bulk (`cargo insta accept`, `vitest -u`, `UPDATE_EXPECT=1` over the suite): an existing snapshot your change moves is either the bug, named in the PR, or a regression. `prove.sh` counts snapshot and golden files as test files, so red keeps your new snapshot and runs it against the unfixed code.
+- **Type tests.** When the fix makes a bad state unrepresentable, the bug stops compiling and a runtime test can't reach it. A type test can: `// @ts-expect-error` above the bad call in a `tsd` or `.test-d.ts` file, a `trybuild` case, or a `compile_fail` doctest. On the base the bad call compiles, so the type test fails (an unused `@ts-expect-error` is an error); on HEAD it passes. Pass the checker's error text to `--expect`. Add one only where the repo already keeps type tests.
+- **Deterministic simulation.** A race or ordering bug that shows 1 run in 50 can't anchor a red-green on its own. If the repo has a simulator or model checker (loom, shuttle, madsim, turmoil, a `vopr` or `simulator` harness), reproduce the bug in it and record the seed or schedule that fails on the base. That turns the flake into a red-green. Without one, say in the PR how often the repro fails on each side, with the run count.
+- **Formal specs and proofs.** When Kani harnesses, Verus or Lean proofs, or a TLA+ spec cover the code you changed, run them on HEAD with the repo's command. A proof that breaks fails this phase the same way a red test does: fix the code, or the proof if the property itself changed. When your change alters behavior a spec models, update the spec in the same PR, or say in the body that it's stale and ask how they keep it current.
+
+Record each check you ran under `## Beyond the example` in `proof.md`: the command, base result, HEAD result, and any seed. A check that found nothing still goes in, since "fuzzed `parse` for 60s on HEAD, no crashes" is a claim the PR body can make and a reviewer can rerun.
+
 ## Performance
 
 Only when the change touches a hot path, or the repo has a benchmark suite covering the code:

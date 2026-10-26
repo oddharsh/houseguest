@@ -32,6 +32,14 @@ bash "<skill-dir>/scripts/house.sh" --files <comma-separated paths you'll touch>
 
 It reports the formatters and linters the repo configures (with the command that checks only your files), the CI steps that enforce style, `.editorconfig` rules, license-header and commit conventions, and changeset rules. Install the repo's dev dependencies the way its CONTRIBUTING says, so those tools actually run. Then read the section for your language in `languages.md`: it lists the conventions tools don't decide, which you read off neighboring files.
 
+Then find the checks the repo runs beyond example tests: property tests, fuzzers, snapshots, type tests, simulators, and formal proofs.
+
+```bash
+bash "<skill-dir>/scripts/checks.sh" --files <comma-separated paths you'll touch> --save "$LEDGER/checks.md"
+```
+
+The writing phase uses it to test the fix the way the neighbors do, and the proof phase runs what it lists.
+
 ## Fingerprint: what to read
 
 Skip reading the whole repo; it spends context on code your change never touches. Read these:
