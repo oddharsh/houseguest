@@ -1,0 +1,268 @@
+{
+  "recall": {
+    "n": 12,
+    "hits": 12,
+    "first_finding": 7
+  },
+  "noise": {
+    "n": 11,
+    "flagged": 8,
+    "blocking_per_pr": 1,
+    "would_merge": 2
+  },
+  "cases": [
+    {
+      "set": "recall",
+      "url": "https://github.com/BurntSushi/ripgrep/pull/3200",
+      "agent": null,
+      "kind": "correctness",
+      "verdict": "close",
+      "hit": true,
+      "hit_rank": 1,
+      "blocking": 2,
+      "nits": 1
+    },
+    {
+      "set": "recall",
+      "url": "https://github.com/BurntSushi/ripgrep/pull/3239",
+      "agent": null,
+      "kind": "exists",
+      "verdict": "close",
+      "hit": true,
+      "hit_rank": 5,
+      "blocking": 6,
+      "nits": 3
+    },
+    {
+      "set": "recall",
+      "url": "https://github.com/BurntSushi/ripgrep/pull/3414",
+      "agent": "Claude Code",
+      "kind": "scope",
+      "verdict": "close",
+      "hit": true,
+      "hit_rank": 1,
+      "blocking": 3,
+      "nits": 6
+    },
+    {
+      "set": "recall",
+      "url": "https://github.com/BurntSushi/ripgrep/pull/3450",
+      "agent": null,
+      "kind": "unjustified",
+      "verdict": "close",
+      "hit": true,
+      "hit_rank": 1,
+      "blocking": 3,
+      "nits": 3
+    },
+    {
+      "set": "noise",
+      "url": "https://github.com/BurntSushi/ripgrep/pull/3464",
+      "agent": null,
+      "kind": null,
+      "verdict": "changes",
+      "hit": null,
+      "hit_rank": null,
+      "blocking": 2,
+      "nits": 5
+    },
+    {
+      "set": "noise",
+      "url": "https://github.com/BurntSushi/ripgrep/pull/3557",
+      "agent": null,
+      "kind": null,
+      "verdict": "changes",
+      "hit": null,
+      "hit_rank": null,
+      "blocking": 1,
+      "nits": 3
+    },
+    {
+      "set": "noise",
+      "url": "https://github.com/BurntSushi/ripgrep/pull/3564",
+      "agent": null,
+      "kind": null,
+      "verdict": "merge",
+      "hit": null,
+      "hit_rank": null,
+      "blocking": 0,
+      "nits": 3
+    },
+    {
+      "set": "recall",
+      "url": "https://github.com/pallets/flask/pull/6067",
+      "agent": null,
+      "kind": "exists",
+      "verdict": "close",
+      "hit": true,
+      "hit_rank": 5,
+      "blocking": 4,
+      "nits": 3
+    },
+    {
+      "set": "noise",
+      "url": "https://github.com/pallets/flask/pull/6095",
+      "agent": null,
+      "kind": null,
+      "verdict": "changes",
+      "hit": null,
+      "hit_rank": null,
+      "blocking": 1,
+      "nits": 3
+    },
+    {
+      "set": "noise",
+      "url": "https://github.com/pallets/flask/pull/6096",
+      "agent": null,
+      "kind": null,
+      "verdict": "changes",
+      "hit": null,
+      "hit_rank": null,
+      "blocking": 1,
+      "nits": 3
+    },
+    {
+      "set": "recall",
+      "url": "https://github.com/pallets/flask/pull/6124",
+      "agent": "AI junk label",
+      "kind": "correctness",
+      "verdict": "close",
+      "hit": true,
+      "hit_rank": 1,
+      "blocking": 5,
+      "nits": 1
+    },
+    {
+      "set": "recall",
+      "url": "https://github.com/pallets/flask/pull/6145",
+      "agent": "[rejected AI] label",
+      "kind": "scope",
+      "verdict": "close",
+      "hit": true,
+      "hit_rank": 1,
+      "blocking": 7,
+      "nits": 1
+    },
+    {
+      "set": "recall",
+      "url": "https://github.com/psf/black/pull/5222",
+      "agent": null,
+      "kind": "focus",
+      "verdict": "changes",
+      "hit": true,
+      "hit_rank": 8,
+      "blocking": 6,
+      "nits": 5
+    },
+    {
+      "set": "noise",
+      "url": "https://github.com/psf/black/pull/5521",
+      "agent": null,
+      "kind": null,
+      "verdict": "changes",
+      "hit": null,
+      "hit_rank": null,
+      "blocking": 2,
+      "nits": 4
+    },
+    {
+      "set": "recall",
+      "url": "https://github.com/psf/black/pull/5557",
+      "agent": null,
+      "kind": "scope",
+      "verdict": "close",
+      "hit": true,
+      "hit_rank": 1,
+      "blocking": 4,
+      "nits": 3
+    },
+    {
+      "set": "noise",
+      "url": "https://github.com/psf/black/pull/5583",
+      "agent": "Claude Code",
+      "kind": null,
+      "verdict": "changes",
+      "hit": null,
+      "hit_rank": null,
+      "blocking": 2,
+      "nits": 2
+    },
+    {
+      "set": "noise",
+      "url": "https://github.com/psf/black/pull/5615",
+      "agent": "Claude Code",
+      "kind": null,
+      "verdict": "changes",
+      "hit": null,
+      "hit_rank": null,
+      "blocking": 1,
+      "nits": 3
+    },
+    {
+      "set": "recall",
+      "url": "https://github.com/sharkdp/bat/pull/3431",
+      "agent": null,
+      "kind": "rule",
+      "verdict": "changes",
+      "hit": true,
+      "hit_rank": 4,
+      "blocking": 4,
+      "nits": 5
+    },
+    {
+      "set": "recall",
+      "url": "https://github.com/sharkdp/bat/pull/3625",
+      "agent": null,
+      "kind": "intent",
+      "verdict": "close",
+      "hit": true,
+      "hit_rank": 1,
+      "blocking": 2,
+      "nits": 3
+    },
+    {
+      "set": "recall",
+      "url": "https://github.com/sharkdp/bat/pull/3736",
+      "agent": null,
+      "kind": "correctness",
+      "verdict": "changes",
+      "hit": true,
+      "hit_rank": 2,
+      "blocking": 3,
+      "nits": 4
+    },
+    {
+      "set": "noise",
+      "url": "https://github.com/sharkdp/bat/pull/3877",
+      "agent": null,
+      "kind": null,
+      "verdict": "merge",
+      "hit": null,
+      "hit_rank": null,
+      "blocking": 0,
+      "nits": 4
+    },
+    {
+      "set": "noise",
+      "url": "https://github.com/sharkdp/bat/pull/3897",
+      "agent": null,
+      "kind": null,
+      "verdict": "changes",
+      "hit": null,
+      "hit_rank": null,
+      "blocking": 0,
+      "nits": 4
+    },
+    {
+      "set": "noise",
+      "url": "https://github.com/sharkdp/bat/pull/4076",
+      "agent": "Claude Code",
+      "kind": null,
+      "verdict": "changes",
+      "hit": null,
+      "hit_rank": null,
+      "blocking": 1,
+      "nits": 1
+    }
+  ]
+}

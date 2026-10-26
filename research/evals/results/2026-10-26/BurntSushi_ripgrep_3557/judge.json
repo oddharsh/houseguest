@@ -1,0 +1,7 @@
+{"findings":[
+{"summary":"Benchmark baseline is an older tag, so the reported speedups mix in two other perf PRs","class":"blocking"},
+{"summary":"Stacking on #3556/#3555 not disclosed in the body","class":"nit"},
+{"summary":"Benchmark claims don't use the repo's harness names, no variance or command given","class":"nit"},
+{"summary":"'Replay' is undefined jargon","class":"nit"}],
+"verdict":"changes","hit":null,"hit_rank":null,
+"why":"One blocking finding: the body's benchmark numbers are attributed to this diff but measured against a base that includes other perf commits. The rest is body wording."}

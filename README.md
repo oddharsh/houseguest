@@ -42,6 +42,10 @@ Before LLMs, outside contributors' PR bodies in 12 well-run repos had a median o
 
 Houseguest is a small software factory that works for a guest, so every step that reaches upstream waits for the user's yes. Its phase design borrows from Astro's factory, StrongDM's holdout scenarios, and studies of why agent PRs go unmerged; [research/software-factories.md](research/software-factories.md) lists each source and what it changed.
 
+## How the reviewer scores
+
+The maintainer reviewer is scored against 23 public PRs with known outcomes: it named the maintainer's reason on 12 of 12 rejected PRs, and raised a blocking finding on 8 of 11 PRs that were merged as they stood. `research/evals/run.sh` replays the corpus offline, so a prompt change gets rescored instead of eyeballed. Method, numbers, and caveats: [research/reviewer-evals.md](research/reviewer-evals.md).
+
 ## Install
 
 In Claude Code:

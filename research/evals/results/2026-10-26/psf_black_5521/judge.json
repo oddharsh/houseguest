@@ -1,0 +1,9 @@
+{"findings":[
+{"summary":"Root cause not fixed: StringSplitter removes the leaf before bailing, so other StringParenWrapper paths still crash; move the depth check earlier","class":"blocking"},
+{"summary":"New clause reverses the deliberate comment-wrapping choice from #5544","class":"blocking"},
+{"summary":"The can_be_split/has_custom_splits clause is redundant for the issue","class":"nit"},
+{"summary":"Near-copy of the existing no-space depth check and error message","class":"nit"},
+{"summary":"Tests don't cover the default-line-length case advertised or a commented unsplittable string","class":"nit"},
+{"summary":"Body corpus claims can't be verified","class":"nit"}],
+"verdict":"changes","hit":null,"hit_rank":null,
+"why":"Two blocking findings: the guard leaves the root-cause crash path in place for other matches, and it reverses a choice merged days earlier. The duplication, test and body notes are nits."}

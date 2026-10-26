@@ -1,0 +1,9 @@
+{"findings":[
+{"summary":"Root cause is wrong: std is_terminal already detects mintty; no observed repro","class":"blocking"},
+{"summary":"Env-var-only mintty check sends ANSI color into pipes and files (MSYSTEM set regardless of stdout)","class":"blocking"},
+{"summary":"Body and changelog claim fix for normal file display, but only --help branch changes","class":"blocking"},
+{"summary":"Body contradicts code comment about interactive_output","class":"nit"},
+{"summary":"Testing claims don't cover the change; no test added","class":"nit"},
+{"summary":"Comments read machine-written and repeat the wrong explanation","class":"nit"},
+{"summary":"Lean: cfg! expression, is_some_and, trim comment","class":"nit"}
+],"verdict":"changes","hit":true,"hit_rank":2,"why":"Finding 2 says the env-var check treats mintty as interactive regardless of stdout and puts color into pipes, which is the maintainer's reason. It ranks second behind the root-cause finding."}

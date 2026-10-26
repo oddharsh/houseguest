@@ -1,0 +1,14 @@
+{"findings":[
+{"summary":"Reads like an unreviewed autofix sweep (AI-policy concern); TokenProxy.__slots__ lists a logger attribute it doesn't have","class":"blocking"},
+{"summary":"Memory claim has no script or build info, and mypyc-compiled classes don't benefit","class":"blocking"},
+{"summary":"Base(ABC) makes isinstance checks about 4.4x slower on the hot path and BasePattern becomes instantiable","class":"blocking"},
+{"summary":"Body claims about removed allocations contradict the diff (extra copies in __str__ and update_sibling_maps)","class":"blocking"},
+{"summary":"used_names removal is half done; Parser still builds it","class":"nit"},
+{"summary":"eq=False/repr=False on dataclasses saves no memory and costs debuggability","class":"nit"},
+{"summary":"__slots__ = () is a no-op where the bases have no slots","class":"nit"},
+{"summary":"Unrelated stylistic rewrites (should_hug, __str__, diff(), pgen.py, pytree helpers, etc.) belong in their own PR","class":"blocking"},
+{"summary":"Leaf constructor rewrite changes prefix behavior for no gain","class":"blocking"},
+{"summary":"No tests or benchmark reproduction, no compiled-build CI evidence","class":"nit"},
+{"summary":"CHANGES.md entry is vague","class":"nit"}],
+"verdict":"changes","hit":true,"hit_rank":8,
+"why":"Finding 8 says many unrelated stylistic hunks touching no memory belong in their own PR, which matches the maintainer's 'no clear focus, many small opinionated changes' reason. Finding 1 is about AI-style sweeps and not the same cause."}

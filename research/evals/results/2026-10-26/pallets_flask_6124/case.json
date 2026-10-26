@@ -1,0 +1,17 @@
+{
+  "set": "recall",
+  "repo": "pallets/flask",
+  "number": 6124,
+  "url": "https://github.com/pallets/flask/pull/6124",
+  "merge_base": "6a2f545bfd8ed31e19066a299296917e034aca58",
+  "head": "6d5b099e8f36f357bfecee8b721a4323e411dc0d",
+  "created": "2026-08-08T16:55:19Z",
+  "title": "Fix stream context cleanup across threads",
+  "body_edited_by_others": [],
+  "reviewer_prompt": "2aba6a090a98",
+  "agent": "AI junk label",
+  "expect": "pushing and popping the app/request context on every loop iteration is extremely inefficient (and the PR is AI-generated, against policy)",
+  "quote": "Besides being AI generated, which is against our policy, this introduces extreme inefficiency due to pushing and popping the context on every loop.",
+  "reason_url": "https://github.com/pallets/flask/pull/6124#issuecomment-5227314582",
+  "kind": "correctness"
+}

@@ -1,0 +1,6 @@
+{"findings":[
+{"summary":"Premise is wrong: \\b{end-half} is a valid regex assertion and the existing text matches what -w does; the new text isn't a valid pattern","class":"blocking"},
+{"summary":"New roff escapes (\\{ and bare \\b) render garbage in the man page and rg --help","class":"blocking"},
+{"summary":"Nothing tested; no rendering or regex run backs the claim","class":"nit"}],
+"verdict":"close","hit":true,"hit_rank":1,
+"why":"Finding 1 says the replacement text isn't valid pattern syntax and the original was correct, which is the maintainer's reason."}

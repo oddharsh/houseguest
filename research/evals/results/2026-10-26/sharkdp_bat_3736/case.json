@@ -1,0 +1,15 @@
+{
+  "set": "recall",
+  "repo": "sharkdp/bat",
+  "number": 3736,
+  "url": "https://github.com/sharkdp/bat/pull/3736",
+  "merge_base": "f3d077346824eae07fbac4b56466d27049b9616e",
+  "head": "d65807048a6272ecb1535e336d871395a1c24308",
+  "created": "2026-05-09T21:04:03Z",
+  "reviewer_prompt": "2aba6a090a98",
+  "agent": null,
+  "expect": "treating mintty/MSYS2 as always interactive breaks piped output: bat would add colors and decorations when stdout is a pipe",
+  "quote": "Doesn't this mean that when using mintty style terminals, it will always be treated as interactive mode? ... What if the user has aliased `cat` and is piping to another program?",
+  "reason_url": "https://github.com/sharkdp/bat/pull/3736#issuecomment-4413682100",
+  "kind": "correctness"
+}

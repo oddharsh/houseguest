@@ -1,0 +1,7 @@
+{"findings":[
+{"summary":"Dropping the per-test env reset lets direct os.environ writes (dotenv, FLASK_DEBUG, etc.) leak between tests","class":"blocking"},
+{"summary":"Could not verify the 'pytest 9.1' claim","class":"nit"},
+{"summary":"Body overstates the bug (FOO-in-shell case)","class":"nit"},
+{"summary":"Trailing blank line plus yield in the fixture do nothing","class":"nit"}],
+"verdict":"changes","hit":null,"hit_rank":null,
+"why":"One blocking finding: the PR removes environment cleanup the old fixtures did on purpose, and the reviewer asks for a patch.dict fix before merge. The rest are verification notes and polish."}

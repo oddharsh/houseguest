@@ -1,0 +1,12 @@
+{
+  "set": "noise",
+  "repo": "BurntSushi/ripgrep",
+  "number": 3564,
+  "url": "https://github.com/BurntSushi/ripgrep/pull/3564",
+  "merge_base": "4c2362d359d9913c7a5e391ccd79cb4da22bc89b",
+  "head": "e1b91d0b988c47360279a8a2dce1a9cac50ab5a9",
+  "created": "2026-10-20T09:18:20Z",
+  "reviewer_prompt": "2aba6a090a98",
+  "agent": null,
+  "note": "merged with no maintainer comment"
+}

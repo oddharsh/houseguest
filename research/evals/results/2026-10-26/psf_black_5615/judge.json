@@ -1,0 +1,7 @@
+{"findings":[
+{"summary":"Test doesn't cover the import/EOF crash input the body and CHANGES lead with","class":"blocking"},
+{"summary":"No evidence for the 'extra blank line' stability case","class":"nit"},
+{"summary":"Fix can be a one-line change and avoids an extra preceding_leaf walk","class":"nit"},
+{"summary":"Body footer and unbacked claims, corpus paragraph wording","class":"nit"}],
+"verdict":"changes","hit":null,"hit_rank":null,
+"why":"The one blocking finding is that the regression test misses the headline crash input; the reviewer would merge once it's added. The stability question, simplification and body comments are nits."}

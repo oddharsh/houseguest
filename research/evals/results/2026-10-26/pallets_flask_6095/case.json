@@ -1,0 +1,12 @@
+{
+  "set": "noise",
+  "repo": "pallets/flask",
+  "number": 6095,
+  "url": "https://github.com/pallets/flask/pull/6095",
+  "merge_base": "8285adf5a4f572dbf7a0a3b8f3a96ca0b19c50a4",
+  "head": "5ce121dd841e2dc2594d0ed3954278f4101d3521",
+  "created": "2026-07-14T10:21:31Z",
+  "reviewer_prompt": "2aba6a090a98",
+  "agent": null,
+  "note": "merged with no maintainer comment"
+}

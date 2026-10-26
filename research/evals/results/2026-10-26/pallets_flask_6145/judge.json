@@ -1,0 +1,11 @@
+{"findings":[
+{"summary":"AI-generated PR, closed on sight under the org policy","class":"blocking"},
+{"summary":"No linked issue; no CHANGES.rst entry or versionchanged notes","class":"blocking"},
+{"summary":"str(o) is wrong for PathLike objects like DirEntry; should be os.fspath","class":"blocking"},
+{"summary":"Changes the documented type list the JSON provider serializes; no reason it belongs in core, override default instead","class":"blocking"},
+{"summary":"Body falsely claims PathLike serialization matches stdlib behavior","class":"blocking"},
+{"summary":"Dataclass change only swaps one TypeError message for another; not a real fix","class":"blocking"},
+{"summary":"Fails the repo's ruff import-order and format checks","class":"blocking"},
+{"summary":"Tests import inside functions unlike the file, and don't cover non-pathlib PathLike","class":"nit"}],
+"verdict":"close","hit":true,"hit_rank":1,
+"why":"Finding 1 states the AI-policy ground the maintainer cited, and findings 4 and 6 also state the 'no more types' and 'different error isn't a bug' reasons. A maintainer reading finding 1 alone would close it."}

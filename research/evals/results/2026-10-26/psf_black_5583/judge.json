@@ -1,0 +1,7 @@
+{"findings":[
+{"summary":"First body example is invalid Python (literal é in a bytes literal), not a Black crash","class":"blocking"},
+{"summary":"The --fast example output is identical to input and shows no change","class":"blocking"},
+{"summary":"Corpus claim of 2,202 files has no command or output","class":"nit"},
+{"summary":"Claude Code footer and unbacked 'tests pass' claim in the body","class":"nit"}],
+"verdict":"changes","hit":null,"hit_rank":null,
+"why":"The reviewer would send it back only over the two false or broken body examples; the code is accepted as correct. The corpus and footer comments are nits."}

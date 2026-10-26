@@ -1,0 +1,15 @@
+{
+  "set": "recall",
+  "repo": "BurntSushi/ripgrep",
+  "number": 3414,
+  "url": "https://github.com/BurntSushi/ripgrep/pull/3414",
+  "merge_base": "4519153e5e461527f4bca45b042fff45c4ec6fb9",
+  "head": "707c3802fb4b3a1f9c7d38a0865227f2043ec56f",
+  "created": "2026-05-25T03:35:12Z",
+  "reviewer_prompt": "2aba6a090a98",
+  "agent": "Claude Code",
+  "expect": "base64 flags are out of scope for ripgrep; a wrapper script should do this",
+  "quote": "This isn't a good fit for ripgrep. You should have a wrapper script do this for you.",
+  "reason_url": "https://github.com/BurntSushi/ripgrep/pull/3414#issuecomment-4537003844",
+  "kind": "scope"
+}

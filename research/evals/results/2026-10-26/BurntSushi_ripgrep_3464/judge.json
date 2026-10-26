@@ -1,0 +1,10 @@
+{"findings":[
+{"summary":"Double-wrapped WithDepth in from_entry and Windows from_entry_os; hunks do nothing and add nesting","class":"blocking"},
+{"summary":"Windows metadata_internal missed, so depth() differs by OS","class":"blocking"},
+{"summary":"Walkdir arm hand-rolls what Error::from_walkdir already does","class":"nit"},
+{"summary":"No test and thin body; reviewer says it won't block on this","class":"nit"},
+{"summary":"with_depth/with_path wrap order differs from walk.rs convention","class":"nit"},
+{"summary":"Title prefix doesn't match repo style","class":"nit"},
+{"summary":"Dropping io::Error::from is a harmless no-op cleanup","class":"nit"}],
+"verdict":"changes","hit":null,"hit_rank":null,
+"why":"Two blocking findings: redundant double-wrapped depth hunks and a missed Windows branch that makes behavior differ by platform. The PR was merged as-is."}

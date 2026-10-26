@@ -1,0 +1,9 @@
+{"findings":[
+{"summary":"AI-generated PR, closed on sight under the org policy","class":"blocking"},
+{"summary":"Removes the second context push, so teardown runs after the view returns and again on every chunk, breaking the documented streaming contract","class":"blocking"},
+{"summary":"Regression test asserts only that teardown ran on the worker thread, which passes with or without the fix","class":"blocking"},
+{"summary":"Stale comments in tests/test_testing.py left behind","class":"nit"},
+{"summary":"Body claim about stale worker context is unsupported by the test; cross-thread side effects unmentioned","class":"blocking"},
+{"summary":"No CHANGES.rst entry or versionchanged notes, no issue discussion","class":"blocking"}],
+"verdict":"close","hit":true,"hit_rank":1,
+"why":"Finding 1 cites the AI policy and finding 2 spells out the repeated push, teardown and pop on every chunk, both of which the maintainer gave as reasons to close. A maintainer reading finding 1 alone would close it."}

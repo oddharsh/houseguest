@@ -1,0 +1,6 @@
+{"findings":[
+{"summary":"Body misses second caller (Types::matched), so -t/-T filtering also changes","class":"nit"},
+{"summary":"Overlapping tests; drop file_name_basic and hidden_trailing_dot","class":"nit"},
+{"summary":"cfg(unix) comment on file_name_dot_components is half wrong","class":"nit"}],
+"verdict":"merge","hit":null,"hit_rank":null,
+"why":"No blocking findings; the reviewer calls the fix correct and would merge after trimming tests."}

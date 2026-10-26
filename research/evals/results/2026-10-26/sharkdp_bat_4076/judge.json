@@ -1,0 +1,4 @@
+{"findings":[
+{"summary":"CHANGELOG entry uses #XXXX placeholder, which fails the required changelog CI check","class":"blocking"},
+{"summary":"Even-length parity half of the new condition has no test","class":"nit"}
+],"verdict":"changes","hit":null,"hit_rank":null,"why":"One blocking finding: the #XXXX changelog placeholder would fail the repo's required changelog workflow. The test gap is a nit."}

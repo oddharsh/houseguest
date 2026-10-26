@@ -1,0 +1,9 @@
+{"findings":[
+{"summary":"Body's main claim is false: output was already sorted by name, nothing user-visible was nondeterministic, no input named","class":"blocking"},
+{"summary":"Only real behavior change (select/negate 'all' ordering) is unmentioned and untested","class":"nit"},
+{"summary":"Test passes on base code and can't catch a regression of what changed","class":"blocking"},
+{"summary":"rustfmt --check fails in CI","class":"blocking"},
+{"summary":"AI-policy concerns: machine-written wording, title and commit message style","class":"nit"},
+{"summary":"No cost data for startup-path change","class":"nit"}],
+"verdict":"close","hit":true,"hit_rank":1,
+"why":"Finding 1 says the PR fixes nondeterminism that didn't exist and shows no misbehaving input, which is the no-demonstrated-need, keep-the-status-quo reason."}
