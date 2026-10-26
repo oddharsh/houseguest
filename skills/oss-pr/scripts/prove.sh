@@ -237,6 +237,7 @@ tail_of() { echo '```'; tail -n 25 "$1"; echo '```'; }
   echo "## Green output (tail of run 1)"
   tail_of "$ledger/logs/green-1.log"
 } >"$ledger/proof.md"
+bash "$(dirname "$0")/receipt.sh" seal "$ledger/proof.md"
 
 echo "$status: wrote $ledger/proof.md"
 [ "$status" = "PASS" ]

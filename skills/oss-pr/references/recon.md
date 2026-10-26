@@ -15,6 +15,7 @@ bash "<skill-dir>/scripts/gather.sh" --repo <owner/name> --issue <N> \
 - **Searches:** GitHub ANDs the words inside one search, so keep each `--q` to 1 to 3 words and give each phrasing its own `--q`. Phrase them the way a maintainer would title the issue (`scrollback crash`, `custom media targets`). A duplicate titled differently is still a duplicate, so try at least 2.
 - **`--files`:** this is the most reliable duplicate check. It lists open PRs that touch the same files, and the recent commits on each file. Guess the files from the issue and a quick look at the repo tree if you haven't written code yet, then rerun once you have a diff.
 - **Reruns:** add `--search-only` to repeat just the searches.
+- **Failed lookups:** a search that errors (a rate limit, a field GitHub dropped) prints LOOKUP FAILED in its section and in a list at the top, and the script exits 3. That section is unknown, not empty. Rerun before deciding, and never write "no duplicates" or "no open PRs" over a failed search. A list that stopped at its limit says so too; add a narrower `--q` instead of reading it as complete.
 - Inside a clone, it reads docs from disk instead.
 - The dump opens with an **AI policy sweep** (`scripts/policy.sh`, also runnable alone). It reads the repo's docs anywhere in the tree, the owner's `.github` repo, and contribution guides linked from the README, CONTRIBUTING, or templates, including guides in other repos. Then it checks earlier threads for maintainers applying an AI rule. It ends with one verdict: RULE FOUND, MENTIONS ONLY, or NONE FOUND, plus every source it checked.
 
@@ -38,7 +39,7 @@ The dump is raw. Read the files it points at, in this order:
 2. CONTRIBUTING, HACKING, or DEVELOPMENT in full, including its section on issues and PRs. Gate rules hide in ordinary sentences ("please engage on the issue first"), so read them yourself; the pattern match in the dump only gives hints.
 3. Any `AGENTS.md` or `CLAUDE.md`, both at the root and in the directories you'll touch (fetch nested ones by path until you clone). These are the maintainers telling an agent how to behave in their repo.
 4. The PR template, and any workflow the dump lists under "Workflows that police PRs." Those workflows enforce the template, so they decide what the body must contain.
-5. The issue thread and every linked PR, open or closed. For any open PR that matches, read its diff and its maintainer comments, not just its title.
+5. The issue thread and every linked PR, open or closed. The dump's "Work linked to" section follows the issue to the PRs that fixed it, then to whatever links to those PRs. An issue, revert, or follow-up PR linked after a fix merged means that fix missed a case, and the user's bug may be that case. For any open PR that matches, read its diff and its maintainer comments, not just its title.
 6. In a docs repo (MDN, a docs site), the writing guidelines for the page type you're editing. They decide where new text belongs.
 
 ## Check intent and lineage

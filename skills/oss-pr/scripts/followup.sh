@@ -12,6 +12,7 @@
 # Read-only.
 
 set -uo pipefail
+. "$(dirname "$0")/lib.sh"
 days=0 limit=60
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -28,11 +29,22 @@ items=$(gh api -X GET search/issues -f q="$q" -f per_page=100 -f sort=updated \
   --jq '.items[] | "\(.repository_url | sub("https://api.github.com/repos/"; ""))\t\(.number)\t\(if .pull_request then "pr" else "issue" end)\t\(.title)"' | head -"$limit")
 [ -z "$items" ] && { echo "No open PRs or issues of yours on other people's repos."; exit 0; }
 
+# Fetch every thread in parallel; each line comes back as the item plus its JSON.
+fetch_item() {
+  local repo n kind title json
+  IFS=$'\t' read -r repo n kind title <<< "$1"
+  if [ "$kind" = "pr" ]; then json=$(gh pr view "$n" -R "$repo" --json comments,reviews,reviewDecision,statusCheckRollup 2>/dev/null)
+  else json=$(gh issue view "$n" -R "$repo" --json comments 2>/dev/null); fi || { printf '%s\tFAILED\n' "$1"; return; }
+  printf '%s\t%s\n' "$1" "$(echo "$json" | jq -c .)"
+}
+fetched=$(echo "$items" | pmap 8 fetch_item)
+unread=$(echo "$fetched" | awk -F'\t' '$5 == "FAILED" {print $1 "#" $2}')
+
 now=$(date -u +%s)
 rows="" ci_rows=""
-while IFS=$'\t' read -r repo n kind title; do
+while IFS=$'\t' read -r repo n kind title json; do
+  [ "$json" = "FAILED" ] && continue
   if [ "$kind" = "pr" ]; then
-    json=$(gh pr view "$n" -R "$repo" --json comments,reviews,reviewDecision,statusCheckRollup 2>/dev/null) || continue
     ci_row=$(echo "$json" | jq -r --arg repo "$repo" --arg n "$n" --arg title "$title" '
       [.statusCheckRollup[]? | {name: (.name // .context), r: ((.conclusion // .state // "") | ascii_upcase)}] as $c
       | ([$c[] | select(.r | test("^(FAILURE|ERROR|TIMED_OUT|STARTUP_FAILURE)$")) | .name] | unique) as $red
@@ -42,8 +54,6 @@ while IFS=$'\t' read -r repo n kind title; do
         else empty end')
     [ -n "$ci_row" ] && ci_rows="$ci_rows
 $ci_row"
-  else
-    json=$(gh issue view "$n" -R "$repo" --json comments 2>/dev/null) || continue
   fi
   row=$(echo "$json" | jq -r --arg me "$me" --arg repo "$repo" --arg n "$n" --arg kind "$kind" --arg title "$title" --argjson now "$now" --argjson days "$days" '
     def bot: ((.author.login // "") | test("\\[bot\\]$|bot$|^app/|github-actions|changeset|codecov|vercel|netlify|devin|copilot|coderabbit|devprod|sonarcloud|codspeed|renovate|dependabot|cla-assistant|triage"; "i"))
@@ -62,7 +72,9 @@ $ci_row"
       end')
   [ -n "$row" ] && rows="$rows
 $row"
-done <<< "$items"
+done <<< "$fetched"
+
+[ -n "$unread" ] && { echo "Couldn't read $(echo "$unread" | wc -l | tr -d ' ') item(s), so they're missing below; rerun, or open them by hand: $(echo "$unread" | tr '\n' ' ')"; echo; }
 
 if [ -n "$(echo "$ci_rows" | sed '/^$/d')" ]; then
   echo "Upstream CI on your PRs (a red PR reads as abandoned; fix it, or say in the thread why it isn't yours):"
