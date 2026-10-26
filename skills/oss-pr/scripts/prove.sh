@@ -61,7 +61,10 @@ head_sha=$(git rev-parse HEAD)
 ledger="$(git rev-parse --git-dir)/houseguest/$branch"
 mkdir -p "$ledger/logs"
 
-: "${tests_re:=(^|/)(tests?|spec|specs|__tests__|testdata|fixtures?)/|[._-](test|spec)s?\.[a-z]+$|(^|/)test_[^/]*$|_test\.[a-z]+$}"
+# Snapshots and golden files are the test's expected values, wherever they sit (insta keeps
+# them in snapshots/ beside the code). Restoring one with the fix would make red compare the
+# old output with the old snapshot and pass.
+: "${tests_re:=(^|/)(tests?|spec|specs|__tests__|__snapshots__|snapshots|testdata|fixtures?)/|[._-](test|spec)s?\.[a-z]+$|(^|/)test_[^/]*$|_test\.[a-z]+$|\.(snap|ambr|golden)$}"
 
 mode="" fix_files=""
 if [ -n "$red_ref" ]; then

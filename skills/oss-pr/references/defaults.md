@@ -118,6 +118,8 @@ These are TS-only. Most also apply to JS projects that typecheck with JSDoc.
   Why: "nothing came back" also passes when the code is broken for every input.
 - **For a bug fix, add a test that fails before the fix and passes after, when the repo has a cheap test path near the bug.**
   Why: maintainers trust a fix they can watch fail first; `proof.md` records both runs.
+- **When the neighboring tests state properties, snapshot output, or test types, test your fix the same way, beside one literal case.**
+  Why: the literal case shows the bug, and the property, snapshot, or type test states the rule, so the next change that breaks it fails loudly. `checks.md` lists what the repo keeps near your files. Never add the framework.
 - **Skip the new test when it needs heavy harness setup, brittle mocks, or big fixture churn.**
   Why: pstack's rule fits here: "Prefer no new test over a bad test." Describe the closest real check in the PR instead.
 - **Run real code instead of mocking it when it runs locally.**
