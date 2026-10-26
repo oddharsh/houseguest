@@ -1,0 +1,15 @@
+{
+  "set": "recall",
+  "repo": "sharkdp/bat",
+  "number": 3625,
+  "url": "https://github.com/sharkdp/bat/pull/3625",
+  "merge_base": "0dcdcb678a25f9fded8c3bb74fe75fee43a054a9",
+  "head": "fe83de3e97b644762fd28caaae56d5d668f5ac0f",
+  "created": "2026-03-11T11:57:49Z",
+  "reviewer_prompt": "2aba6a090a98",
+  "agent": null,
+  "expect": "paging for --list-themes was added on purpose recently; force-disabling it reverses a deliberate choice",
+  "quote": "paging was deliberately introduced recently ... I don't think we want to force disable paging when list themes, having just recently implemented it.",
+  "reason_url": "https://github.com/sharkdp/bat/pull/3625#issuecomment-4041468312",
+  "kind": "intent"
+}

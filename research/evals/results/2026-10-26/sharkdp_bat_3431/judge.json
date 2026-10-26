@@ -1,0 +1,11 @@
+{"findings":[
+{"summary":"Fixture locks in wrong highlight: arch list incomplete/typo'd so common arches render as invalid.spec","class":"blocking"},
+{"summary":"Loose converted grammar instead of submodule, so upstream license is missing from --acknowledgements","class":"blocking"},
+{"summary":"Body doesn't say whether grammar is verbatim or hand-edited (Manual modifications entry)","class":"nit"},
+{"summary":"No evidence the syntax meets the doc/assets.md popularity criterion (10,000 downloads); #2931 may have been declined on it","class":"blocking"},
+{"summary":"Source|Patch rule has no line-end pop and can swallow description paragraphs; redundant","class":"blocking"},
+{"summary":"Tag rules not anchored to line start","class":"nit"},
+{"summary":"Fixture skips most of the grammar","class":"nit"},
+{"summary":"Conditional keyword rule lacks word boundary and omits %elif","class":"nit"},
+{"summary":"Lean: dedupe arch push bodies, drop obsolete norootforbuild rule","class":"nit"}
+],"verdict":"changes","hit":true,"hit_rank":4,"why":"Finding 4 names the doc/assets.md popularity criterion and the missing evidence for it, which is the maintainer's reason. It ranks fourth behind grammar bugs and packaging."}

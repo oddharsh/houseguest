@@ -1,0 +1,7 @@
+{"findings":[
+{"summary":"No CHANGES.rst entry despite the PR template requiring one","class":"blocking"},
+{"summary":"Unrelated removal of t.cast(str, host) at app.py:751","class":"nit"},
+{"summary":"Body doesn't describe the approach or the hostname lowercasing behavior change","class":"nit"},
+{"summary":"New test should take the client fixture instead of calling app.test_client()","class":"nit"}],
+"verdict":"changes","hit":null,"hit_rank":null,
+"why":"The only blocking finding is the missing CHANGES.rst entry the template asks for; the reviewer would merge once it's added. The cast removal, body wording and test fixture are nits."}

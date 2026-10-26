@@ -1,0 +1,15 @@
+{
+  "set": "recall",
+  "repo": "pallets/flask",
+  "number": 6067,
+  "url": "https://github.com/pallets/flask/pull/6067",
+  "merge_base": "8285adf5a4f572dbf7a0a3b8f3a96ca0b19c50a4",
+  "head": "eca982ffb5651b3f8bc1d71e91b4e65b14eb7338",
+  "created": "2026-06-29T10:29:48Z",
+  "reviewer_prompt": "2aba6a090a98",
+  "agent": null,
+  "expect": "the hook isn't needed: users can already override make_response or return json.response directly",
+  "quote": "You can override make_response already, or return json.response directly.",
+  "reason_url": "https://github.com/pallets/flask/pull/6067#issuecomment-4833537402",
+  "kind": "exists"
+}

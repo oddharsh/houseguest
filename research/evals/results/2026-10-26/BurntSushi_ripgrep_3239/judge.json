@@ -1,0 +1,12 @@
+{"findings":[
+{"summary":"AI prompt (purpose.txt) and generated PR description (pullrequest.txt) committed to repo root","class":"blocking"},
+{"summary":"Feature PR with no linked issue; feature requests go through issues","class":"blocking"},
+{"summary":"Flag doesn't suppress unreadable-directory errors during the walk, the headline case","class":"blocking"},
+{"summary":"nopermission reverses the deliberate exit-status 2 decision","class":"blocking"},
+{"summary":"permission mode duplicates existing -s/--no-messages limited to one error kind","class":"blocking"},
+{"summary":"Value names inverted against ripgrep's no- naming; for-now wording","class":"nit"},
+{"summary":"Unit tests race on process-global ERRORED flag and are too weak; no integration test","class":"blocking"},
+{"summary":"Flag/field ordering not alphabetical; zsh completion lacks choices and wrong exclusion group","class":"nit"},
+{"summary":"Body overclaims test results and reads as generated; commit title mismatched","class":"nit"}],
+"verdict":"close","hit":true,"hit_rank":5,
+"why":"Finding 5 says --no-messages already suppresses these errors and the new permission mode duplicates it, matching the maintainer's reason; it is the fifth finding in the reply's order."}

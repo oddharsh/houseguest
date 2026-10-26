@@ -1,0 +1,12 @@
+{"findings":[
+{"summary":"New flags with no linked issue; feature already achievable with a small script piped into rg -F -f -, so it doesn't belong in core","class":"blocking"},
+{"summary":"Two mutually exclusive switches (--base64/--base64url) where repo prefers one flag; collapse to one","class":"nit"},
+{"summary":"-i/--smart-case silently defeat the fixed-strings implication and match wrongly","class":"blocking"},
+{"summary":"Tests don't exercise HiArgs wiring; no end-to-end rgtest","class":"nit"},
+{"summary":"Docs describe a regex mechanism the code doesn't use","class":"nit"},
+{"summary":"Machine-written-looking docs, em dashes, overlong line","class":"nit"},
+{"summary":"Body's stated reason for not reusing the encoder is wrong","class":"nit"},
+{"summary":"Lean: drop the whole PR in favor of script","class":"blocking"},
+{"summary":"Lean: drop --base64url, Base64Mode enum, redundant tests and comments","class":"nit"}],
+"verdict":"close","hit":true,"hit_rank":1,
+"why":"Finding 1 says the feature already composes via a short script piped into rg -F -f - and shouldn't be carried as permanent flags, which matches 'use a wrapper script'."}

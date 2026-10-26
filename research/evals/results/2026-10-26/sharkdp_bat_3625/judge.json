@@ -1,0 +1,7 @@
+{"findings":[
+{"summary":"Reverts deliberate list-themes paging added in v0.26.0 and kept in v0.26.1; force-disables paging","class":"blocking"},
+{"summary":"No CHANGELOG entry for a behavior change","class":"blocking"},
+{"summary":"Test pins the reverted behavior and nothing was compiled or run","class":"nit"},
+{"summary":"Body reads machine-written","class":"nit"},
+{"summary":"Lean: existing guard at app.rs:305 becomes dead/contradictory; could be one match arm","class":"nit"}
+],"verdict":"close","hit":true,"hit_rank":1,"why":"Finding 1 says the PR reverses paging for --list-themes that maintainers added on purpose recently, matching the maintainer's reason exactly."}

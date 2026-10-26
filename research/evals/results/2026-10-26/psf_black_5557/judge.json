@@ -1,0 +1,9 @@
+{"findings":[
+{"summary":"Vendor placement: commercial demo badge with tracking link in README, nobody asked for it","class":"blocking"},
+{"summary":"Badge would ship to PyPI long description and depend on third-party host","class":"blocking"},
+{"summary":"Badge directly above --- turns the horizontal rule into an H2 heading","class":"blocking"},
+{"summary":"Prettier pre-commit hook would rewrite the line","class":"nit"},
+{"summary":"No CHANGES.md entry, so changelog check fails","class":"blocking"},
+{"summary":"Body claims about auto-rebuild and 'actual binary' can't be backed by the repo","class":"nit"},
+{"summary":"Pitch reads as boilerplate outreach copy","class":"nit"}
+],"verdict":"close","hit":true,"hit_rank":1,"why":"Finding 1 objects to advertising a vendor's demo service in the README that the project doesn't ask for or maintain, which matches the maintainer's reason in substance."}

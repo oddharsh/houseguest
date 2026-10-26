@@ -1,0 +1,6 @@
+{"findings":[
+{"summary":"-pnp assertion passes without the fix; drop it and the 'all four' claim","class":"nit"},
+{"summary":"Four cases in one test function instead of one per flag form","class":"nit"},
+{"summary":"Same bug class survives across separate args (-b -p); body should call it out of scope","class":"nit"},
+{"summary":"Body lists test commands without output","class":"nit"}
+],"verdict":"changes","hit":null,"hit_rank":null,"why":"No blocking findings: the reviewer calls the fix correct and the changelog compliant, and every point is test polish or scope notes a maintainer would merge without."}

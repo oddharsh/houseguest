@@ -1,0 +1,12 @@
+{
+  "set": "noise",
+  "repo": "sharkdp/bat",
+  "number": 4076,
+  "url": "https://github.com/sharkdp/bat/pull/4076",
+  "merge_base": "fca6c542d4c75f154ded9529abc8f40b43575da2",
+  "head": "bc0a67e07c1eb8e3a6786804e4dfd1e267464dbe",
+  "created": "2026-10-16T20:21:47Z",
+  "reviewer_prompt": "2aba6a090a98",
+  "agent": "Claude Code",
+  "note": "merged; maintainer: Nice, thanks"
+}

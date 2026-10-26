@@ -1,0 +1,5 @@
+{
+  "runner": "houseguest:maintainer-review subagent (Claude Code desktop, Opus 5.5)",
+  "tool_calls": 12,
+  "network_calls": []
+}

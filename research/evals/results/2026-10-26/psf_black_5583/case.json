@@ -1,0 +1,12 @@
+{
+  "set": "noise",
+  "repo": "psf/black",
+  "number": 5583,
+  "url": "https://github.com/psf/black/pull/5583",
+  "merge_base": "1190eeb39527e1ed81f9b35c931af66f31d05186",
+  "head": "d9d95392edcdeb9129686ccec9e47f2be175f604",
+  "created": "2026-10-22T17:53:00Z",
+  "reviewer_prompt": "2aba6a090a98",
+  "agent": "Claude Code",
+  "note": "merged; maintainer: Thanks!"
+}

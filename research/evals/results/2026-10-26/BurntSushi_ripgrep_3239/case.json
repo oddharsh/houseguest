@@ -1,0 +1,15 @@
+{
+  "set": "recall",
+  "repo": "BurntSushi/ripgrep",
+  "number": 3239,
+  "url": "https://github.com/BurntSushi/ripgrep/pull/3239",
+  "merge_base": "cd1f981beafaeb9b61537e47e91314cea125400b",
+  "head": "6b70a11f7adfd6d0d955c182681fb7f193b93e3b",
+  "created": "2025-12-06T20:51:28Z",
+  "reviewer_prompt": "2aba6a090a98",
+  "agent": null,
+  "expect": "ripgrep already has --no-messages, which suppresses these errors; the new flag duplicates it",
+  "quote": "ripgrep already has a `--no-messages` flag.",
+  "reason_url": "https://github.com/BurntSushi/ripgrep/pull/3239#issuecomment-3621146255",
+  "kind": "exists"
+}

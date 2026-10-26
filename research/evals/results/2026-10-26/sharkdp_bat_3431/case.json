@@ -1,0 +1,15 @@
+{
+  "set": "recall",
+  "repo": "sharkdp/bat",
+  "number": 3431,
+  "url": "https://github.com/sharkdp/bat/pull/3431",
+  "merge_base": "01b7ac62c594b8410e4b0407734b607aa2f9671d",
+  "head": "2758474f8f14c7f68d2d339da92d9a539e2c4143",
+  "created": "2025-10-09T07:08:25Z",
+  "reviewer_prompt": "2aba6a090a98",
+  "agent": null,
+  "expect": "new syntax must meet the popularity criteria in doc/assets.md, and the PR doesn't show it does",
+  "quote": "Does this syntax fulfil the popularity requirement? See doc/assets.md#criteria-for-inclusion-of-new-syntaxes.",
+  "reason_url": "https://github.com/sharkdp/bat/pull/3431#pullrequestreview-3326836811",
+  "kind": "rule"
+}
