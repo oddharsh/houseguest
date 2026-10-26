@@ -76,11 +76,19 @@ The intent check, the second fix, the comparison, the maintainer reviewer, and t
 
 **Decisions.** Isolation loses the decisions a phase made without saying so: why the fix sits in this function and not its caller, which guard it kept, which file it chose not to touch. A later fresh phase 3 or 5 can quietly undo them. So every run of phases 3 and 5 appends its decisions to `$LEDGER/decisions.md`, one line each with an id and a reason (`D3: kept the empty-list guard; housecheck S3`). A later run reads them first and reverses one only by adding a line that names it and says why. The reviewer, the comparison, and the final check never see `decisions.md`: it's an account of how the change was made, which is exactly what they judge without.
 
-**Review rounds.** Each pass through phase 6 is a round, and since every phase starts fresh, `$LEDGER/rounds.md` is the loop's memory. After each round, append its findings, quoted, each with an id (`R2.3`), and what happened to each: fixed in a commit (name it), rewritten in the body, or declined with its evidence (a `path:line`, a rule, a test result). The phase that owns a finding may decline it, but only with evidence, and never to avoid work. Give `rounds.md` to phases 3 and 5 so they don't redo or undo an earlier round, and to the reviewer from round 2 on, so it answers each decline instead of repeating the finding. The loop stops in one of three ways:
+**Review rounds.** Each pass through phase 6 is a round, and since every phase starts fresh, `$LEDGER/rounds.md` is the loop's memory. After each round, append its findings, quoted, each with an id (`R2.3`) and the reviewer's tag, and what happened to each: fixed in a commit (name it), rewritten in the body, or declined with its evidence (a `path:line`, a rule, a test result). The phase that owns a finding may decline it, but only with evidence, and never to avoid work. Give `rounds.md` to phases 3 and 5 so they don't redo or undo an earlier round, and to the reviewer from round 2 on, so it answers each decline instead of repeating the finding.
 
-- **Clean:** the reviewer has no finding left.
-- **Stand-still:** every finding left is one a phase declined and the reviewer still stands by after reading why. Show the user both sides, quoted, and let them decide each one.
-- **Budget:** 3 rounds. A PR that still draws findings after three passes has a problem the loop won't fix. Show the user what's open and stop.
+The tag decides what a finding costs. Every finding sent back means a fresh phase 3 or 5, then 4, then 7 again. When Anthropic ran `git blame` on what its own reviewer kept flagging, about 59% was code older than the PR.
+
+- **Important** findings start the next round. Quote the bug class and every instance the reviewer listed, and have the phase fix the whole class across the diff, not only the cited lines. A class that comes back in a later round means the sweep missed an instance, so name the one it missed.
+- **Nits** never start a round on their own. A phase already rerunning for an Important finding may take them; otherwise log them as `left` and show them to the user with the PR.
+- **Pre-existing** findings never go back to a phase, since cleaning up code the PR didn't touch is a second PR nobody asked for (`deslop.md`). Log them, and at the end offer the user an issue draft for any that matter.
+
+The loop stops in one of three ways:
+
+- **Clean:** the reviewer has no Important finding left.
+- **Stand-still:** every Important finding left is one a phase declined and the reviewer still stands by after reading why. Show the user both sides, quoted, and let them decide each one.
+- **Budget:** 3 rounds. A PR that still draws Important findings after three passes has a problem the loop won't fix. Show the user what's open and stop.
 
 Phase 7 runs only after a clean stop, or after the user has decided each open finding.
 
