@@ -14,7 +14,8 @@
 # and ends with a verdict line naming every source checked.
 #
 # --as-of reads every GitHub source at its last commit before that moment.
-# Pages outside GitHub can only be read live; the output marks them.
+# Pages outside GitHub can only be read live; the output marks them. They count as a rule
+# only when the URL or page title names contribution guidance; otherwise they're mentions.
 # --keep DIR leaves the fetched docs in DIR so other checks can grep them.
 # Read-only: GET requests only.
 
@@ -27,7 +28,7 @@ while [ $# -gt 0 ]; do
     --repo) repo="$2"; shift 2 ;;
     --as-of) asof="$2"; shift 2 ;;
     --keep) keep="$2"; shift 2 ;;
-    -h|--help) sed -n '2,20p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,21p' "$0"; exit 0 ;;
     *) echo "policy.sh: unknown argument $1" >&2; exit 2 ;;
   esac
 done
@@ -37,11 +38,11 @@ asof_ts="9999"
 if [ -n "$asof" ]; then case "$asof" in *T*) asof_ts="$asof" ;; *) asof_ts="${asof}T00:00:00Z" ;; esac; fi
 
 if [ -n "$keep" ]; then dir="$keep"; mkdir -p "$dir"; else dir=$(mktemp -d); trap 'rm -rf "$dir"' EXIT; fi
-sources="$dir/.sources"; : > "$sources"
+sources="$dir/.sources"; : > "$sources"; : > "$dir/.guides"
 
 AI_RE='\bLLMs?\b|large language model|AI[- ]?(generated|assisted|assistance|tools?|agents?|policy|use|usage|written|authored)|generative AI|machine[- ]generated|chatgpt|copilot|claude|gemini|\bGPT\b|vibe[- ]cod|slop'
 NAME_RE='(^|/)(CONTRIBUTING|CONTRIBUTE|HACKING|DEVELOPMENT|GOVERNANCE|AI_POLICY|AI-POLICY|AGENTS|CLAUDE|TRIAGE)(\.(md|rst|txt|adoc))?$|(^|/)LLMS?[^/]*\.(md|rst|adoc)$|^(\.github/)?README(\.(md|rst|txt|adoc))?$|(^|/)[^/]*(ai|llm|genai)[-_ .]?(policy|policies|usage|use|contribution|contributions|guidelines|rules)[^/]*\.(md|rst|txt|adoc)$|(^|/)[^/]*contribut[^/]*\.(md|rst|txt|adoc)$|^\.github/(PULL_REQUEST_TEMPLATE|ISSUE_TEMPLATE|DISCUSSION_TEMPLATE)|pull_request_template'
-ENF_RE='(AI|LLM)[- ]?(generated|written|authored|assisted) (PRs?|pull requests?|code|issues?|comments?|contributions?|descriptions?|text|patch(es)?|changes?|reports?)|(this|your|the|entire|whole) (PR|pull request|issue|comment|contribution|description|code|report)[^.]{0,40}(AI|LLM)[- ]?(generated|written)|(seems|looks|reads|is) (like it was |to be |)(AI|LLM)[- ]?(generated|written)|generated (by|with) (an? )?(AI|LLM|ChatGPT|Claude|Copilot)|(AI|LLM)[- ](policy|policies)|your (AI|LLM|agent|bot)|\bslop\b|(written|wrote) (by|with) (an? )?(AI|LLM|ChatGPT|Claude|Copilot)|human[- ]written|in your own words'
+GUIDE_RE='contribut|polic(y|ies)|guideline|governance|code[-_ ]of[-_ ]conduct|hacking|developer[-_ ]guide|(ai|llm)[-_ ]?(use|usage|rules)'
 SKIP_RE='(^|/)(node_modules|vendor|third_party|tests?|fixtures?|\.agents|\.claude|\.cursor|skills|examples?)/'
 
 ref_of() {  # ref_of owner/repo -> last commit sha before the as-of moment
@@ -136,9 +137,14 @@ follow_link() {  # follow_link url -> source records for what it fetched, on std
   elif ! echo "$url" | grep -qiE '^https?://([a-z0-9-]+\.)*(github\.com|shields\.io|badge|crates\.io|docs\.rs|npmjs\.com|opensource\.guide|contributor-covenant\.org|choosealicense\.com|creativecommons\.org|semver\.org|keepachangelog\.com|conventionalcommits\.org|opensource\.org|apache\.org/licenses|gnu\.org)'; then
     safe=$(echo "$url" | sed -E 's#^https?://##; s#[^A-Za-z0-9._/-]#_#g')
     dest="$dir/live/$safe.txt"; mkdir -p "$(dirname "$dest")"
-    if curl -sL --max-time 10 "$url" | sed -e 's/<[^>]*>/ /g' | tr -s ' \t' > "$dest" 2>/dev/null && [ -s "$dest" ]; then
+    if curl -sL --max-time 10 "$url" > "$dest.html" 2>/dev/null && sed -e 's/<[^>]*>/ /g' "$dest.html" | tr -s ' \t' > "$dest" && [ -s "$dest" ]; then
       printf '%s\t%s\t%s\n' "$url" "live" "linked page outside GitHub (read live, not as of then)" >> "$sources"
+      # Product pages talk about AI in words that look like rules ("required", "issues"), so a
+      # live page joins the verdict only when its URL or <title> says it's contribution guidance.
+      title=$(tr '\n' ' ' < "$dest.html" | grep -oiE '<title[^>]*>[^<]*' | head -1 | sed 's/<[^>]*>//')
+      printf '%s\n%s\n' "$url" "$title" | grep -qiE "$GUIDE_RE" && echo "$url" >> "$dir/.guides"
     else rm -f "$dest"; fi
+    rm -f "$dest.html"
   fi
   cat "$sources"; rm -f "$sources"
 }
@@ -168,6 +174,7 @@ while IFS=$'\t' read -r src at why; do
   [ -f "$f" ] || continue
   lines=$(grep -n -i -E "$AI_RE" "$f" 2>/dev/null | cut -d: -f1 | head -40)
   [ -z "$lines" ] && continue
+  case "$src" in http*) grep -qxF "$src" "$dir/.guides" || { mentions=$((mentions + 1)); echo "$src" >> "$dir/.mention_srcs"; continue; } ;; esac
   block=""
   for n in $lines; do
     ctx=$(sed -n "$(( n > 1 ? n - 1 : 1 )),$(( n + 2 ))p" "$f" | tr '\n' ' ' | tr -s ' ')
