@@ -24,10 +24,12 @@ Take the first rung that fully works:
 - **Be lazy about the solution and thorough about the change.** Finish every part the issue needs, including the callers, tests, and fixtures your change breaks.
 - **No abstraction, wrapper, option, or "for later" code** nobody asked for. Keep the structure the repo already has: its layers, interfaces, and conventions.
 - **Deletion beats addition, inside your own diff.** Code a maintainer wrote stays, unless the fix requires changing it (see `style.md`).
+- **Fewer lines only when each stays as easy to read.** Don't fold two branches into a ternary or a compound condition so they can share setup. A Blink CL merged a JSON branch and a string branch into `!(is_object ? Stringify(...) : ToString(...)).ToLocal(&out)`, and the reviewer asked for nested `if`s back. A line the reader parses twice costs more than the two lines it replaced. Branch the way the neighbors branch.
 - **Fix the root cause once.** Grep every caller of the function you touch, and fix the shared code rather than one caller.
+- **Guard the whole failure set.** When the fix catches a call that can fail, list every way it fails (from its docs, its signature, or its source) before you write the guard. Reviewers think in that set. The same CL guarded `ToString()` against a `Symbol` and drew two questions: aren't there other cases, and shouldn't they be tested? `ToString()` also fails on an object whose `toString` throws, on stack overflow, and on termination. The guard usually covers the set already, so the comment and the tests are what have to say so.
 - **Code you move keeps its error handling and validation,** and its doc comment.
 - **Between options of equal size, take the one that's correct on edge cases.**
-- **One good test,** the kind that fails when the bug comes back, mirroring the tests beside it. Trivial changes need none, unless the repo requires one.
+- **One good test per cause,** the kind that fails when the bug comes back, mirroring the tests beside it. When the guarded call fails in several ways, test each one a public input can reach, and name the rest in the PR body. Trivial changes need none, unless the repo requires one.
 - **A known limit goes in the PR body,** in one sentence with when it would matter. Ponytail marks these with `shortcut:` comments; in someone else's repo that's a foreign convention, so keep it out of the code.
 
 Never cut: validation at trust boundaries, error handling that prevents data loss, security, accessibility, anything the issue asked for, or anything the house rules require (a changeset, a test, a docs line).
