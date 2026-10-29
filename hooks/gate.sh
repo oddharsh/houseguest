@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# PreToolUse gate for `gh pr create` on repos you don't own.
+# PreToolUse gate for `gh pr create`, or a Gerrit upload, on repos you don't own.
 #
 # Blocks (exit 2) until the oss-pr ledger shows recon said GO, the blind intent
 # check found no deliberate choice in the way, a style note exists, and a proof
@@ -11,9 +11,18 @@ input=$(cat)
 cmd=$(printf '%s' "$input" | jq -r '.tool_input.command // empty')
 cwd=$(printf '%s' "$input" | jq -r '.cwd // empty')
 
+# Gerrit's equivalents of `gh pr create`: Chromium's `git cl upload`, Go's `git codereview mail`,
+# git-review (Wikimedia, Qt, OpenStack), Android's `repo upload`, and a plain push to refs/for/<branch>.
+GERRIT_RE='git[[:space:]]+cl[[:space:]]+upload|git[[:space:]]+codereview[[:space:]]+mail|git[[:space:]]+review|repo[[:space:]]+upload|git[[:space:]]+push[[:space:]][^;&|]*refs/for/[^[:space:];&|]*'
+gerrit=""
+printf '%s' "$cmd" | grep -q -E "(^|[;&|[:space:]])($GERRIT_RE)([[:space:]]|\$)" && gerrit=1
+# git-review also downloads, lists, and compares changes; only its upload publishes anything.
+printf '%s' "$cmd" | grep -q -E 'git[[:space:]]+review[[:space:]](.*[[:space:]])?(-[dxXNmls]|--(download|cherrypick|cherrypick-indicate|cherrypick-only|compare|list|setup))([[:space:]]|$)' && gerrit=""
+
 # A security report recon marked PRIVATE also blocks public issues and pushes.
 private_only=""
-if printf '%s' "$cmd" | grep -q -E '(^|[;&|[:space:]])(gh[[:space:]]+issue[[:space:]]+create|git[[:space:]]+push)([[:space:]]|$)'; then
+if [ -n "$gerrit" ]; then :
+elif printf '%s' "$cmd" | grep -q -E '(^|[;&|[:space:]])(gh[[:space:]]+issue[[:space:]]+create|git[[:space:]]+push)([[:space:]]|$)'; then
   private_only=1
 else
   printf '%s' "$cmd" | grep -q -E '(^|[;&|[:space:]])gh[[:space:]]+pr[[:space:]]+create([[:space:]]|$)' || exit 0
@@ -40,13 +49,19 @@ EOF
   exit 2
 fi
 
-# Only gate contributions upstream: a fork, or a clone with an `upstream` remote.
-if ! git remote get-url upstream >/dev/null 2>&1; then
-  [ "$(gh repo view --json isFork -q .isFork 2>/dev/null)" = "true" ] || exit 0
-fi
-
 branch=$(git branch --show-current)
 ledger="$(git rev-parse --git-dir)/houseguest/$branch"
+
+# Only gate contributions upstream: a fork, or a clone with an `upstream` remote. Gerrit has
+# no forks, so there it's a project that checks in its review setup, any `repo upload` (Android's
+# projects check in none), or a branch oss-pr already keeps a ledger for.
+if [ -n "$gerrit" ]; then
+  top=$(git rev-parse --show-toplevel)
+  [ -e "$top/codereview.settings" ] || [ -e "$top/codereview.cfg" ] || [ -e "$top/.gitreview" ] || [ -d "$ledger" ] \
+    || printf '%s' "$cmd" | grep -q -E 'repo[[:space:]]+upload' || exit 0
+elif ! git remote get-url upstream >/dev/null 2>&1; then
+  [ "$(gh repo view --json isFork -q .isFork 2>/dev/null)" = "true" ] || exit 0
+fi
 head=$(git rev-parse HEAD)
 problems=""
 add() { problems="${problems}  - $1
@@ -155,9 +170,15 @@ else
   [ "$fsha" = "$head" ] || add "final.md is for ${fsha:-no sha}, but HEAD is $head; rerun the final check"
 fi
 
-# The title, when one is passed: recheck it against the repo's title conventions.
-ttl=$(printf '%s' "$cmd" | sed -n -E "s/.*(--title|-t)[ =]+\"([^\"]*)\".*/\2/p; s/.*(--title|-t)[ =]+'([^']*)'.*/\2/p" | head -1)
-[ -z "$ttl" ] && [ -f "$ledger/pr-title.txt" ] && printf '%s' "$cmd" | grep -q 'pr-title.txt' && ttl=$(head -1 "$ledger/pr-title.txt")
+# The title, when one is passed: recheck it against the repo's title conventions. On Gerrit
+# the title is the commit's subject (`git cl upload -t` titles the patchset, not the change),
+# and it's checked only when title.sh found merged titles to learn from.
+if [ -n "$gerrit" ]; then
+  ttl=""; [ -f "$ledger/titles.json" ] && ttl=$(git log -1 --format=%s)
+else
+  ttl=$(printf '%s' "$cmd" | sed -n -E "s/.*(--title|-t)[ =]+\"([^\"]*)\".*/\2/p; s/.*(--title|-t)[ =]+'([^']*)'.*/\2/p" | head -1)
+  [ -z "$ttl" ] && [ -f "$ledger/pr-title.txt" ] && printf '%s' "$cmd" | grep -q 'pr-title.txt' && ttl=$(head -1 "$ledger/pr-title.txt")
+fi
 if [ -n "$ttl" ] && [ -f "$ledger/titles.json" ] && [ ! -s "$ledger/title-ack.md" ]; then
   tout=$(bash "${CLAUDE_PLUGIN_ROOT:-$(dirname "$0")/..}/skills/oss-pr/scripts/title.sh" --stats "$ledger/titles.json" "$ttl" 2>/dev/null)
   if [ $? -ne 0 ]; then add "title doesn't match the repo's title conventions: $(echo "$tout" | sed -n '/^FLAG/,$p' | grep '^  - ' | sed 's/^  - //' | tr '\n' ';' | cut -c1-240). Rewrite it, or explain in title-ack.md why it's right"; fi
@@ -176,10 +197,11 @@ fi
 
 [ -z "$problems" ] && exit 0
 
+what="PR"; [ -n "$gerrit" ] && what="Gerrit change"
 cat >&2 <<EOF
-houseguest blocked this PR. The oss-pr ledger at $ledger isn't complete:
+houseguest blocked this $what. The oss-pr ledger at $ledger isn't complete:
 $problems
 Finish the missing phases with the oss-pr skill. If the user explicitly says to skip
-the checks for this PR, rerun the same command prefixed with HOUSEGUEST_SKIP=1.
+the checks for this $what, rerun the same command prefixed with HOUSEGUEST_SKIP=1.
 EOF
 exit 2

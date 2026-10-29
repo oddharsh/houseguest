@@ -19,6 +19,12 @@ bash "<skill-dir>/scripts/gather.sh" --repo <owner/name> --issue <N> \
 - Inside a clone, it reads docs from disk instead.
 - The dump opens with an **AI policy sweep** (`scripts/policy.sh`, also runnable alone). It reads the repo's docs anywhere in the tree, the owner's `.github` repo, and contribution guides linked from the README, CONTRIBUTING, or templates, including guides in other repos. Then it checks earlier threads for maintainers applying an AI rule. It ends with one verdict: RULE FOUND, MENTIONS ONLY, or NONE FOUND, plus every source it checked.
 
+## Where changes go
+
+Some projects review on Gerrit and keep GitHub as a mirror: Chromium and the rest of depot_tools' projects (`git cl upload`), Go (`git codereview mail`; it also imports GitHub PRs), Android (`repo upload`), Qt and Wikimedia (`git review`). Look in the repo root for `codereview.settings`, `codereview.cfg`, or `.gitreview`, and in CONTRIBUTING and the PR template for Gerrit, a `*-review.googlesource.com` host, or a `refs/for/` push. `codex.sh`'s "Where changes go" section lists all of these, and a PR template or bot that closes PRs ("we don't accept pull requests") settles it.
+
+When it's Gerrit, record the host and the upload command on recon.md's `- Review:` line, and later phases switch on it: the commit message becomes the description (`pr-copy.md`, "On Gerrit"), and `followup.sh` needs `--gerrit <host>`. The gather dump then reads only the mirror, so it can't see open changes or the bug. Search the review server for duplicates yourself (`curl -s 'https://<host>/changes/?q=status:open+file:<path>' | sed 1d`, `dir:<folder>` for a folder, and `message:<term>` for each `--q`), along with the bug in its own tracker (issues.chromium.org, or the one CONTRIBUTING names). Read each match's review thread the way step 5 below reads PRs.
+
 ## The AI policy comes first
 
 Settle this before anything else, because it decides whether houseguest may write anything the maintainer will read.
@@ -117,7 +123,7 @@ Run this check whenever the bug could let someone other than the site's or tool'
 - **Show the harm itself:** a script that runs, protected data served to an unauthenticated request, a file read from outside the project. "The middleware saw an odd path" isn't harm.
 - **Duplicates and precedent:** read the project's published advisories (`gh api repos/<owner/name>/security-advisories`) and its SECURITY.md. A closed advisory of the same shape tells you how the maintainers already decided.
 
-**When it is a vulnerability: `DECISION: PRIVATE`.** Nothing about it goes anywhere public: no issue, no PR, no push to a public fork, no comment, no commit message that describes it. Follow SECURITY.md's channel (GitHub's private vulnerability reporting under the Security tab, an email address, a bug bounty). If the repo gives none, look for private reporting on the repo's Security tab, and otherwise ask the maintainers in a public comment for a private contact, without details. Draft the report for the user to submit: the claim, affected versions, the repro under default config, the harm, and a suggested fix. A fix, if the maintainers want one, goes in the advisory's temporary private fork (its name ends in `-ghsa-...`), never a public branch. The gate blocks `gh pr create`, `gh issue create`, and `git push` to anything but such a fork while `recon.md` says PRIVATE.
+**When it is a vulnerability: `DECISION: PRIVATE`.** Nothing about it goes anywhere public: no issue, no PR, no push to a public fork, no comment, no commit message that describes it. Follow SECURITY.md's channel (GitHub's private vulnerability reporting under the Security tab, an email address, a bug bounty). If the repo gives none, look for private reporting on the repo's Security tab, and otherwise ask the maintainers in a public comment for a private contact, without details. Draft the report for the user to submit: the claim, affected versions, the repro under default config, the harm, and a suggested fix. A fix, if the maintainers want one, goes in the advisory's temporary private fork (its name ends in `-ghsa-...`), never a public branch. The gate blocks `gh pr create`, `gh issue create`, every Gerrit upload, and `git push` to anything but such a fork while `recon.md` says PRIVATE.
 
 **When it isn't:** it's an ordinary bug, and everything else in this file applies. Describe it as the bug it is, in the plain words the issue body uses, without "vulnerability," "exploit," or "attack." Calling a bug a security hole is the fastest way to lose a maintainer's attention.
 
@@ -192,6 +198,7 @@ If you haven't cloned yet, write recon notes to `${TMPDIR:-/tmp}/houseguest/<own
 DECISION: GO | STOP | ASK | DOCS
 Reason: <one sentence, with link>
 
+- Review: <GitHub PRs, or Gerrit: the host, the upload command, and the file or doc that says so>
 - AI policy: <the sweep's verdict; the quoted binding rule with its path, or "none found in: <sources>"; and the mode it puts the job in (normal, author mode, or STOP)>
 - Gates: <discussion-first / vouch / DCO / CLA, and whether the user has passed them>
 - Duplicates and prior attempts: <#links with state and the maintainer's reason for each close; open PRs touching the same files>
