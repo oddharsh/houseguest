@@ -15,6 +15,9 @@ pstack was written for people shaping their own code, so it pushes hard on restr
   Good: `// iOS Safari fires blur before click; see https://bugs.webkit.org/show_bug.cgi?id=<n>`
 - **Link the issue, RFC, or spec when a constraint can't be expressed in code.**
   Why: a link lets the maintainer verify the claim, and it stays accurate longer than a paraphrase.
+- **A comment on a guard names everything the guard catches, or marks its case as one example.**
+  Why: the reader takes the comment as the guard's full condition, and a reviewer who knows a second case asks why it's missing.
+  Bad: `// Converting a Symbol to a string throws.` Good: `// Conversion can throw: a Symbol, or an object whose toString() throws.`
 - **When your own new code needs a comment to explain a surprise, reshape the code instead.**
   Why: rename, extract, or type the thing so the surprise disappears; the comment would only defend it.
   Bad: `n := 3 // number of retries` Good: `maxRetries := 3`
