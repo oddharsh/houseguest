@@ -115,7 +115,7 @@ An invented example of the target shape, for a fictional formatter:
 
 ## The disclosure line
 
-Every PR and issue gets one, placed at the end of the body (never in commit messages). It credits the tooling by name, with no link, and claims only what houseguest actually did in this run:
+Every PR and issue gets one, placed at the end of the body (never in commit messages, except on Gerrit, where the commit message is the body; see "On Gerrit"). It credits the tooling by name, with no link, and claims only what houseguest actually did in this run:
 
 > AI-assisted. Recon, red-green check, and PR text by houseguest.
 
@@ -128,6 +128,20 @@ When the rule requires a human to be present and accountable without giving a fo
 > AI-assisted (Claude Code). I reproduced the numbers above locally and reviewed the change before submitting.
 
 Ask the user which of those they actually did, and cut any they didn't.
+
+## On Gerrit
+
+When `recon.md`'s `- Review:` line says Gerrit (Chromium, Go, Android, Qt, Wikimedia), there's no PR body. Gerrit shows the commit message as the change description, so reviewers, bots, and everyone who reads `git log` after the merge see the same text. Everything above about what to say still applies; this section covers where it goes.
+
+- **Subject and body.** `pr-title.txt` is the commit's subject line, and `pr-body.md` is the rest of the message after one blank line. Build the message from them with `git commit --amend`, and keep both files in step with it, since the final check and the reviewer read the files.
+- **Plain text.** The message is plain text: no headings, no bold, no `<details>`, no checkboxes, no fenced blocks. The red-green block stays out; keep its one verification sentence in the body. If the repo's messages carry a test line (Android wants `Test:`), fill it from `proof.md`.
+- **Read the form off the repo.** Run `git log -20 --no-merges --format='%an%n%B%n----' origin/<target branch>` and skip the bots. Match the subject's form and length (`[component] Verb` or `pkg/path: lowercase verb`, whatever theirs do), the wrap width, the body length, and the trailer block: which trailers recent commits carry (`Bug:`, `Fixed:`, `Fixes`, `Change-Id:`, `R=`, `Test:`), in their order and spelling. Never take a trailer from this file.
+- **Trailers.** They sit together at the very end, one per line, with nothing after them, or Gerrit and `git interpret-trailers` won't parse them. Never write a `Change-Id:` by hand: the repo's commit-msg hook adds it (CONTRIBUTING or `git cl`/`git review` install the hook), and every later patchset keeps the same one. Reviewer lines like `R=` go in only when recent commits still use them; most projects set reviewers at upload (`git cl upload -r`, `%r=` on the push).
+- **The disclosure line goes in the message,** since that's the description. If the repo's own commits or AI policy use a trailer for it (`Assisted-by:` and the like), use theirs in the trailer block. Otherwise it's the last paragraph of the body, above the trailers. It stays in the project's history after the merge, so if a reviewer asks for it out of the message, move it to a top-level reply on the change and say so in `rounds.md`.
+- **Length** is calibrated on those recent commit bodies, by the rules in "Calibrate to the repo first"; there are no PR medians to read.
+- **The title check:** `title.sh` learns from merged PRs, which a Gerrit project's GitHub mirror doesn't have. The gate checks the subject only when `titles.json` exists; otherwise the commit format in `style.md` is the check.
+
+Replies on Gerrit go on the inline threads, not in one comment: draft one reply per unresolved thread, quoting its `file:line`, and say which patchset made the change (`Done in patchset 3`). The user saves them as drafts and posts them with one Reply, after uploading the new patchset. After a review push, rewrite the commit message as if the current patchset were the first, the same way the PR-body rule below says; the `Change-Id:` stays.
 
 ## Issue body
 
@@ -178,6 +192,8 @@ bash "<skill-dir>/scripts/recheck.sh" --repo <owner/name> --issue <N> --files <y
 
 On CHANGED, act on each item: a merged fix or a closed issue ends the job (go back to recon); an open PR for the same change means JOIN or STOP; a new commit on your files means merging the base and rerunning the proof. Then rerun it with `--since` set to the previous run's `Checked:` time. The gate wants CLEAR.
 
+On Gerrit, point `--repo` at the project's GitHub mirror (`chromium/chromium`, `golang/go`) and leave out `--issue` when the bug lives elsewhere: it then sees only commits to your files. Check open changes on the review server yourself (`curl -s 'https://<host>/changes/?q=status:open+file:<path>' | sed 1d`, one query per changed file, or `dir:<folder>`) and the bug in its own tracker, and write what you found into `recheck.md` below the script's report.
+
 ## Ship
 
 Write the final body to `$LEDGER/pr-body.md`. The final check (phase 7) then reproduces every problem this body poses, on the base and on HEAD, so claim only what the change solves. Once `final.md` says PASS, the session the user talks to shows them the title, the body, and the exact command:
@@ -185,5 +201,7 @@ Write the final body to `$LEDGER/pr-body.md`. The final check (phase 7) then rep
 ```bash
 gh pr create -R <upstream> --head <fork-owner>:<branch> --title "$(cat <ledger>/pr-title.txt)" --body-file "<ledger>/pr-body.md"
 ```
+
+On Gerrit, show `git log -1 --format=%B` (the description as it will appear) and the upload command `recon.md`'s `- Review:` line names: `git cl upload`, `git codereview mail`, `git review`, `repo upload .`, or `git push origin HEAD:refs/for/<branch>`. The gate checks every one of them.
 
 Run it only after a clear yes.

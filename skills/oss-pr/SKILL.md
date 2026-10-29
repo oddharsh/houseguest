@@ -32,7 +32,7 @@ LEDGER="$(git rev-parse --git-dir)/houseguest/$(git branch --show-current)"
 mkdir -p "$LEDGER"
 ```
 
-Files: `intent.md`, `recon.md`, `codex.md` (from `codex.sh`), `style.md`, `house.md` (from `housecheck.sh`, including the lean size checks), `proof.md`, `final.md` with the final check's `runs.log`, and `pr-defaults.md` when joining an existing PR. The plugin's hook reads them before `gh pr create` runs and blocks the PR when one is missing. Verdicts that houseguest's scripts write (`house.md`, `proof.md`, `recheck.md`) and the final check's `final.md` carry a `.seal` (`scripts/receipt.sh`), and the hook checks it: never edit a verdict another phase wrote, rerun that phase. Keep each note short and concrete (paths, links, commands, exit codes); they also feed the PR description later.
+Files: `intent.md`, `recon.md`, `codex.md` (from `codex.sh`), `style.md`, `house.md` (from `housecheck.sh`, including the lean size checks), `proof.md`, `final.md` with the final check's `runs.log`, and `pr-defaults.md` when joining an existing PR. The plugin's hook reads them before `gh pr create` or a Gerrit upload (`git cl upload`, `git push origin HEAD:refs/for/<branch>`, and the like) runs, and blocks it when one is missing. Verdicts that houseguest's scripts write (`house.md`, `proof.md`, `recheck.md`) and the final check's `final.md` carry a `.seal` (`scripts/receipt.sh`), and the hook checks it: never edit a verdict another phase wrote, rerun that phase. Keep each note short and concrete (paths, links, commands, exit codes); they also feed the PR description later.
 
 The helper scripts live in `scripts/` next to this file. Wherever a reference says `<skill-dir>`, substitute the base directory shown when this skill loaded.
 
@@ -110,13 +110,13 @@ Contributions die quietly when a maintainer asks something and nobody answers; a
 bash "<skill-dir>/scripts/followup.sh" --days 2
 ```
 
-It lists the user's open PRs and issues on others' repos where a human other than the user spoke last, longest wait last. For each, read the thread and draft a reply following "Replies to review comments" in `pr-copy.md`, or say plainly that no reply is needed (a "we'll ping you" note needs none). Never post the replies yourself. It also lists the user's PRs whose upstream CI is red, or waiting for a maintainer to approve the run; for a red one, find whether the failure is the PR's (fix it and push, with the user's yes) or the base's (draft one comment saying so), since a PR left red reads as abandoned.
+It lists the user's open PRs and issues on others' repos where a human other than the user spoke last, longest wait last. For a project that reviews on Gerrit, add `--gerrit https://<host>` with the host from `recon.md`'s `- Review:` line; it finds the user's open changes there by `git config user.email` (`--email` overrides it) and counts each one's unresolved inline threads. For each, read the thread and draft a reply following "Replies to review comments" in `pr-copy.md`, or say plainly that no reply is needed (a "we'll ping you" note needs none). Never post the replies yourself. It also lists the user's PRs whose upstream CI is red, or waiting for a maintainer to approve the run; for a red one, find whether the failure is the PR's (fix it and push, with the user's yes) or the base's (draft one comment saying so), since a PR left red reads as abandoned.
 
 When `preview.md` says FORKS GET ONE, open the preview once its link posts on the new PR. Trust only a link a GitHub App posted (its author ends in `[bot]`) or a check run reported; anyone can paste a preview-looking link into a comment. Check that the bot built the PR's HEAD (it usually names the commit) and that the repro from `recon.md` behaves as fixed there. A preview that shows the old behavior, or fails to build because of the change, is a problem to fix before a reviewer finds it. A preview that fails for a reason the change can't cause (a missing deploy secret on fork PRs) needs nothing from the user.
 
 ## Things that are always outward-facing
 
-Opening a PR or issue, pushing to a fork, and replying on GitHub publish text under the user's name to strangers. Show the final text and the exact command, and wait for a clear yes each time. Draft replies to reviewers; never auto-post them, because an AI-written reply to a maintainer's review is the single fastest way to lose their goodwill.
+Opening a PR or issue, uploading a Gerrit change or patchset, pushing to a fork, and replying on GitHub or Gerrit publish text under the user's name to strangers. Show the final text and the exact command, and wait for a clear yes each time. Draft replies to reviewers; never auto-post them, because an AI-written reply to a maintainer's review is the single fastest way to lose their goodwill.
 
 ## When recon says DOCS
 
