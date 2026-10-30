@@ -40,6 +40,8 @@ It reports the repo's title conventions (prefix, length, examples) and flags any
 - **Comparisons to other products** ("as in Arc", "as quickly as Dia's"). Say what this project now does, in its own terms.
 - **"as ..." and ", not X" clauses.** "Kept while away, not built anew on every peek" is a sentence about a sentence; "The folded column is kept while away" is the change.
 - **Length past the repo's 90th percentile.** If it doesn't fit, the PR is probably two PRs.
+- **A vague word in the first 2 words after the prefix** ("Fix some issues with...", "Improve handling of..."). Readers skimming the queue look there for what sets the PR apart.
+- **A verb that doesn't say what happens** ("affects," "has issues with," "not working"). Say "crashes," "hangs," or "drops the last row."
 
 Match the house *form* exactly: `[package] Verb ...` in workers-sdk, `fix(scope): ...` in a Conventional Commits repo, a plain behavior statement where that's the norm (driceroland/Search titles read like "⌘N in full screen opens a window in full screen of its own"). Then make it plain inside that form: concrete nouns from the codebase, one verb, no flourish. Maintainers meet the title in a list of open PRs and read about 2 words of it. Put the identifier or the symptom right after the prefix (`lrs.md` section 9).
 
@@ -142,6 +144,16 @@ When `recon.md`'s `- Review:` line says Gerrit (Chromium, Go, Android, Qt, Wikim
 - **The title check:** `title.sh` learns from merged PRs, which a Gerrit project's GitHub mirror doesn't have. The gate checks the subject only when `titles.json` exists; otherwise the commit format in `style.md` is the check.
 
 Replies on Gerrit go on the inline threads, not in one comment: draft one reply per unresolved thread, quoting its `file:line`, and say which patchset made the change (`Done in patchset 3`). The user saves them as drafts and posts them with one Reply, after uploading the new patchset. After a review push, rewrite the commit message as if the current patchset were the first, the same way the PR-body rule below says; the `Change-Id:` stays.
+
+## Issue title
+
+An issue title gets read in the tracker's list and matched by the next person's duplicate search. So it follows the same rules as a PR title, in the repo's issue form rather than its PR form. Lead with the symptom in the words a maintainer would search for, the ones recon's `--q` searches used (`lrs.md` section 9). Name the component the way the repo does, and use the verb that says what happens. Where a first draft says "Line wrapping not working," write "`--wrap` breaks CJK lines at a third of the width."
+
+```bash
+bash "<skill-dir>/scripts/title.sh" --repo <owner/name> --issues --save "$LEDGER/issue-titles.json" "<your title>"
+```
+
+`--issues` learns from issues other people filed that maintainers closed as completed. Write the final title to `$LEDGER/issue-title.txt`. The gate rechecks `gh issue create`'s title against `issue-titles.json` whenever the branch has a ledger, and `title-ack.md` works the same way it does for PRs.
 
 ## Issue body
 
