@@ -41,7 +41,7 @@ It reports the repo's title conventions (prefix, length, examples) and flags any
 - **"as ..." and ", not X" clauses.** "Kept while away, not built anew on every peek" is a sentence about a sentence; "The folded column is kept while away" is the change.
 - **Length past the repo's 90th percentile.** If it doesn't fit, the PR is probably two PRs.
 
-Match the house *form* exactly: `[package] Verb ...` in workers-sdk, `fix(scope): ...` in a Conventional Commits repo, a plain behavior statement where that's the norm (driceroland/Search titles read like "⌘N in full screen opens a window in full screen of its own"). Then make it plain inside that form: concrete nouns from the codebase, one verb, no flourish.
+Match the house *form* exactly: `[package] Verb ...` in workers-sdk, `fix(scope): ...` in a Conventional Commits repo, a plain behavior statement where that's the norm (driceroland/Search titles read like "⌘N in full screen opens a window in full screen of its own"). Then make it plain inside that form: concrete nouns from the codebase, one verb, no flourish. Maintainers meet the title in a list of open PRs and read about 2 words of it. Put the identifier or the symptom right after the prefix (`lrs.md` section 9).
 
 Write the final title to `$LEDGER/pr-title.txt`. The PR gate rechecks `--title` against `titles.json` and blocks on any flag, unless `$LEDGER/title-ack.md` explains why the title is right for this repo.
 
