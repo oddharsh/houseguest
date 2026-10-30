@@ -119,13 +119,25 @@ These are the LRS sentence-level checks, scaled to short text:
 - Passive voice when the old information belongs at the front ("This was introduced in abc1234"). Judge it by information flow.
 - Parallel items in parallel form, short before long.
 
+## 9. Text read in a row
+
+LRS assumes a reader moving through prose. Much of a PR's text gets skimmed as one item among many. The title sits in a queue of 40 open PRs or issues, commit subjects in `git log --oneline`, and replies in a batch of review threads. Full Stack Data Lab's checklist for bulk AI text ("Five Principles for Generating Readable AI Text in Bulk," https://fsdatalab.github.io/blog/agent-text-at-scale/) covers that reader, and 4 of its rules apply here.
+
+- **The first 2 words carry the item.** Nielsen's eye-tracking work found that list readers often see only the first two words of each line. After the house prefix, put the word that sets this item apart from its neighbors: the identifier or the symptom. "`--max-width` counts display width" picks itself out of a queue; "Fix an issue with line wrapping" reads like every other formatter bug. The repo's form still wins (`fix(fmt):` stays), so this governs only the words after it.
+- **One shape per list.** Readers parse a clause faster when it matches the shape of the one before it (Frazier et al., 1984). Give every commit subject in a series the repo's verb form and tense, and every table row the same columns. Every review reply gets the same skeleton: `Done in abc1234, <what changed>`, or `Done in patchset 3` on Gerrit. When every item shares a subject, drop it and open on the verb.
+- **One word per concept.** ASD-STE100, the controlled English written for aircraft maintenance manuals, gives each word one meaning. That extends section 5's key-term chain from the bug's name to every noun: the component, the option, the failure. A body that says "cache" in one sentence and "store" in the next reads as two things. Use the repo's word everywhere the concept appears.
+- **Vary only what differs.** Readers assume a difference between items means something (Mackinlay's expressiveness rule, borrowed from chart design). If one row of a platform matrix gives a version and the others don't, or one limit names a build and the next doesn't, the maintainer stops to ask why. Fill the same fields for every item, or say in a few words why one is different.
+
+The checklist's first rule, open each item on its subject or verb, is section 3 at list scale. Its fifth rule, verbs whose connotation matches the page's purpose, survives in one form: name a failure with the verb that says what happens ("crashes," "hangs," "drops the last row"). Readers recognize charged words faster than neutral ones (Kousta et al., 2009), and "affects," "impacts," or "has issues with" make them read on to learn whether it's bad. Section 2's drama rule still holds, because it targets severity adjectives with no number behind them, and an accurate verb carries no such claim.
+
 ## Draft check, in order
 
 Run this after drafting and before the maintainer-reviewer pass. The order follows how a maintainer reads: whether to read at all, whether to care, whether it's clear, whether to agree, and what to remember.
 
-1. **Index and Frankenedit:** do the title and first sentence tell a maintainer what broke and what this changes? Does every hunk in the diff map to that, and does the body match the current diff?
+1. **Index and Frankenedit:** do the title and first sentence tell a maintainer what broke and what this changes? Would the title's first 2 words after the house prefix pick this PR out of the queue? Does every hunk in the diff map to that, and does the body match the current diff?
 2. **Motivation and length:** which function in section 2 is this? For a recognized bug, delete background and any cost sentence the maintainer doesn't need. Otherwise, require one concrete cost in their terms, and no drama words without numbers.
 3. **Characters:** are the subjects the code, the users, and the behavior, using names from the repo and the issue? No coined abstractions, no "this PR" as the actor, no buried verbs.
 4. **Warrant and acknowledgment:** does the red-green block show the test exercises the reported bug? Is recon's most likely objection answered, with one alternative and one limit stated? If you're disagreeing, does your "but" hit what the maintainer actually believes?
-5. **Key terms:** one name for the bug across title, body, test, and commit.
+5. **Key terms:** one name for the bug across title, body, test, and commit, and one word for every other concept the text names.
 6. **Stress and sentences:** numbers and payoffs in the last slot of their sentences, then the pass in section 8.
+7. **Lists:** read only the first 2 words of each commit subject, table row, and list item. Does each say what sets it apart? Do the items share one shape, and does every difference between them mean something (section 9)?
