@@ -4,7 +4,8 @@
 # Blocks (exit 2) until the oss-pr ledger shows recon said GO, the blind intent
 # check found no deliberate choice in the way, a style note exists, and a proof
 # and the final check both passed on the current HEAD. Stays silent everywhere else: other commands,
-# repos that aren't forks, and your own repos.
+# repos that aren't forks, and your own repos. A `gh issue create` from a branch with a ledger
+# gets only the title check.
 # A user who explicitly wants to skip can prefix the command with HOUSEGUEST_SKIP=1.
 
 input=$(cat)
@@ -32,8 +33,40 @@ printf '%s' "$cmd" | grep -q 'HOUSEGUEST_SKIP=1' && exit 0
 [ -n "$cwd" ] && cd "$cwd" 2>/dev/null
 git rev-parse --git-dir >/dev/null 2>&1 || exit 0
 
+cmd_title() {  # cmd_title <ledger title file>: the file's first line when the command reads it, else the command's --title
+  # The file comes first: in `--title "$(cat .../pr-title.txt)"` the quoted text is the `$(cat ...)` itself.
+  if [ -f "$1" ] && printf '%s' "$cmd" | grep -q "$(basename "$1")"; then head -1 "$1"; return; fi
+  printf '%s' "$cmd" | sed -n -E "s/.*(--title|-t)[ =]+\"([^\"]*)\".*/\2/p; s/.*(--title|-t)[ =]+'([^']*)'.*/\2/p" | head -1
+}
+title_flags() {  # title_flags <stats file> <title>: what title.sh flags, joined by ";", or nothing when it passes
+  local out
+  out=$(bash "${CLAUDE_PLUGIN_ROOT:-$(dirname "$0")/..}/skills/oss-pr/scripts/title.sh" --stats "$1" "$2" 2>/dev/null) && return 0
+  out=$(echo "$out" | sed -n '/^FLAG/,$p' | grep '^  - ' | sed 's/^  - //' | tr '\n' ';' | sed 's/;$//' | cut -c1-240)
+  [ -n "$out" ] || out="title.sh couldn't read $1"
+  printf '%s' "$out"
+}
+
 if [ -n "$private_only" ]; then
-  grep -q -E '^DECISION:[[:space:]]*PRIVATE' "$(git rev-parse --git-dir)/houseguest/$(git branch --show-current)/recon.md" 2>/dev/null || exit 0
+  ledger="$(git rev-parse --git-dir)/houseguest/$(git branch --show-current)"
+  if ! grep -q -E '^DECISION:[[:space:]]*PRIVATE' "$ledger/recon.md" 2>/dev/null; then
+    # An issue filed from a branch houseguest keeps a ledger for gets the same title check as a PR,
+    # against the titles of issues this repo's maintainers closed as completed.
+    printf '%s' "$cmd" | grep -q -E '(^|[;&|[:space:]])gh[[:space:]]+issue[[:space:]]+create([[:space:]]|$)' && [ -d "$ledger" ] || exit 0
+    ttl=$(cmd_title "$ledger/issue-title.txt") why=""
+    [ -n "$ttl" ] || exit 0
+    if [ ! -f "$ledger/issue-titles.json" ]; then
+      why="the title isn't checked: run title.sh --issues --save \"$ledger/issue-titles.json\" first (see pr-copy.md)"
+    elif [ ! -s "$ledger/title-ack.md" ]; then
+      tf=$(title_flags "$ledger/issue-titles.json" "$ttl")
+      [ -n "$tf" ] && why="the title doesn't match the titles of issues this repo's maintainers acted on: $tf. Rewrite it, or explain in title-ack.md why it's right"
+    fi
+    [ -z "$why" ] && exit 0
+    cat >&2 <<EOF
+houseguest blocked this issue: $why.
+If the user explicitly says to skip the check, rerun the same command prefixed with HOUSEGUEST_SKIP=1.
+EOF
+    exit 2
+  fi
   # The advisory's temporary private fork (<repo>-ghsa-xxxx-xxxx-xxxx) is where the fix belongs.
   for w in $(printf '%s' "$cmd" | sed -E 's/.*git[[:space:]]+push//'); do
     case "$w" in -*) continue ;; esac
@@ -176,12 +209,11 @@ fi
 if [ -n "$gerrit" ]; then
   ttl=""; [ -f "$ledger/titles.json" ] && ttl=$(git log -1 --format=%s)
 else
-  ttl=$(printf '%s' "$cmd" | sed -n -E "s/.*(--title|-t)[ =]+\"([^\"]*)\".*/\2/p; s/.*(--title|-t)[ =]+'([^']*)'.*/\2/p" | head -1)
-  [ -z "$ttl" ] && [ -f "$ledger/pr-title.txt" ] && printf '%s' "$cmd" | grep -q 'pr-title.txt' && ttl=$(head -1 "$ledger/pr-title.txt")
+  ttl=$(cmd_title "$ledger/pr-title.txt")
 fi
 if [ -n "$ttl" ] && [ -f "$ledger/titles.json" ] && [ ! -s "$ledger/title-ack.md" ]; then
-  tout=$(bash "${CLAUDE_PLUGIN_ROOT:-$(dirname "$0")/..}/skills/oss-pr/scripts/title.sh" --stats "$ledger/titles.json" "$ttl" 2>/dev/null)
-  if [ $? -ne 0 ]; then add "title doesn't match the repo's title conventions: $(echo "$tout" | sed -n '/^FLAG/,$p' | grep '^  - ' | sed 's/^  - //' | tr '\n' ';' | cut -c1-240). Rewrite it, or explain in title-ack.md why it's right"; fi
+  tf=$(title_flags "$ledger/titles.json" "$ttl")
+  [ -n "$tf" ] && add "title doesn't match the repo's title conventions: $tf. Rewrite it, or explain in title-ack.md why it's right"
 elif [ -n "$ttl" ] && [ ! -f "$ledger/titles.json" ]; then
   add "title not checked: run title.sh --save \"$ledger/titles.json\" first (see pr-copy.md)"
 fi

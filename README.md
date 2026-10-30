@@ -61,7 +61,7 @@ Nothing reaches upstream without your yes.
 | `followup.sh` | Which of your open PRs and issues are waiting on you? |
 | `house.sh` | What enforces style in this repo, and how? |
 | `housecheck.sh` | Does your diff pass the house rules and look like PRs that got merged? |
-| `title.sh` | Does your PR title match the titles this repo merges? |
+| `title.sh` | Does your PR or issue title match the ones this repo accepts? |
 | `checks.sh` | Which property tests, fuzzers, or proofs does the repo already run? |
 | `prove.sh` | Does the test fail without the fix and pass with it? |
 | `receipt.sh` | Were the ledger's verdicts edited by hand? |
