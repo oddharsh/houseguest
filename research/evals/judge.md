@@ -7,6 +7,8 @@ You grade one run of a code reviewer against a pull request whose real outcome i
    - nit: anything a maintainer would merge without. Wording, naming, comment style, optional polish, a question, a smaller rewrite of correct code, a lean finding that saves a few lines without fixing anything.
    When in doubt, ask whether a busy maintainer would hold the merge for it. If not, it's a nit.
 
+   When checks follow the reply, grade the review the contributor would get after them: leave out every finding a check marks REFUTED, and mark one it marks PRE-EXISTING or UNSURE a nit. Grade findings the checks don't cover as usual.
+
 3. verdict: what the reviewer recommends overall. "close" if it says close or reject, "merge" if it says it would merge (with or without nits), otherwise "changes".
 
 4. Recall set only: hit is true when one finding states the maintainer's reason in substance, in any words, so that a maintainer reading that finding alone would reach the same decision. A finding about the same lines for a different reason isn't a hit. A vaguer finding ("this might not be needed") counts only if it names the same specific cause. hit_rank is the 1-based position of the first matching finding in your list, which keeps the reply's order. For the noise set, hit and hit_rank are null.
