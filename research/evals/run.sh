@@ -54,13 +54,26 @@ done
 mkdir -p "$out"; out=$(cd "$out" && pwd)
 
 # --- prep ---------------------------------------------------------------------
+# The reviewer prompt under test, frontmatter stripped, into system.md; prints its
+# hash, which goes in case.json so scores from different prompt versions don't
+# get mixed up.
+system_prompt() {  # system_prompt <case dir>
+  awk 'f >= 2; /^---$/ { f++ }' "$plugin/agents/maintainer-review.md" > "$1/system.md"
+  git hash-object "$1/system.md" | cut -c1-12
+}
+
 prep_one() {  # prep_one <set> <json row>
   local set="$1" row="$2" url repo n dir
   url=$(jq -r .url <<<"$row")
   repo=$(sed -E 's#https://github.com/([^/]+/[^/]+)/pull/.*#\1#' <<<"$url")
   n=${url##*/}
   dir="$out/$(tr / _ <<<"$repo")_$n"
-  [ -f "$dir/prompt.md" ] && { echo "prep: $repo#$n (cached)"; return; }
+  if [ -f "$dir/prompt.md" ]; then
+    # A cached case still gets today's prompt, or a rerun after a prompt change replays the old one.
+    jq --arg p "$(system_prompt "$dir")" '.reviewer_prompt = $p' "$dir/case.json" > "$dir/case.json.new" \
+      && mv "$dir/case.json.new" "$dir/case.json"
+    echo "prep: $repo#$n (cached)"; return
+  fi
   rm -rf "$dir"; mkdir -p "$dir"
 
   local pr base head created mb
@@ -107,12 +120,9 @@ prep_one() {  # prep_one <set> <json row>
   bash "$plugin/skills/oss-pr/scripts/policy.sh" --repo "$repo" --as-of "$created" --keep "$dir/docs" \
     > "$dir/policy.md" 2>/dev/null
 
-  # The reviewer prompt under test, frontmatter stripped. Its hash goes in
-  # case.json so scores from different prompt versions don't get mixed up.
-  awk 'f >= 2; /^---$/ { f++ }' "$plugin/agents/maintainer-review.md" > "$dir/system.md"
   jq -n --arg set "$set" --arg repo "$repo" --argjson n "$n" --arg url "$url" --arg mb "$mb" \
     --arg head "$head" --arg created "$created" --argjson row "$row" \
-    --arg prompt "$(git hash-object "$dir/system.md" | cut -c1-12)" --arg title "$title" \
+    --arg prompt "$(system_prompt "$dir")" --arg title "$title" \
     --argjson edits "${edits:-[]}" \
     '{set: $set, repo: $repo, number: $n, url: $url, merge_base: $mb, head: $head, created: $created,
       title: $title, body_edited_by_others: $edits, reviewer_prompt: $prompt} + $row' > "$dir/case.json"
