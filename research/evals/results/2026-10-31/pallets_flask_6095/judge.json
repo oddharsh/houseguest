@@ -1,0 +1,4 @@
+{"findings":[
+{"summary":"delenv on an absent key records no undo, so dotenv tests leak environment variables; reviewer would still merge","class":"nit"},
+{"summary":"Bare yield in the autouse fixture does nothing and can be dropped","class":"nit"}
+],"verdict":"merge","hit":null,"hit_rank":null,"why":"No blocking findings; the reviewer says it would merge as is with two optional nits."}

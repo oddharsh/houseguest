@@ -40,7 +40,7 @@ The PR's choices outrank neighbors because consistency inside one diff is what a
 
 In order:
 
-1. **A review comment, or a GitHub suggestion block** for anything under about 10 lines. The author applies it, so the history stays theirs. Use this whenever the author is active (`prdefaults.sh` shows when they last spoke).
+1. **A review comment, or a GitHub suggestion block** for anything under about 10 lines. The author applies it, so the history stays theirs. Use this whenever the author is active (`prdefaults.sh` shows when they last spoke). Use a suggestion block only when committing it fixes the problem entirely, in one place. A fix that also needs a test, a second file, or a follow-up step gets a plain comment that describes it, because a one-click suggestion that leaves the bug half-fixed looks finished when it isn't.
 2. **A PR into their branch** (`gh pr create -R <their fork> --base <their branch>`) for larger work, when the author is active but hasn't asked for pushes. They merge it or don't.
 3. **Commits pushed to their branch,** only when the author or a maintainer invited it in the thread ("feel free to push") and you have access. Add commits on top. Never force-push, rebase, or squash someone else's branch, even if the branch's history shows the author does so.
 4. **A new PR that supersedes theirs,** only when the author has been silent for weeks, a maintainer has said the PR is up for grabs (or the author abandoned it), and you credit them: keep their commits, or add `Co-authored-by:` for their work. Say in both threads what you did.

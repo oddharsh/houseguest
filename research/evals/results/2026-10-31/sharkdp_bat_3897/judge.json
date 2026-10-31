@@ -1,0 +1,4 @@
+{"findings":[
+{"summary":"The -pnp test block cannot fail on base; drop it or retarget it at an input where the printers differ","class":"nit"},
+{"summary":"Pre-existing: raw scan reads values of short options like -l as flags","class":"nit"}
+],"verdict":"merge","hit":null,"hit_rank":null,"why":"No blocking findings; the reviewer would merge, and the one test critique and one pre-existing issue are nits."}

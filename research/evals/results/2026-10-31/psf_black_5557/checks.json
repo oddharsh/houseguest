@@ -1,0 +1,12 @@
+{
+  "checker_prompt": "bbc393b497f6",
+  "scope": "noise: every Important finding; recall: only the finding the judge matched to the maintainer reason",
+  "checks": [
+    {
+      "id": "I1",
+      "finding": "**1. The README would advertise a third-party commercial service the core team doesn't run or maintain.** `README.md:35` adds a \"Live demo by Demoshell\" badge that links to `build.demoshell.com/launch?...&utm_source=badge`. The body says you run Demoshell, the badge \"carries a small attribution,\" and \"Otherwise I'll keep taking care of it.\" So the project's front page would carry a branded, UTM-tracked link to a vendor, and whether it works depends on one outside person and one company staying up. Concrete case: if Demoshell changes its URL scheme, drops the free tier, or shuts down, Black's README points every visitor at a dead or repurposed page, and nobody on the core team can fix the target. Every other link in the badge row (`README.md:5-15`) points at project infrastructure or package indexes (Actions, ReadTheDocs, Coveralls, PyPI, conda-forge, pepy); none promotes a service. There's no linked issue where a maintainer asked for a hosted demo. This is a scope call for maintainers, and I'd decline it: the README isn't the place for demos the core team doesn't maintain.\n",
+      "verdict": "CONFIRMED",
+      "evidence": "Every factual claim checks out: `git diff base...HEAD` adds exactly one line, README.md:35 `[![Live demo by Demoshell](https://build.demoshell.com/v1/embed/badge.svg)](https://build.demoshell.com/launch?snapshot=demoshell%2Ftui%3Ablack&utm_source=badge)`, and pr-body.md discloses that the author runs Demoshell, that the badge carries attribution, and 'Otherwise I'll keep taking care of it.' The badge row (README.md:5-15) links only to GitHub Actions, ReadTheDocs, Coveralls, the LICENSE, PyPI, pepy, conda-forge and psf/black, and the PR links no issue. The finding cites no written rule (policy.md lists no AI policy, and nothing in CONTRIBUTING covers README links), so the conclusion that maintainers should decline rests on the reviewer's scope judgment; nothing was run because the change is a single README line."
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "checker_prompt": "bbc393b497f6",
+  "scope": "noise: every Important finding; recall: only the finding the judge matched to the maintainer reason",
+  "checks": [
+    {
+      "id": "I1",
+      "finding": "**1. The edit swaps a valid regex assertion for an invalid pattern, and the PR rests on a misreading of the syntax.**\n\n`crates/core/flags/defs.rs:7539` changes `\\b{end-half}` to `{end-half}\\b`.\n\n- `\\b{end-half}` is one token: a half word-boundary assertion that checks only the end side. regex-syntax parses it in `ast/parse.rs:1663` (`\"end-half\" => ast::AssertionKind::WordBoundaryEndHalf`), and its own test at `ast/parse.rs:4571` parses `\\b{end-half}` (regex-syntax 0.8.8, the version in `Cargo.lock`). The `{end-half}` part names which boundary is meant. It isn't a separate thing that goes before `\\b`.\n- `{end-half}\\b` doesn't parse. A leading `{` hits `parse_counted_repetition` (`ast/parse.rs:1103`), which returns `RepetitionMissing` when there's nothing before it. Appended to a pattern the way the doc describes, `foo{end-half}\\b`, it fails as a counted repetition because `end-half` isn't a number. A user who copies the new man page text gets a regex error.\n- The doc matches the code. `-w` is built in `crates/regex/src/config.rs:316-331` (`into_word`) as `Look::WordStartHalf*`, then the pattern, then `Look::WordEndHalf*`. That's exactly `\\b{start-half}PATTERN\\b{end-half}`, so there's no typo to fix.\n- The body offers no source for \"should be `{end-half}\\b`,\" and the diff leaves line 7538's `\\b{start-half}` alone, though by the body's own reading it would need the same treatment.\n\nFix: drop the change.\n",
+      "verdict": "CONFIRMED",
+      "evidence": "The diff changes crates/core/flags/defs.rs:7539 from `\\fB\\\\b{end-half}\\fP` to `\\fB\\{end-half}\\b\\fP`. The old text was correct: regex-syntax 0.8.8 (the Cargo.lock pin) parses `\\b{end-half}` as one assertion (ast/parse.rs:1663 `\"end-half\" => ast::AssertionKind::WordBoundaryEndHalf`, test at :4571), and `into_word` in crates/regex/src/config.rs:316-331 builds WordStartHalf + pattern + WordEndHalf, so the doc already matched the code. The body's `{end-half}\\b` hits parse_counted_repetition (parse.rs:1103), which errors on a leading `{` (RepetitionMissing) or a non-decimal count; one nuance is that `rg --help` would actually print `\\{end-half}\\b` (help.rs:258 only unescapes `\\\\`), which parses as a literal `{end-half}` and so is also wrong. I read the code paths and didn't run rg; the old line dates to 9802945, before base."
+    }
+  ]
+}

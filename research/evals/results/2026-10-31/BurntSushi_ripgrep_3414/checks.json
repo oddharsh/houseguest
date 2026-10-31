@@ -1,0 +1,12 @@
+{
+  "checker_prompt": "bbc393b497f6",
+  "scope": "noise: every Important finding; recall: only the finding the judge matched to the maintainer reason",
+  "checks": [
+    {
+      "id": "I1",
+      "finding": "**1. The feature doesn't need to live in ripgrep: `-F -f -` already does the search, and a wrapper can generate the patterns.**\n\nMost of the 480 added lines do one thing: they turn each pattern into a list of literal strings, then hand that list to the fixed-strings path. ripgrep already takes a list of literals from outside. `crates/core/flags/defs.rs:2155` documents it: \"When PATTERNFILE is `-`, then stdin will be read for the patterns.\" So `b64-literals admin | rg -F -f -` gives the same matches as `rg --base64 admin`, using a 30-line script built from the `pattern_literals` loop in `crates/core/base64.rs:64`. Your Go prototype already does that. Two new switches plus two negations, a new module, and a new `LowArgs` field are a permanent cost to ripgrep's flag surface, its man page, and its completions (`crates/core/flags/complete/rg.zsh:48-52`), all for a transform that sits entirely in front of the matcher. Nothing in the repo asked for it either: no issue is linked, and `.github/ISSUE_TEMPLATE/feature_request.md` is where a new flag usually gets argued first. I don't see this fitting ripgrep; a wrapper script is the place for it.\n",
+      "verdict": "CONFIRMED",
+      "evidence": "Every checkable premise holds (read only, not run): the PR's whole effect is in crates/core/flags/hiargs.rs, where it replaces `patterns.patterns` with `base64::expand_patterns(alphabet, ...)` and forces `fixed_strings = true` before the matcher is built. That is the same literal-list path `-F -f -` already reaches; defs.rs:2155-2156 documents `When PATTERNFILE is -, then stdin will be read for the patterns`. The cited rg.zsh:48-52 adds 2 flags plus 2 negations, and no issue is linked in pr-body.md. The conclusion that it doesn't fit ripgrep is a scope judgment for the maintainer. No written rule makes the feature_request.md template mandatory, and policy.md finds no AI policy."
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+{"findings":[
+{"summary":"Forcing PagingMode::Never for --list-themes reverses paging the project added on purpose (#3239) and defended with a follow-up fix (#3457); also overrides explicit --paging=always","class":"blocking"},
+{"summary":"No changelog entry for a behavior change, which CONTRIBUTING requires and CI checks","class":"blocking"},
+{"summary":"Fix and new test were never compiled or run (cargo unavailable)","class":"nit"},
+{"summary":"Override leaves the --list-themes stdin guard dead; post-match overwrite reads worse than handling in the match","class":"nit"}
+],"verdict":"close","hit":true,"hit_rank":1,"why":"Finding 1 says paging for --list-themes was deliberately added recently (#3239, #3457) and the PR reverses that choice, which is the maintainer's reason."}

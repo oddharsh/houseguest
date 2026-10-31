@@ -1,0 +1,4 @@
+{"findings":[
+{"summary":"_wrapped_line_can_fit adds fit/split clauses beyond the crash fix, changing comment-wrap formatting at default line length; keep only the depth check","class":"blocking"},
+{"summary":"StringSplitter.do_transform orphans the string leaf before deciding it can't split (pre-existing, out of scope)","class":"nit"}],
+"verdict":"changes","hit":null,"hit_rank":null,"why":"The one blocking finding says the guard changes formatting the project chose on purpose at default line length, and asks for a narrower fix before merge."}

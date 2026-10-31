@@ -1,0 +1,12 @@
+{
+ "findings": [
+  {
+   "summary": "Benchmark numbers measured against a commit that is not this diff's base; description only",
+   "class": "nit"
+  }
+ ],
+ "verdict": "merge",
+ "hit": null,
+ "hit_rank": null,
+ "why": "No blocking findings; the reviewer would merge as is."
+}

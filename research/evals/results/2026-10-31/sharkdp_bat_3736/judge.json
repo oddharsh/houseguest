@@ -1,0 +1,7 @@
+{"findings":[
+{"summary":"MSYSTEM/TERM_PROGRAM env check treats mintty/MSYS2 as terminal regardless of stdout, so piped or redirected bat --help (including alias cat=bat) gets ANSI colors","class":"blocking"},
+{"summary":"Description and changelog claim a fix for regular file display the code does not make; root cause unverified and no test covers the change","class":"blocking"},
+{"summary":"Use is_some_and like env_no_color instead of map/unwrap_or","class":"nit"},
+{"summary":"Two cfg'd copies of is_mintty_terminal for a one-line check; inline cfg!(windows) instead","class":"nit"},
+{"summary":"Pre-existing: --help ignores NO_COLOR under --color=auto","class":"nit"}
+],"verdict":"changes","hit":true,"hit_rank":1,"why":"Finding 1 states that the env-var check makes mintty always count as interactive, so piping and aliased cat get colors and decorations, matching the maintainer's question."}

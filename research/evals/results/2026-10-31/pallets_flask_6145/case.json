@@ -1,0 +1,17 @@
+{
+  "set": "recall",
+  "repo": "pallets/flask",
+  "number": 6145,
+  "url": "https://github.com/pallets/flask/pull/6145",
+  "merge_base": "d318b683471101618febed18996405ad26462110",
+  "head": "56f3db172de7f3e843a3ebf048f6f475ef700b40",
+  "created": "2026-08-31T13:27:52Z",
+  "title": "fix(json): support os.PathLike serialization and guard dataclass class type in DefaultJSONProvider",
+  "body_edited_by_others": [],
+  "reviewer_prompt": "9937d5f4cc5d",
+  "agent": "[rejected AI] label",
+  "expect": "the maintainer doesn't want more types handled by the JSON provider, and a different error for invalid data isn't a bug worth catching; also against the project's LLM/AI policy",
+  "quote": "I do not want to add more types to this. I do not care that the error on invalid data is different for some data, it's invalid regardless and would be fixed not caught.",
+  "reason_url": "https://github.com/pallets/flask/pull/6145#issuecomment-5480570285",
+  "kind": "scope"
+}

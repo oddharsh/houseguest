@@ -3,6 +3,7 @@
 #
 #   run.sh prep   <out-dir> [corpus.jsonl...]   rebuild each PR offline
 #   run.sh review <out-dir> [--model M] [--jobs N]
+#   run.sh verify <out-dir> [--model M] [--jobs N]
 #   run.sh judge  <out-dir> [--model M] [--jobs N]
 #   run.sh score  <out-dir>
 #   run.sh all    <out-dir> [--model M] [--jobs N]
@@ -10,7 +11,7 @@
 #
 # Corpora default to recall.jsonl and noise.jsonl beside this script. Each
 # stage skips cases whose output already exists, so a rerun after a prompt
-# change only needs `rm <out-dir>/*/review.md <out-dir>/*/judge.json` first.
+# change only needs `rm <out-dir>/*/{review.md,checks.json,judge.json}` first.
 #
 # prep: for each PR, a fresh git repo at the merge base (50 commits of history,
 #   no remote), with the PR's final tree as one commit on top, plus the body,
@@ -19,20 +20,26 @@
 # review: the agent body as the system prompt, prompt.md as the task, run with
 #   `claude -p` in the case's repo. No WebFetch and no gh or curl: a reviewer
 #   that can reach GitHub can read how the PR ended.
+# verify: list the review's Important findings, then run agents/finding-check.md
+#   on each one alone, in the case's repo and as offline as the review. The
+#   verdicts go in checks.json; the judge drops what they refute, as the skill
+#   keeps a refuted finding from starting a round.
 # judge: a second model splits the review into findings, marks each blocking or
 #   nit, and for the recall set says whether one names the maintainer's reason.
 # score: recall (hits / recall cases) and noise (clean PRs with a blocking
 #   finding, and blocking findings per clean PR), as a table and scores.json.
 #
-# review and judge need a logged-in `claude` CLI (`claude auth status`). A
-# session that can't run one can do those two steps itself: write review.md
-# from prompt.md and system.md, and judge.json from judge-prompt.md and
+# review, verify, and judge need a logged-in `claude` CLI (`claude auth
+# status`). A session that can't run one can do those steps itself: write
+# review.md from prompt.md and system.md; checks.json as {checker_prompt,
+# checks: [{finding, verdict, evidence}]} from agents/finding-check.md, one
+# check per Important finding; and judge.json from judge-prompt.md and
 # judge.md, in each case directory. score doesn't care who wrote them.
 
 set -uo pipefail
 here=$(cd "$(dirname "$0")" && pwd)
 plugin=$(cd "$here/../.." && pwd)
-cmd="${1:?usage: run.sh <prep|review|judge|score|all> <out-dir> ...}"
+cmd="${1:?usage: run.sh <prep|review|verify|judge|score|all|archive> <out-dir> ...}"
 out="${2:?usage: run.sh $cmd <out-dir> ...}"
 shift 2
 model="" jobs=4 corpora=()
@@ -47,13 +54,26 @@ done
 mkdir -p "$out"; out=$(cd "$out" && pwd)
 
 # --- prep ---------------------------------------------------------------------
+# The reviewer prompt under test, frontmatter stripped, into system.md; prints its
+# hash, which goes in case.json so scores from different prompt versions don't
+# get mixed up.
+system_prompt() {  # system_prompt <case dir>
+  awk 'f >= 2; /^---$/ { f++ }' "$plugin/agents/maintainer-review.md" > "$1/system.md"
+  git hash-object "$1/system.md" | cut -c1-12
+}
+
 prep_one() {  # prep_one <set> <json row>
   local set="$1" row="$2" url repo n dir
   url=$(jq -r .url <<<"$row")
   repo=$(sed -E 's#https://github.com/([^/]+/[^/]+)/pull/.*#\1#' <<<"$url")
   n=${url##*/}
   dir="$out/$(tr / _ <<<"$repo")_$n"
-  [ -f "$dir/prompt.md" ] && { echo "prep: $repo#$n (cached)"; return; }
+  if [ -f "$dir/prompt.md" ]; then
+    # A cached case still gets today's prompt, or a rerun after a prompt change replays the old one.
+    jq --arg p "$(system_prompt "$dir")" '.reviewer_prompt = $p' "$dir/case.json" > "$dir/case.json.new" \
+      && mv "$dir/case.json.new" "$dir/case.json"
+    echo "prep: $repo#$n (cached)"; return
+  fi
   rm -rf "$dir"; mkdir -p "$dir"
 
   local pr base head created mb
@@ -100,12 +120,9 @@ prep_one() {  # prep_one <set> <json row>
   bash "$plugin/skills/oss-pr/scripts/policy.sh" --repo "$repo" --as-of "$created" --keep "$dir/docs" \
     > "$dir/policy.md" 2>/dev/null
 
-  # The reviewer prompt under test, frontmatter stripped. Its hash goes in
-  # case.json so scores from different prompt versions don't get mixed up.
-  awk 'f >= 2; /^---$/ { f++ }' "$plugin/agents/maintainer-review.md" > "$dir/system.md"
   jq -n --arg set "$set" --arg repo "$repo" --argjson n "$n" --arg url "$url" --arg mb "$mb" \
     --arg head "$head" --arg created "$created" --argjson row "$row" \
-    --arg prompt "$(git hash-object "$dir/system.md" | cut -c1-12)" --arg title "$title" \
+    --arg prompt "$(system_prompt "$dir")" --arg title "$title" \
     --argjson edits "${edits:-[]}" \
     '{set: $set, repo: $repo, number: $n, url: $url, merge_base: $mb, head: $head, created: $created,
       title: $title, body_edited_by_others: $edits, reviewer_prompt: $prompt} + $row' > "$dir/case.json"
@@ -161,6 +178,53 @@ review_one() {  # review_one <case dir>
   fi
 }
 
+FINDINGS_SCHEMA='{"type":"object","required":["important"],"properties":{
+  "important":{"type":"array","items":{"type":"string"}}}}'
+CHECK_SCHEMA='{"type":"object","required":["verdict","evidence"],"properties":{
+  "verdict":{"enum":["CONFIRMED","REFUTED","PRE-EXISTING","UNSURE"]},"evidence":{"type":"string"}}}'
+
+verify_one() {  # verify_one <case dir>: one finding check per Important finding
+  local dir="$1" repo list finding res checks="[]"
+  [ -s "$dir/review.md" ] || return
+  [ -s "$dir/checks.json" ] && return
+  repo=$(jq -r .repo "$dir/case.json")
+  list=$(claude -p "Copy out every finding this review tags Important, each verbatim with its instances and evidence, in the order it gives them. Leave out Nits, Pre-existing findings, and lean notes.
+
+<review>
+$(cat "$dir/review.md")
+</review>" ${model:+--model "$model"} --tools "" --json-schema "$FINDINGS_SCHEMA" \
+    --output-format json --no-session-persistence 2>/dev/null)
+  jq -e '.structured_output.important' <<<"$list" >/dev/null 2>&1 \
+    || { echo "verify: $(basename "$dir") couldn't list its findings" >&2; return; }
+  # Written here rather than at prep, so a cached prep still checks with the current prompt.
+  awk 'f >= 2; /^---$/ { f++ }' "$plugin/agents/finding-check.md" > "$dir/check-system.md"
+  while IFS= read -r finding; do
+    res=$(cd "$dir/repo" && claude -p "Check this finding from a review of a pull request to $repo.
+
+- The repo: \`$dir/repo\`, a clone at the PR's base with the PR applied. HEAD is the PR; the tag \`base\` is the base it branched from.
+- The title and body: \`$dir/pr-body.md\` (title on the first line).
+- CONTRIBUTING and any AI policy as of the moment the PR opened: \`$dir/policy.md\`, with copies under \`$dir/docs\`.
+- The finding, verbatim:
+
+<finding>
+$(jq -r . <<<"$finding")
+</finding>
+
+This check runs offline, on a PR from the past. You can read files and run read-only git commands, nothing else: where you'd run the input, read the code path and say you didn't run it." \
+      --system-prompt "$(cat "$dir/check-system.md")" ${model:+--model "$model"} \
+      --tools "Read,Grep,Glob,Bash" --permission-mode dontAsk \
+      --allowedTools "Read" "Grep" "Glob" "Bash(git log:*)" "Bash(git show:*)" "Bash(git diff:*)" \
+        "Bash(git blame:*)" "Bash(git grep:*)" "Bash(git ls-files:*)" "Bash(ls:*)" "Bash(wc:*)" \
+      --add-dir "$dir" --json-schema "$CHECK_SCHEMA" --output-format json --no-session-persistence 2>/dev/null)
+    jq -e '.structured_output.verdict' <<<"$res" >/dev/null 2>&1 \
+      || { echo "verify: $(basename "$dir") failed a check" >&2; return; }
+    checks=$(jq -c --argjson f "$finding" --argjson c "$(jq -c .structured_output <<<"$res")" '. + [{finding: $f} + $c]' <<<"$checks")
+  done < <(jq -c '.structured_output.important[]' <<<"$list")
+  jq -n --arg p "$(git hash-object "$dir/check-system.md" | cut -c1-12)" --argjson c "$checks" \
+    '{checker_prompt: $p, checks: $c}' > "$dir/checks.json"
+  echo "verify: $(basename "$dir") ($(jq '[.checks[] | select(.verdict == "REFUTED")] | length' "$dir/checks.json") refuted of $(jq '.checks | length' "$dir/checks.json"))"
+}
+
 JUDGE_SCHEMA='{"type":"object","required":["findings","verdict"],"properties":{
   "findings":{"type":"array","items":{"type":"object","required":["summary","class"],"properties":{
     "summary":{"type":"string"},"class":{"enum":["blocking","nit"]}}}},
@@ -173,6 +237,9 @@ judge_prompt() {  # judge_prompt <case dir> -> the grader's task on stdout
     "\nThe maintainer closed it or asked for changes. Their reason, in one line: \(.expect)\nTheir words: \(.quote)\n" else
     "\nThe maintainers merged it without asking for changes.\n" end)' "$dir/case.json"
   echo; echo "The reviewer's reply, verbatim:"; echo; echo '<review>'; cat "$dir/review.md"; echo '</review>'
+  [ -s "$dir/checks.json" ] || return 0
+  echo; echo "A second agent then checked each Important finding against the code, one at a time:"; echo
+  echo '<checks>'; jq -r '.checks[] | "- \(.verdict): \(.finding[0:300])\n  Evidence: \(.evidence)"' "$dir/checks.json"; echo '</checks>'
 }
 
 judge_one() {
@@ -199,7 +266,7 @@ prompts() {  # judge-prompt.md for every reviewed case, whoever runs the judge
 
 each() {  # each <fn>: run fn over every case dir, $jobs at a time
   local fn="$1" d
-  export -f review_one judge_one judge_prompt; export model plugin here JUDGE_SCHEMA
+  export -f review_one verify_one judge_one judge_prompt; export model plugin here JUDGE_SCHEMA FINDINGS_SCHEMA CHECK_SCHEMA
   for d in "$out"/*/; do [ -f "$d/case.json" ] && echo "${d%/}"; done \
     | xargs -P "$jobs" -I{} bash -c "$fn \"\$1\"" _ {}
 }
@@ -233,7 +300,7 @@ archive() {  # keep what a reader needs to audit a score, without the clones
   for d in "$out"/*/; do
     [ -f "$d/case.json" ] || continue
     name=$(basename "$d"); mkdir -p "$dest/$name"
-    cp "$d"/{case.json,review.md,judge.json} "$dest/$name/" 2>/dev/null
+    cp "$d"/{case.json,review.md,checks.json,judge.json} "$dest/$name/" 2>/dev/null
     [ -f "$d/review.meta.json" ] && cp "$d/review.meta.json" "$dest/$name/"
   done
   cp "$out/scores.json" "$dest/" 2>/dev/null
@@ -244,8 +311,9 @@ case "$cmd" in
   prep) prep ;;
   archive) archive ;;
   review) need_claude; each review_one ;;
+  verify) need_claude; each verify_one ;;
   judge) prompts; need_claude; each judge_one ;;
   score) score ;;
-  all) prep; need_claude; each review_one; prompts; each judge_one; score ;;
+  all) prep; need_claude; each review_one; each verify_one; prompts; each judge_one; score ;;
   *) echo "run.sh: unknown command $cmd" >&2; exit 1 ;;
 esac

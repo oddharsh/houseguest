@@ -1,0 +1,44 @@
+{
+ "findings": [
+  {
+   "summary": "Duplicates existing --no-messages, which the body never mentions",
+   "class": "blocking"
+  },
+  {
+   "summary": "nopermission drops exit status 2, changing a documented design choice without an issue",
+   "class": "blocking"
+  },
+  {
+   "summary": "Flag does not cover traversal/walker permission errors although the body says it does",
+   "class": "blocking"
+  },
+  {
+   "summary": "Scratch files pullrequest.txt and purpose.txt committed; body reads machine-written",
+   "class": "blocking"
+  },
+  {
+   "summary": "Unit tests race on global ERRORED and cannot catch a regression in silencing",
+   "class": "blocking"
+  },
+  {
+   "summary": "Calls set_errored() directly against file comment; leaves field doc wrong",
+   "class": "nit"
+  },
+  {
+   "summary": "Field and impl ordering out of line with file layout",
+   "class": "nit"
+  },
+  {
+   "summary": "zsh completion in wrong exclusion group and offers no values",
+   "class": "nit"
+  },
+  {
+   "summary": "Value names read backwards; doc_long says only one supported value",
+   "class": "nit"
+  }
+ ],
+ "verdict": "close",
+ "hit": true,
+ "hit_rank": 1,
+ "why": "Finding 1 states the flag duplicates --no-messages, the maintainer's reason."
+}

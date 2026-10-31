@@ -1,0 +1,12 @@
+{
+  "checker_prompt": "bbc393b497f6",
+  "scope": "noise: every Important finding; recall: only the finding the judge matched to the maintainer reason",
+  "checks": [
+    {
+      "id": "I1",
+      "finding": "**1. Duplicates `--no-messages`, which the body never mentions.**\n`crates/core/flags/defs.rs:4799-4822` defines `--no-messages`: \"suppresses some error messages. Specifically, messages related to the failed opening and reading of files.\" That's the exact message `handle_search_error` silences, because `err_message!` (`crates/core/messages.rs:81-86`) only prints when `messages()` is true. So `rg foo --no-messages` already does what `--suppress-error=permission` does: no message, `ERRORED` still set, exit 2. The new flag only narrows it to one `io::ErrorKind`.\n\nThe one new behavior is `nopermission`, which drops exit status 2 for an error. The module doc at `crates/core/messages.rs:9-15` states the design on purpose: ripgrep keeps going after a read error, \"But when an error does occur, it will alter ripgrep's exit status.\" Changing that needs an issue and a maintainer's yes first. The PR links none, and the body names no factual error behind the current choice.\n",
+      "verdict": "CONFIRMED",
+      "evidence": "Not run (read the code path). On HEAD, handle_search_error (crates/core/main.rs) replaces the search-error err_message! call, and err_message! (crates/core/messages.rs:82-86) calls set_errored() and then message!, which prints only when messages() is true. messages() is set from !low.no_messages (crates/core/flags/parse.rs:117), so `--no-messages` already silences that same message and still exits 2, which is what `--suppress-error=permission` does, limited to PermissionDenied. `--suppress-error=nopermission` skips set_errored() and so goes against the exit-status design stated at crates/core/messages.rs:9-15. pr-body.md never mentions --no-messages or links an issue; the 'needs an issue first' part is the reviewer's judgment, since no written rule requires it (feature_request.md only asks for a description and motivation)."
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+{
+ "findings": [
+  {
+   "summary": "Feature does not belong in ripgrep: -F -f - plus a wrapper script already does it",
+   "class": "blocking"
+  },
+  {
+   "summary": "No end-to-end test of the --base64 to -F wiring; repo requires rgtest! for new flags",
+   "class": "blocking"
+  },
+  {
+   "summary": "Man page overclaims (regex, certificates, regardless of position) and omits short-query limit",
+   "class": "nit"
+  },
+  {
+   "summary": "Flags like -x, -w, -i, empty pattern quietly break --base64 searches",
+   "class": "nit"
+  },
+  {
+   "summary": "Machine-written copy: em dashes, ad-copy lists, over-wide line",
+   "class": "nit"
+  },
+  {
+   "summary": "Lean: two enums for one choice",
+   "class": "nit"
+  },
+  {
+   "summary": "Lean: tuple rebinding instead of in-place mutation of low",
+   "class": "nit"
+  },
+  {
+   "summary": "Lean: redundant unit tests",
+   "class": "nit"
+  }
+ ],
+ "verdict": "close",
+ "hit": true,
+ "hit_rank": 1,
+ "why": "Finding 1 says a wrapper script is the right place, matching the maintainer's out-of-scope reason."
+}

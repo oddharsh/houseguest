@@ -1,0 +1,12 @@
+{
+  "checker_prompt": "bbc393b497f6",
+  "scope": "noise: every Important finding; recall: only the finding the judge matched to the maintainer reason",
+  "checks": [
+    {
+      "id": "I1",
+      "finding": "**1. The Windows twin of a changed function still drops the depth.**\n\nThe diff adds depth to the `#[cfg(not(windows))]` `DirEntryRaw::metadata_internal` (`crates/ignore/src/walk.rs:298-306`) but leaves the `#[cfg(windows)]` one right above it untouched:\n\n```\n// crates/ignore/src/walk.rs:295\n.map_err(|err| Error::Io(io::Error::from(err)).with_path(&self.path))\n```\n\nCase: on Windows, a parallel walk with `follow_links(true)` reaches a symlink whose target is deleted after the entry is built. `DirEntry::metadata()` hits `fs::metadata(&self.path)`, fails, and `err.depth()` returns `None`; the same walk on Linux returns `Some(depth)`. Every other pair of cfg twins in this diff got the same change (both `from_path` impls at `:394` and `:413`), so this one reads as missed. Fix: same line as the unix version, `Error::Io(err).with_depth(self.depth).with_path(&self.path)` (and drop the identity `io::Error::from` like you did on unix).\n",
+      "verdict": "CONFIRMED",
+      "evidence": "On HEAD, the #[cfg(windows)] DirEntryRaw::metadata_internal at crates/ignore/src/walk.rs:294 still reads `.map_err(|err| Error::Io(io::Error::from(err)).with_path(&self.path))`, while the diff changed its #[cfg(not(windows))] twin (walk.rs:304-306) to `Error::Io(err).with_depth(self.depth).with_path(&self.path)` and gave both from_path cfg twins (:393, :412) depth. Because Error::depth() (crates/ignore/src/lib.rs:252-257) returns Some only through a WithDepth wrapper, a follow_link metadata failure returns depth None on Windows and Some(depth) on unix. The Windows line predates base (blame a5ba50c), but it's the twin of a function this PR changed, so the PR leaves the platforms inconsistent. Read the code path only: no Windows build was run."
+    }
+  ]
+}

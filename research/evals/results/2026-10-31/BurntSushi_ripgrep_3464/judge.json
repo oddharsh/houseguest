@@ -1,0 +1,24 @@
+{
+ "findings": [
+  {
+   "summary": "Windows cfg twin of metadata_internal still drops the depth",
+   "class": "blocking"
+  },
+  {
+   "summary": "from_entry and from_entry_os attach depth twice",
+   "class": "nit"
+  },
+  {
+   "summary": "Walkdir arm hand-rebuilds Error::from_walkdir",
+   "class": "nit"
+  },
+  {
+   "summary": "No test pins the new depth",
+   "class": "nit"
+  }
+ ],
+ "verdict": "changes",
+ "hit": null,
+ "hit_rank": null,
+ "why": "Only blocking finding is the Windows twin missing the depth change, which the reviewer would hold the merge for; the PR was merged as is."
+}

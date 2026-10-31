@@ -1,0 +1,9 @@
+{"findings":[
+{"summary":"No single focus: one Node/Leaf memory change bundled with unrelated restyles, dead-code rewrites, ABC change, and eq/repr dataclass changes","class":"blocking"},
+{"summary":"Headline memory number has no reproducible source, and __slots__ saves nothing for mypyc-compiled wheels","class":"blocking"},
+{"summary":"Description's allocation claims are contradicted by the diff (dead pattern code, extra copies, used_names still built, unreachable guard)","class":"blocking"},
+{"summary":"Stale Node.__init__ docstring mentions removed context argument","class":"nit"},
+{"summary":"Constructor contracts changed by packing ifs into or (prefix, children aliasing); no caller hits it","class":"nit"},
+{"summary":"Slots that do nothing (empty __slots__ on classes with dict-bearing bases, unused logger slot)","class":"nit"},
+{"summary":"Changelog wording references internals","class":"nit"}],
+"verdict":"changes","hit":true,"hit_rank":1,"why":"Finding 1 states the maintainer's reason directly (no focus, many unrelated stylistic rewrites bundled under a memory change), and finding 2 covers the mypyc performance-claim problem."}

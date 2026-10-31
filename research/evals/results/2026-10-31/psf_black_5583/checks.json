@@ -1,0 +1,12 @@
+{
+  "checker_prompt": "bbc393b497f6",
+  "scope": "noise: every Important finding; recall: only the finding the judge matched to the maintainer reason",
+  "checks": [
+    {
+      "id": "I1",
+      "finding": "**1. The first repro in the body can't produce the error it claims (description claim the proof doesn't support).**\n\n`pr-body.md` lines 8 and 16 show `x = b'{\"name\": \"é\"}'`. That literal holds a raw `é` (bytes `303 251` in the file), and Python rejects it outright: a bytes literal may contain only ASCII characters, so `ast.parse` raises `SyntaxError: bytes can only contain ASCII literal characters`. Black would report it can't parse the file, which is a different failure from the \"not equivalent to the source\" error the body quotes.\n\nThe `--fast` block makes it worse. It's labelled \"silently changes the values,\" yet line 16 prints that same line unchanged. Only the `y = b\"\\N{bullet}\"` -> `b\"\\N{BULLET}\"` line shows the bug.\n\nMy guess is the example started as an escaped JSON string and the escape got rendered away. Even then, `b'{\"name\": \"é\"}'` is already lowercase and wouldn't change; it needs uppercase hex, such as `b'{\"name\": \"é\"}'`, to trigger the normalization. Swap in an input that actually reproduces it (or drop the first line and keep the `\\N{bullet}` one), and paste the real output from `black` and `black --fast` on base.\n\nFix: edit the body only. No code change needed.\n",
+      "verdict": "CONFIRMED",
+      "evidence": "`grep -n name pr-body.md | od -c` shows lines 8 and 16 hold a raw UTF-8 `é` (bytes 303 251) inside `b'...'`. Python only allows ASCII in bytes literals, so the source AST parse fails and Black reports a parse failure (src/black/__init__.py:1878, \"cannot use --safe with this file; failed to parse source file AST\") or can't parse the file at all, which is a different error from the quoted \"not equivalent to the source\". The `--fast` output on line 16 also prints that line unchanged, so only the `\\N{bullet}` line shows the bug (I read the code path and checked bytes; I didn't run black)."
+    }
+  ]
+}

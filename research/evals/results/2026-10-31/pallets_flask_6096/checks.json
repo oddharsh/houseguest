@@ -1,0 +1,12 @@
+{
+  "checker_prompt": "bbc393b497f6",
+  "scope": "noise: every Important finding; recall: only the finding the judge matched to the maintainer reason",
+  "checks": [
+    {
+      "id": "I1",
+      "finding": "**1. The bug fix branches from `main`, and CONTRIBUTING says bug fixes target `stable`.**\nThe rule, from `pallets/.github/CONTRIBUTING.md` (the org default Flask uses), under \"Create a Pull Request\": \"The \"stable\" branch is the target for bug and documentation fixes, otherwise the target is \"main\".\" The same file's \"Set Up the Repository\" section says: \"To work on a bug or documentation fix, switch to the \"stable\" branch\".\nThis PR's base is `514fc6b Merge branch 'stable'`, which is a commit on `main`. `CHANGES.rst` at that commit opens with `Version 3.2.0 / Unreleased`, so the branch can't land on `stable` as-is. Nothing in the diff depends on 3.2-only code (`urlsplit` was already imported in `testing.py` on base), so rebasing the one commit onto `stable` and retargeting should be clean. If you're doing it anyway, add a `CHANGES.rst` line under the next 3.1.x section (optional per the same file, but it's a user-visible fix).\n",
+      "verdict": "CONFIRMED",
+      "evidence": "The rule exists in docs/pallets/.github/CONTRIBUTING.md:108-109 (\"The \\\"stable\\\" branch is the target for bug and documentation fixes, otherwise the target is \\\"main\\\".\") and :29-31 (\"To work on a bug or documentation fix, switch to the \\\"stable\\\" branch\"); flask's docs/contributing.rst defers to that Pallets guide. The PR is a bug fix (title and body: IPv6 server-name parsing, fixes #6093), yet `git log --format='%H %P %s' -1 base` shows base 514fc6b is \"Merge branch 'stable'\" whose first parent 8b4fd5d is main: CHANGES.rst there opens \"Version 3.2.0 / Unreleased\", while the stable parent 81798b4 opens \"Version 3.1.3\". So the branch was cut from main, not stable; I couldn't see the GitHub target offline, only the base commit."
+    }
+  ]
+}

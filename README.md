@@ -27,7 +27,7 @@ Maintainers close low-effort PRs for 3 reasons. houseguest runs a phase against 
 4. **Write.** The smallest change that fully fixes it, one concern per PR.
 5. **Proof.** The test fails without the fix, passes with it, covers every hunk, and survives 10 reruns.
 6. **Copy.** PR text sized to the repo's pre-LLM baseline.
-7. **Maintainer review.** A busy maintainer's read of the diff, for up to 3 rounds.
+7. **Maintainer review.** A busy maintainer's read of the diff, for up to 3 rounds. A second agent checks each blocking finding against the code before it costs a round.
 8. **Final check.** Reproduces each problem exactly as the report posed it, on base and HEAD.
 
 Each phase runs in its own subagent, so the agent that wrote the fix never grades its own proof. Phases talk only through a ledger in `.git/houseguest/<branch>/`, which git never tracks.
@@ -41,7 +41,7 @@ Nothing reaches upstream without your yes.
 | Piece | Job |
 |---|---|
 | `skills/oss-pr` | The phases, and the references they read |
-| `agents/` | `intent-check`, `maintainer-review`, `final-check`, plus `second-fix` and `compare` for an optional blind second opinion |
+| `agents/` | `intent-check`, `maintainer-review`, `finding-check`, `final-check`, plus `second-fix` and `compare` for an optional blind second opinion |
 | `hooks/gate.sh` | The PR gate |
 | `skills/oss-pr/scripts/` | 15 helpers, listed below |
 
@@ -72,7 +72,7 @@ Nothing reaches upstream without your yes.
 
 - **PR length.** Outside contributors' PR bodies in 12 well-run repos had a median of 30 words before LLMs and 95 since mid-2025. houseguest writes to the old baseline. [research/pre-llm-prs.md](research/pre-llm-prs.md)
 - **Reviewer recall.** Replayed against 23 public PRs, the reviewer named the maintainer's reason on 12 of 12 rejected ones. [research/reviewer-evals.md](research/reviewer-evals.md)
-- **Reviewer noise.** It still raised a blocking finding on 8 of 11 PRs merged clean (a few of those findings hold up). `research/evals/run.sh` rescores every prompt change.
+- **Reviewer noise.** On 11 PRs merged clean, it raised a blocking finding on 5, down from 8 before the 2026-10-31 prompt change, and 4 of those 5 hold up on GitHub. The finding checks confirmed all 5 and refuted none, so the drop came from the prompt. `research/evals/run.sh` rescores every prompt change.
 - **Design sources.** Astro's factory, StrongDM's holdout scenarios, loki-mode's receipts, and others. [research/software-factories.md](research/software-factories.md)
 
 ## Disclosure
@@ -81,7 +81,7 @@ Every PR it drafts ends with one line: "AI-assisted. Recon, red-green check, and
 
 ## Precedence and credits
 
-The repo's tooling beats its written rules, which beat nearby code, which beat houseguest's fallback defaults. Those fallbacks adapt [anti-slop](https://github.com/dmmulroy/anti-slop), [deslop](https://github.com/maharshi365/deslop), [pstack](https://github.com/cursor/plugins/tree/main/pstack) by Lauren Tan (MIT), and [ponytail](https://github.com/DietrichGebert/ponytail)'s laziness ladder by DietrichGebert (MIT), and apply only to lines your diff touches.
+The repo's tooling beats its written rules, which beat nearby code, which beat houseguest's fallback defaults. Those fallbacks adapt [anti-slop](https://github.com/dmmulroy/anti-slop), [deslop](https://github.com/maharshi365/deslop), [pstack](https://github.com/cursor/plugins/tree/main/pstack) by Lauren Tan (MIT), and [ponytail](https://github.com/DietrichGebert/ponytail)'s laziness ladder by DietrichGebert (MIT), and apply only to lines your diff touches. The finding check and the reviewer's list of things that aren't findings adapt Anthropic's [code-review](https://github.com/anthropics/claude-plugins-official/tree/main/plugins/code-review) plugin (Apache-2.0).
 
 ## License
 

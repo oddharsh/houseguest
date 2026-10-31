@@ -1,0 +1,6 @@
+{"findings":[
+{"summary":"PR reads as AI-generated, which org policy closes on sight","class":"blocking"},
+{"summary":"Pushing and popping the context around every chunk runs teardown before the stream starts and again per chunk, breaking the documented guarantee and costing routing and teardown per chunk","class":"blocking"},
+{"summary":"New test passes on base for the wrong reason and cannot catch the repeated teardown","class":"blocking"},
+{"summary":"No CHANGES.rst entry for a user-visible behavior change","class":"blocking"}
+],"verdict":"changes","hit":true,"hit_rank":2,"why":"Finding 2 states the per-chunk push/pop teardown inefficiency (and breakage), the maintainer's main reason; finding 1 also covers the AI-policy part."}

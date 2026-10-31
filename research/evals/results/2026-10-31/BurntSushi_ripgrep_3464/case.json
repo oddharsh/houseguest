@@ -1,0 +1,14 @@
+{
+  "set": "noise",
+  "repo": "BurntSushi/ripgrep",
+  "number": 3464,
+  "url": "https://github.com/BurntSushi/ripgrep/pull/3464",
+  "merge_base": "48b0c795f4feb37343b2832d991c5c6a3900c08a",
+  "head": "d8cf1c52ffbc688a5ff81f9c05ba277ffbca3c06",
+  "created": "2026-07-07T06:56:48Z",
+  "title": "feat[ignore]: Add depth to more errors",
+  "body_edited_by_others": [],
+  "reviewer_prompt": "9937d5f4cc5d",
+  "agent": null,
+  "note": "merged; maintainer: Thank you!"
+}

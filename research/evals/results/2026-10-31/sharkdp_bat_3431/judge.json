@@ -1,0 +1,9 @@
+{"findings":[
+{"summary":"Nothing shows RPMSpec meets the doc/assets.md popularity criteria (10,000+ Package Control downloads); no Package Control link or count in the PR","class":"blocking"},
+{"summary":"Syntax vendored as a loose file with no submodule, no Non-submodule additions entry, and no license or provenance","class":"blocking"},
+{"summary":"Syntax rules mis-scope ordinary spec content (arch list missing common arches, unanchored tag rules, Source/Patch prose rule, %ifos ordering) and the fixture locks one in","class":"blocking"},
+{"summary":"Test fixture copied from openSUSE without the LICENSE.md the guide asks for","class":"nit"},
+{"summary":"Lean: delete the redundant ^(Source|Patch) rule","class":"nit"},
+{"summary":"Lean: dedupe identical arch push bodies into one named context","class":"nit"},
+{"summary":"Lean: replace captures {0:} with scope:","class":"nit"}
+],"verdict":"changes","hit":true,"hit_rank":1,"why":"Finding 1 states the maintainer's reason in substance: no evidence the syntax meets the doc/assets.md popularity criteria, and it names the 10,000 Package Control download threshold."}

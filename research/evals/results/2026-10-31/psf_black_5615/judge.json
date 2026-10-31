@@ -1,0 +1,4 @@
+{"findings":[
+{"summary":"Fix could be one changed line since the new condition restates the later is_fmt_skip/WHITESPACE check","class":"nit"},
+{"summary":"Claude Code footer in PR body repeats the AI disclosure sentence","class":"nit"}],
+"verdict":"merge","hit":null,"hit_rank":null,"why":"No blocking findings; both items are optional polish and the reviewer says it would merge."}
