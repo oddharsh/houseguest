@@ -1,0 +1,12 @@
+{
+  "checker_prompt": "bbc393b497f6",
+  "scope": "noise: every Important finding; recall: only the finding the judge matched to the maintainer reason",
+  "checks": [
+    {
+      "id": "I1",
+      "finding": "**1. Changelog entry still carries the `#XXXX` placeholder** (`CHANGELOG.md:29`).\n\n`CONTRIBUTING.md`, \"Changelog entry format\": \"Please replace `#123` with the number of your pull request (not issue) and `@user` by your GitHub username.\" The entry reads `see #XXXX (@cindykrafft)`. Change it to `see #4076`.\n",
+      "verdict": "CONFIRMED",
+      "evidence": "CONTRIBUTING.md:43 (unchanged by the PR, same text in docs/sharkdp/bat/CONTRIBUTING.md) says \"Please replace `#123` with the number of your pull request (not issue) and `@user` by your GitHub username.\" The PR's diff adds CHANGELOG.md:29 under Bugfixes reading \"... see #XXXX (@cindykrafft)\" (`git diff base...HEAD -- CHANGELOG.md`; `grep -n XXXX CHANGELOG.md` -> line 29), so the placeholder is new in this PR and breaks the rule."
+    }
+  ]
+}

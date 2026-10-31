@@ -1,0 +1,24 @@
+{
+ "findings": [
+  {
+   "summary": "No demonstrated need: output was already deterministic at base, new test passes on base, no benchmark for the claimed speedup",
+   "class": "blocking"
+  },
+  {
+   "summary": "PR body and test comment read as machine-written, violating AI_POLICY.md",
+   "class": "blocking"
+  },
+  {
+   "summary": "`let _ = btypes.build().unwrap();` does nothing for the assertion",
+   "class": "nit"
+  },
+  {
+   "summary": "Commit and title style do not match repo",
+   "class": "nit"
+  }
+ ],
+ "verdict": "close",
+ "hit": true,
+ "hit_rank": 1,
+ "why": "Finding 1 says there is no demonstrated need and prefers the status quo, which is the maintainer's reason."
+}

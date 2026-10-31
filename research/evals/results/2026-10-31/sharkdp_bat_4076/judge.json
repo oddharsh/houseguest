@@ -1,0 +1,5 @@
+{"findings":[
+{"summary":"Changelog entry still has the #XXXX placeholder; CONTRIBUTING requires the PR number","class":"blocking"},
+{"summary":"No test pins the len() % 2 == 0 half of the guard; comment only names the U+4E0A case","class":"nit"},
+{"summary":"Pre-existing: read_utf16_line ignores code-unit alignment for later lines","class":"nit"}
+],"verdict":"changes","hit":null,"hit_rank":null,"why":"The one blocking finding is the changelog placeholder, a CONTRIBUTING rule; the reviewer would merge only once it is filled in."}

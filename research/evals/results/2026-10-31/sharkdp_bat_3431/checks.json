@@ -1,0 +1,12 @@
+{
+  "checker_prompt": "bbc393b497f6",
+  "scope": "noise: every Important finding; recall: only the finding the judge matched to the maintainer reason",
+  "checks": [
+    {
+      "id": "I1",
+      "finding": "**1. Nothing shows RPMSpec meets the inclusion criteria for new syntaxes.**\n\n`doc/assets.md` puts this ahead of every other step: \"**Important:** Before proceeding, verify that the syntax you wish to add meets the criteria for inclusion\", and the criterion is \"More than 10,000 downloads at Package Control\" (`doc/assets.md`, \"Criteria for inclusion of new syntaxes\"). The syntax request template asks for the evidence directly, under \"Guideline Criteria: [packagecontrol.io link here]\" (`.github/ISSUE_TEMPLATE/syntax_request.md`).\n\nThe body links `https://github.com/dreadatour/RPMSpec` and closes #2605, but gives no Package Control link or download count. Please add the packagecontrol.io link and the number to the description. If the package is under 10,000, this is a close, and the user-local syntax route in the README is the answer for anyone who wants it.\n",
+      "verdict": "UNSURE",
+      "evidence": "The rule is real: doc/assets.md:9 says to verify the syntax meets the criteria, and doc/assets.md:77 sets the bar at \"More than 10,000 downloads at Package Control\". pr-body.md, the commit, and the CHANGELOG line give no packagecontrol.io link or count. The rule binds the package's download count, though, and doesn't require evidence in the PR body; the template field (.github/ISSUE_TEMPLATE/syntax_request.md:28-29) belongs to the syntax request issue, which is #2605, the one this PR closes. Offline I can't tell whether RPMSpec clears 10,000 downloads or whether #2605 already carries the link. The RPMSpec download count on packagecontrol.io, or the Guideline Criteria field in #2605, would settle it."
+    }
+  ]
+}

@@ -1,0 +1,3 @@
+{"findings":[
+{"summary":"First repro in the PR body uses a non-ASCII bytes literal that can't produce the quoted error, and the --fast block shows the line unchanged; body claim not supported","class":"blocking"}],
+"verdict":"changes","hit":null,"hit_rank":null,"why":"The only blocking finding is a false repro in the PR body; the code change itself is called correct."}

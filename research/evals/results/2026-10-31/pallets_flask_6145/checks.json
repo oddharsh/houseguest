@@ -1,0 +1,12 @@
+{
+  "checker_prompt": "bbc393b497f6",
+  "scope": "noise: every Important finding; recall: only the finding the judge matched to the maintainer reason",
+  "checks": [
+    {
+      "id": "I2",
+      "finding": "**2. A new serialized type with no ticket, bundled with an unrelated change.**\n`.github/pull_request_template.md`: \"Before opening a PR, open a ticket describing the issue or feature the PR will address.\" No issue is linked, and the body names no user who hit this.\n- `src/flask/json/provider.py:113` adds `os.PathLike` to the set `DefaultJSONProvider` serializes. Which types the provider handles is a design call. The class already documents the extension point for anything else: `default` at `provider.py:140-144` (\"Apply this function to any object that :meth:`json.dumps` does not know how to serialize\"), and `JSONProvider`'s docstring says to subclass it \"to customize JSON behavior.\" An app that wants paths as strings overrides `default` in 4 lines.\n- `provider.py:116` is a second, unrelated concern in the same PR. `pallets/.github/CONTRIBUTING.md` sends bug fixes to \"stable\" and features to \"main\", so a bug fix plus a feature can't even pick a target branch. They'd need to be two PRs, each with its own ticket.\n",
+      "verdict": "CONFIRMED",
+      "evidence": "The rule exists: .github/pull_request_template.md:2-4 says \"Before opening a PR, open a ticket describing the issue or feature the PR will address,\" exempting only typos and simple non-code changes, and pr-body.md links no issue (no \"fixes #\"). The cited lines match on HEAD: provider.py:113 adds os.PathLike to the str() branch (a new serialized type), provider.py:116 adds the unrelated dataclass-class guard, and provider.py:141-144 documents the `default` override hook. pallets/.github/CONTRIBUTING.md:108-109 says \"The 'stable' branch is the target for bug and documentation fixes, otherwise the target is 'main'\", so a bug fix and a feature in one PR don't share a target branch."
+    }
+  ]
+}

@@ -1,8 +1,8 @@
 # Scoring the maintainer reviewer
 
-Replayed against 23 public PRs, the maintainer reviewer named the maintainer's real reason on all 12 that were rejected. It also asked for changes on 9 of the 11 that maintainers merged as they stood, and on 8 of those 9 the grader called at least one finding blocking.
+Replayed against 23 public PRs, the maintainer reviewer named the maintainer's real reason on all 12 that were rejected. On the first run (2026-10-26) it also held the merge on 8 of the 11 that maintainers merged as they stood. After the 2026-10-31 prompt change it held 5 of the 11, and 4 of those 5 findings hold up against what happened on GitHub.
 
-Recall is saturated on this set, so it can't tell two prompt versions apart yet. Noise has room to move, and it's where the next prompt change should be scored.
+Recall is saturated on this set, so it can't tell two prompt versions apart. Noise is where prompt changes get scored.
 
 This page exists because houseguest can't learn from itself. Its ledger lives in `.git/houseguest/<branch>/` and is deleted with the clone, so nothing records whether the reviewer was right. Anthropic scores its own code reviewer daily against PRs that caused incidents (recall) and PRs known to be clean (noise), and rescores on every prompt or model change. This is the offline version: a corpus built from public history, a harness that replays it, and a first score.
 
@@ -53,9 +53,44 @@ So 8/11 overstates the false-positive rate, though not by enough to dismiss it. 
 - **Two flask hits rest on the AI policy,** which the maintainer also cited. On flask#6124 the reviewer's second finding was the mechanism too: pushing and popping the context on every chunk.
 - **A leak, caught.** The first replay of flask#6124 and #6145 used their current titles, "AI junk" and "[rejected AI] ...", which davidism set after closing. Both reviews cited the title. Prep now recovers the title each PR opened with from its rename events, and both cases still hit on the rerun.
 
+## Rescore with the finding check (2026-10-31)
+
+PR #26 changed the reviewer prompt and added a finding check, both adapted from Anthropic's code-review plugin. The prompt now leaves out things that are true but aren't findings (what a linter catches, code silenced on purpose, hardening no rule asks for), quotes a rule before citing it, and writes each Important finding so it can be checked alone. The check is `agents/finding-check.md`, one run per Important finding, blind to the rest of the review.
+
+| | 2026-10-26 | 2026-10-31 |
+|---|---|---|
+| Recall: maintainer's reason named | 12/12 | 12/12 |
+| Named as the first finding | 7/12 | 10/12 |
+| Noise: clean PRs with a blocking finding | 8/11 | 5/11 |
+| Blocking findings per clean PR | 1.0 | 0.5 |
+| Noise PRs called mergeable | 2/11 | 6/11 |
+| Finding checks run / refuted | none | 17 / 0 |
+
+Reviewer prompt `9937d5f4cc5d` on Opus 5.5, checker prompt `bbc393b497f6` on Opus 5.5, graded by Sonnet 5.5. Every review, check, and grade is in `evals/results/2026-10-31/`.
+
+**The prompt did the work, and the check refuted nothing.** The reviews alone scored the numbers above, before any check ran. The check then confirmed all 5 noise findings. That was the right call, judged against GitHub:
+
+- **ripgrep#3464:** the PR gave depth to 3 of 4 cfg twins in `walk.rs`. The Windows `metadata_internal` still drops it on master today.
+- **bat#4076:** the `#XXXX` changelog placeholder is still in bat's `CHANGELOG.md`.
+- **black#5583:** the body's first repro is a SyntaxError (as on 2026-10-26).
+- **flask#6096:** Pallets' CONTRIBUTING sends bug fixes to `stable`, and the PR targeted `main`. The rule is real; the maintainers waived it and merged.
+- **black#5521:** a style change bolted onto the crash fix, reaching the default line length. Settling it needs a Black run, which the offline replay can't do.
+
+So at most 1 of the 11 clean PRs drew a blocking finding that's wrong, against roughly 5 on the first run. This set leaves the check nothing false to refute, which means it shows the check doesn't cost real findings. It can't show the check catches false ones.
+
+**The control.** Each recall case's hit finding was checked too: 11 CONFIRMED, 1 UNSURE. bat#3431's hit says nothing shows RPMSpec clears bat's 10,000-download bar for new syntaxes. The checker found the rule but couldn't see the download count offline. Under the skill an UNSURE finding goes to the user with what would settle it, so the reason still reaches someone; it just doesn't start a round on its own.
+
+**What this run left out:**
+
+- **Recall findings other than the hit (25 of 37) weren't checked,** to keep the run to 17 checks. The noise score is complete. The recall rank after checks isn't measured.
+- **Grades are from before the checks.** With nothing refuted and the one UNSURE being a recall hit (still a hit as a nit), regrading would change no score.
+- **Offline checks are weaker than real ones.** The skill's check runs the finding's input. Here it could only read, and 4 of the 5 noise checks said so.
+- **The runner differs from the baseline's.** Reviews ran as general-purpose subagents told to follow `system.md`, because the installed `houseguest:maintainer-review` agent still carried the old prompt. An audit of all 423 tool calls across reviews, checks, and grades found no network use. Two reviewers read ripgrep's dependencies from the local cargo registry, outside the case directory.
+
 ## What to try next
 
-- **Calibrate "blocking."** The prompt opens with "you close most within a minute," and the reviewer said close or request changes on 21 of 23 PRs. A prompt that separates "blocks the merge" from "fix before you send" should cut noise without costing recall. Rescoring that change is now one command.
+- **Calibrate "blocking."** The 2026-10-31 prompt cut noise from 8/11 to 5/11, and 4 of the 5 left are real. Most of what's left is "fix before you send" (a changelog line, a branch target), which a guest should hear. Separating that from "blocks the merge" is now a reporting question more than a noise one.
+- **Give the check something to refute.** A set of reviews with known-false findings (the 2026-10-26 ripgrep#3557 "unmerged PRs" claim is one) would test whether the check catches them.
 - **Give it the ledger.** The real flow hands the reviewer recon's notes, including issue threads and earlier rejected attempts. A recall set that includes thread-only reasons would test that path.
 - **Run each case 3 times.** One run per PR can't separate a real change from sampling noise.
 

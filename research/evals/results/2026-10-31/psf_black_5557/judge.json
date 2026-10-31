@@ -1,0 +1,6 @@
+{"findings":[
+{"summary":"README would advertise a third-party commercial demo service the core team doesn't run or maintain; decline","class":"blocking"},
+{"summary":"Badge line directly above --- turns into a setext heading and swallows the rule; prettier hook would rewrite it","class":"blocking"},
+{"summary":"No changelog entry and no request for the skip-news label","class":"blocking"},
+{"summary":"PR template checklist left unticked","class":"nit"}],
+"verdict":"close","hit":true,"hit_rank":1,"why":"Finding 1 states the maintainer's reason in substance: the README shouldn't promote a demo the core team doesn't maintain."}

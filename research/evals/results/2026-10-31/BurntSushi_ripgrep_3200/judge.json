@@ -1,0 +1,16 @@
+{
+ "findings": [
+  {
+   "summary": "Edit swaps valid `\\b{end-half}` for invalid `{end-half}\\b`; doc matches code, drop the change",
+   "class": "blocking"
+  },
+  {
+   "summary": "New line drops roff backslash escaping (moot if change dropped)",
+   "class": "nit"
+  }
+ ],
+ "verdict": "close",
+ "hit": true,
+ "hit_rank": 1,
+ "why": "Finding 1 says the replacement is an invalid pattern replacing a valid one, which is the maintainer's reason."
+}

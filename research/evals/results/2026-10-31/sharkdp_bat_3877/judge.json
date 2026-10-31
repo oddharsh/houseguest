@@ -1,0 +1,5 @@
+{"findings":[
+{"summary":"Fallback comment names the wrong case and the body omits the first-read limit on streamed stdin","class":"nit"},
+{"summary":"fill_buf does not retry ErrorKind::Interrupted for library callers; CLI cannot reach it","class":"nit"},
+{"summary":"CONTENT_INSPECTION_LIMIT restates content_inspector's private constant and the truncation is unneeded","class":"nit"}
+],"verdict":"merge","hit":null,"hit_rank":null,"why":"No blocking findings; the reviewer says it would merge and all three findings are comment, edge-case, or simplification nits."}

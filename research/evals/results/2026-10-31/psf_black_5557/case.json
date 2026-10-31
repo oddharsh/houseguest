@@ -1,0 +1,17 @@
+{
+  "set": "recall",
+  "repo": "psf/black",
+  "number": 5557,
+  "url": "https://github.com/psf/black/pull/5557",
+  "merge_base": "11cff1312bf96e02bce9a467d0b5a2dd65300642",
+  "head": "526208e20443f58438822ec36aad00fa474cdcc0",
+  "created": "2026-10-17T08:20:12Z",
+  "title": "docs: add link to a live browser demo",
+  "body_edited_by_others": [],
+  "reviewer_prompt": "9937d5f4cc5d",
+  "agent": null,
+  "expect": "the docs shouldn't advertise a demo the core team doesn't maintain",
+  "quote": "I'd rather not advertise demos not maintained by the core team.",
+  "reason_url": "https://github.com/psf/black/pull/5557#issuecomment-6255670838",
+  "kind": "scope"
+}

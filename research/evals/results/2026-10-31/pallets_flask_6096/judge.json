@@ -1,0 +1,6 @@
+{"findings":[
+{"summary":"Bug fix is based on main but CONTRIBUTING says bug fixes target the stable branch","class":"blocking"},
+{"summary":"SERVER_NAME port is now validated even when an explicit port is passed to run(); only affects broken config","class":"nit"},
+{"summary":"Drops t.cast(str, host), an unrelated typing cleanup in a bug-fix PR","class":"nit"},
+{"summary":"New test builds its own client instead of using the client fixture","class":"nit"}
+],"verdict":"changes","hit":null,"hit_rank":null,"why":"One blocking finding: a CONTRIBUTING rule about targeting stable for bug fixes; the rest are nits."}

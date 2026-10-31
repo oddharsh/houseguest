@@ -72,7 +72,7 @@ Nothing reaches upstream without your yes.
 
 - **PR length.** Outside contributors' PR bodies in 12 well-run repos had a median of 30 words before LLMs and 95 since mid-2025. houseguest writes to the old baseline. [research/pre-llm-prs.md](research/pre-llm-prs.md)
 - **Reviewer recall.** Replayed against 23 public PRs, the reviewer named the maintainer's reason on 12 of 12 rejected ones. [research/reviewer-evals.md](research/reviewer-evals.md)
-- **Reviewer noise.** It still raised a blocking finding on 8 of 11 PRs merged clean (a few of those findings hold up). `research/evals/run.sh` rescores every prompt change. The finding check exists to cut this number and hasn't been scored yet.
+- **Reviewer noise.** On 11 PRs merged clean, it raised a blocking finding on 5, down from 8 before the 2026-10-31 prompt change, and 4 of those 5 hold up on GitHub. The finding checks confirmed all 5 and refuted none, so the drop came from the prompt. `research/evals/run.sh` rescores every prompt change.
 - **Design sources.** Astro's factory, StrongDM's holdout scenarios, loki-mode's receipts, and others. [research/software-factories.md](research/software-factories.md)
 
 ## Disclosure
