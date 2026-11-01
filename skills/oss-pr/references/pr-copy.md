@@ -105,7 +105,7 @@ Screenshots from `$LEDGER/shots/` go in after the PR opens (see "What reviewers 
 
 **Docs PRs from a DOCS decision:** the stake is real, so use it. Say what the docs led you to expect and what you found: "The `--max-width` docs don't say it counts bytes, and I took the CJK wrapping for a bug until I found #812, where that was chosen for speed. This adds that to the option's entry, with `--width-mode=display` for anyone who needs display width." Link the decision, and don't argue with it.
 
-**Dependency and security bumps:** one or two sentences. Name the advisory or changelog entry that motivates it, the version change, and what you checked (lockfile regenerated, tests run). Skip the stake sentence unless there's a real one.
+**Dependency and security bumps:** one or two sentences. Name the advisory or the upstream commit that motivates it (linked at its SHA), the version change, and what you checked (lockfile regenerated, tests run). A bump with no commit the project needs isn't worth a maintainer's review, so don't draft one. Skip the stake sentence unless there's a real one.
 
 An invented example of the target shape, for a fictional formatter:
 

@@ -36,6 +36,12 @@ A hook blocks `gh pr create` until every phase has passed on HEAD with its seal 
 
 Nothing reaches upstream without your yes.
 
+## When upstream says no
+
+Sometimes you're the edge case: the maintainers declined the change, chose the behavior on purpose, or stopped maintaining your release line. houseguest then offers a fork you own, as light as it can be: a patch your package manager applies, or the source vendored at one commit and trimmed to what your code calls.
+
+The fork keeps its rules in `FORK.md`, each in plain words with an example and a counterexample that are also its tests, so the code can be regenerated and rechecked. It updates only for a named commit that fixes something you hit, after reading every commit the update brings. These are houseguest's rules for your fork; upstream, the house rules still win. [skills/oss-pr/references/forks.md](skills/oss-pr/references/forks.md)
+
 ## What's in it
 
 | Piece | Job |
