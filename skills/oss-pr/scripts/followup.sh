@@ -7,7 +7,9 @@
 # dies: the thread goes quiet, and a stale bot closes it. This finds every open
 # item where the newest human comment or review isn't yours, newest wait last.
 # It also lists your open PRs whose upstream CI is failing, or waiting for a maintainer to
-# approve the run (first-time contributors' workflows need that), whoever spoke last.
+# approve the run (first-time contributors' workflows need that), whoever spoke last,
+# their unresolved review-bot threads with each bot's run count, and PRs whose linked
+# issue closed or has another merged or open PR that closes it.
 # --days hides waits shorter than N days (default 0). --limit caps items checked (default 60).
 # --gerrit adds your open changes on that Gerrit host (repeatable), found by --email
 # (default: git config user.email), with their unresolved inline threads and red try bots.
@@ -38,19 +40,34 @@ if [ -n "$me" ]; then
 fi
 [ -z "$items" ] && [ ${#hosts[@]} -eq 0 ] && { echo "No open PRs or issues of yours on other people's repos."; exit 0; }
 
+bot_re='\[bot\]$|bot$|^app/|github-actions|changeset|codecov|vercel|netlify|devin|copilot|coderabbit|devprod|sonarcloud|codspeed|renovate|dependabot|cla-assistant|triage'
+# What gh pr view can't say: whether each review thread is resolved, and which other PRs
+# would close the issues this one closes. Only issues the PR links (closingIssuesReferences) count.
+pr_q='query($owner: String!, $name: String!, $n: Int!) { repository(owner: $owner, name: $name) { pullRequest(number: $n) {
+  reviewThreads(first: 100) { nodes { isResolved comments(first: 1) { nodes { author { __typename login } } } } }
+  reviews(last: 100) { nodes { author { __typename login } } }
+  closingIssuesReferences(first: 5) { nodes { number state stateReason
+    timelineItems(itemTypes: [CROSS_REFERENCED_EVENT], last: 50) { nodes { ... on CrossReferencedEvent { willCloseTarget
+      source { __typename ... on PullRequest { number url state merged author { login } repository { nameWithOwner } } } } } } } } } } }'
+
 # Fetch every thread in parallel; each line comes back as the item plus its JSON.
+# A PR whose GraphQL read fails keeps gql: null, so its bot and duplicate checks show as unread.
 fetch_item() {
-  local repo n kind title json
+  local repo n kind title json gql
   IFS=$'\t' read -r repo n kind title <<< "$1"
-  if [ "$kind" = "pr" ]; then json=$(gh pr view "$n" -R "$repo" --json comments,reviews,reviewDecision,statusCheckRollup 2>/dev/null)
-  else json=$(gh issue view "$n" -R "$repo" --json comments 2>/dev/null); fi || { printf '%s\tFAILED\n' "$1"; return; }
+  if [ "$kind" = "pr" ]; then
+    json=$(gh pr view "$n" -R "$repo" --json comments,reviews,reviewDecision,statusCheckRollup 2>/dev/null) || { printf '%s\tFAILED\n' "$1"; return; }
+    gql=$(gh api graphql -f query="$pr_q" -f owner="${repo%%/*}" -f name="${repo#*/}" -F n="$n" --jq .data.repository.pullRequest 2>/dev/null) || gql=null
+    json=$(echo "$json" | jq -c --argjson g "${gql:-null}" '. + {gql: $g}')
+  else json=$(gh issue view "$n" -R "$repo" --json comments 2>/dev/null) || { printf '%s\tFAILED\n' "$1"; return; }; fi
   printf '%s\t%s\n' "$1" "$(echo "$json" | jq -c .)"
 }
 fetched=$(echo "$items" | pmap 8 fetch_item)
 unread=$(echo "$fetched" | awk -F'\t' '$5 == "FAILED" {print $1 "#" $2}')
+unchecked=$(echo "$fetched" | awk -F'\t' '$3 == "pr" && $5 != "FAILED" && $5 ~ /"gql":null/ {print $1 "#" $2}')
 
 now=$(date -u +%s)
-rows="" ci_rows=""
+rows="" ci_rows="" bot_rows="" dup_rows=""
 while IFS=$'\t' read -r repo n kind title json; do
   [ "$json" = "FAILED" ] && continue
   if [ "$kind" = "pr" ]; then
@@ -63,9 +80,34 @@ while IFS=$'\t' read -r repo n kind title json; do
         else empty end')
     [ -n "$ci_row" ] && ci_rows="$ci_rows
 $ci_row"
+    # A run is one review the bot submitted, however many inline comments it carried.
+    bot_row=$(echo "$json" | jq -r --arg re "$bot_re" --arg repo "$repo" --arg n "$n" --arg title "$title" '
+      def isbot: .__typename == "Bot" or ((.login // "") | test($re; "i"));
+      (.gql // empty) as $g
+      | [$g.reviews.nodes[] | .author // {} | select(isbot) | .login] as $runs
+      | [$g.reviewThreads.nodes[] | select(.isResolved | not) | .comments.nodes[0].author // {} | select(isbot) | .login]
+      | group_by(.) | map(.[0] as $who | ([$runs[] | select(. == $who)] | length) as $r
+        | "\($who): \(length) unresolved, \($r) review run\(if $r == 1 then "" else "s" end)\(if $r > 3 then ", past the 3-run budget" else "" end)")
+      | if length > 0 then "\($repo)#\($n) \($title)\t\(join("; "))" else empty end')
+    [ -n "$bot_row" ] && bot_rows="$bot_rows
+$bot_row"
+    dup_row=$(echo "$json" | jq -r --arg repo "$repo" --arg n "$n" --arg title "$title" '
+      (.gql // empty) as $g
+      | [$g.closingIssuesReferences.nodes[] as $i
+        | ([$i.timelineItems.nodes[] | select(.willCloseTarget == true and .source.__typename == "PullRequest") | .source
+            | select((.repository.nameWithOwner == $repo and (.number | tostring) == $n) | not)
+            | select(.merged or .state == "OPEN")
+            | "\(if .repository.nameWithOwner == $repo then "#\(.number)" else .url end) by \(.author.login // "ghost") (\(if .merged then "merged" else "open" end))"]
+           | unique) as $others
+        | if ($others | length) > 0 then "#\($i.number) is also closed by \($others | join(", "))"
+          elif $i.state == "CLOSED" then "#\($i.number) closed (\($i.stateReason // "no reason given")) without this PR"
+          else empty end]
+      | if length > 0 then "\($repo)#\($n) \($title)\t\(join("; "))" else empty end')
+    [ -n "$dup_row" ] && dup_rows="$dup_rows
+$dup_row"
   fi
-  row=$(echo "$json" | jq -r --arg me "$me" --arg repo "$repo" --arg n "$n" --arg kind "$kind" --arg title "$title" --argjson now "$now" --argjson days "$days" '
-    def bot: ((.author.login // "") | test("\\[bot\\]$|bot$|^app/|github-actions|changeset|codecov|vercel|netlify|devin|copilot|coderabbit|devprod|sonarcloud|codspeed|renovate|dependabot|cla-assistant|triage"; "i"))
+  row=$(echo "$json" | jq -r --arg me "$me" --arg re "$bot_re" --arg repo "$repo" --arg n "$n" --arg kind "$kind" --arg title "$title" --argjson now "$now" --argjson days "$days" '
+    def bot: ((.author.login // "") | test($re; "i"))
       or ((.body // "") | test("^\\s*<!--"));
     (.reviewDecision // "") as $rd
     | ([.comments[]? | {who: .author.login, at: .createdAt, body: (.body // ""), bot: bot}]
@@ -117,10 +159,25 @@ done
 
 unread=$(echo "$unread" | sed '/^$/d')
 [ -n "$unread" ] && { echo "Couldn't read $(echo "$unread" | wc -l | tr -d ' ') item(s), so they're missing below; rerun, or open them by hand: $(echo "$unread" | tr '\n' ' ')"; echo; }
+[ -n "$unchecked" ] && { echo "Couldn't check bot threads or competing PRs on: $(echo "$unchecked" | tr '\n' ' ')"; echo; }
 
+if [ -n "$(echo "$dup_rows" | sed '/^$/d')" ]; then
+  echo "Issues your PRs close that closed, or that another PR also closes (read theirs before anything else):"
+  echo "$dup_rows" | sed '/^$/d' | while IFS=$'\t' read -r head detail; do
+    printf -- '- %s\n    %s\n' "$head" "$detail"
+  done
+  echo
+fi
 if [ -n "$(echo "$ci_rows" | sed '/^$/d')" ]; then
   echo "Upstream CI on your PRs (a red PR reads as abandoned; fix it, or say in the thread why it isn't yours):"
   echo "$ci_rows" | sed '/^$/d' | while IFS=$'\t' read -r head detail; do
+    printf -- '- %s\n    %s\n' "$head" "$detail"
+  done
+  echo
+fi
+if [ -n "$(echo "$bot_rows" | sed '/^$/d')" ]; then
+  echo "Unresolved review-bot threads (answer per \"Automated reviewers\" in pr-copy.md, 3 runs per bot at most):"
+  echo "$bot_rows" | sed '/^$/d' | while IFS=$'\t' read -r head detail; do
     printf -- '- %s\n    %s\n' "$head" "$detail"
   done
   echo

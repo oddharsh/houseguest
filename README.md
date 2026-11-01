@@ -58,7 +58,7 @@ Nothing reaches upstream without your yes.
 | `preview.sh` | Will reviewers get a preview build of a fork PR? |
 | `prdefaults.sh` | What has an existing PR already settled before you add to it? |
 | `recheck.sh` | What changed upstream since recon? |
-| `followup.sh` | Which of your open PRs and issues are waiting on you? |
+| `followup.sh` | Which of your open PRs and issues are waiting on you, a review bot, or a competing fix? |
 | `house.sh` | What enforces style in this repo, and how? |
 | `housecheck.sh` | Does your diff pass the house rules and look like PRs that got merged? |
 | `title.sh` | Does your PR or issue title match the ones this repo accepts? |
@@ -81,7 +81,7 @@ Every PR it drafts ends with one line: "AI-assisted. Recon, red-green check, and
 
 ## Precedence and credits
 
-The repo's tooling beats its written rules, which beat nearby code, which beat houseguest's fallback defaults. Those fallbacks adapt [anti-slop](https://github.com/dmmulroy/anti-slop), [deslop](https://github.com/maharshi365/deslop), [pstack](https://github.com/cursor/plugins/tree/main/pstack) by Lauren Tan (MIT), and [ponytail](https://github.com/DietrichGebert/ponytail)'s laziness ladder by DietrichGebert (MIT), and apply only to lines your diff touches. The finding check and the reviewer's list of things that aren't findings adapt Anthropic's [code-review](https://github.com/anthropics/claude-plugins-official/tree/main/plugins/code-review) plugin (Apache-2.0).
+The repo's tooling beats its written rules, which beat nearby code, which beat houseguest's fallback defaults. Those fallbacks adapt [anti-slop](https://github.com/dmmulroy/anti-slop), [deslop](https://github.com/maharshi365/deslop), [pstack](https://github.com/cursor/plugins/tree/main/pstack) by Lauren Tan (MIT), and [ponytail](https://github.com/DietrichGebert/ponytail)'s laziness ladder by DietrichGebert (MIT), and apply only to lines your diff touches. The finding check and the reviewer's list of things that aren't findings adapt Anthropic's [code-review](https://github.com/anthropics/claude-plugins-official/tree/main/plugins/code-review) plugin (Apache-2.0). The rules for review bots and for yielding to a duplicate PR adapt DeepSeek's [dsh-superagent](https://github.com/deepseek-ai/dsh-superagent-prototype) prompts (MIT).
 
 ## License
 

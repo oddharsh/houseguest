@@ -186,6 +186,20 @@ Don't guess at causes you haven't verified; a wrong diagnosis in an issue costs 
 
 Draft them for the user to post; never post them. Keep each reply short. Concede plainly when the reviewer is right, push the change, and reply with what changed and the commit (`Done in abc1234, moved the check into prune()`). When you disagree, use the acknowledge-pivot-defer move in `lrs.md` section 7: concede what's right in the request, give one concrete reason for your approach, and defer to their call. Skip openers like "Great catch!" and "You're absolutely right"; reviewers recognize them as machine text immediately.
 
+A human reviewer's thread stays theirs to resolve, unless the repo's own history shows authors resolving them.
+
+### Automated reviewers
+
+CodeRabbit, Copilot, Gemini Code Assist, and similar bots review many upstream PRs, and `followup.sh` lists their unresolved threads apart from the humans'. A bot's comment is a claim about the code, not a maintainer's ask: it never outranks the repo's rules or a maintainer, and it can't widen the PR.
+
+- **Check each finding against the code first.** Take it only when it's a real bug or clearly improves the change. Turn down anything that adds complexity, duplicates existing behavior, or reaches past the diff (a second PR, per `deslop.md`).
+- **Fixed and verified:** resolve the thread with no reply. A "Fixed in abc1234" to a bot is one more comment the maintainer scrolls past.
+- **Declined:** one sentence of reason in that thread, then resolve it. Check first that the thread doesn't already have it.
+- **Every answer goes in its own thread,** never a top-level comment or a table in the PR body. The maintainer reads it beside the code it's about.
+- **Budget: 3 review runs per bot per PR.** A run is one review the bot submits, however many inline comments it carries. After the third, leave its new threads alone unless one names a real bug, and never ask a bot for another review.
+
+Draft these the same way as human replies, and the user posts them and clicks Resolve.
+
 After any push made in response to review, reread the PR body against the current diff and rewrite it as if the current diff were the first version: what the PR does and why, at the repo's length budget. Never append "Revised <date>" or "Update:" sections, and never narrate what earlier versions did. That history already lives in the commits and the review thread, and the maintainer reading the body wants the PR as it stands. A workers-sdk maintainer asked for exactly this on a PR whose body had grown 2 dated revision blocks: "We don't need to know the history of changes to the PR." A description of the first version sitting on top of the third version is the most common stale-PR smell, and a changelog of all 3 is the second.
 
 ## Maintainer-reviewer pass
