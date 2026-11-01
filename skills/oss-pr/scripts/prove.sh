@@ -27,7 +27,8 @@
 #
 # Needs a clean working tree, because it swaps files in place (so builds and
 # installed dependencies are reused). A trap restores HEAD on exit or Ctrl-C.
-# Writes proof.md and full logs to $(git rev-parse --git-dir)/houseguest/<branch>/.
+# Writes proof.md and full logs to $(git rev-parse --git-dir)/houseguest/<branch>/, and appends
+# the tree and verdict to proof-attempts.log, which next.sh counts toward the 3-attempt budget.
 
 set -uo pipefail
 
@@ -241,6 +242,7 @@ tail_of() { echo '```'; tail -n 25 "$1"; echo '```'; }
   tail_of "$ledger/logs/green-1.log"
 } >"$ledger/proof.md"
 bash "$(dirname "$0")/receipt.sh" seal "$ledger/proof.md"
+printf '%s\t%s\t%s\n' "$(git rev-parse HEAD^{tree})" "$status" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$ledger/proof-attempts.log"
 
 echo "$status: wrote $ledger/proof.md"
 [ "$status" = "PASS" ]

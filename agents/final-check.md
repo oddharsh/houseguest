@@ -36,6 +36,7 @@ If a step needs something you don't have (hardware, an account, an OS, a paid se
 # Final check: <branch>
 STATUS: PASS | FAIL | BLOCKED
 SHA: <git rev-parse HEAD>
+BODY: sha256=<openssl dgst -sha256 < the pr-body.md you were given | awk '{print $NF}'>
 
 ## Unannounced changes
 - <input: base output vs HEAD output, the difftests/ file that shows it, or "none found in <N> inputs tried">
@@ -52,4 +53,4 @@ SHA: <git rev-parse HEAD>
   ```
 ```
 
-STATUS is PASS only when every problem showed on the base and is gone on HEAD as claimed (or, for docs and issue drafts, every example held). The `STATUS:` and `SHA:` lines are read by the PR gate hook, so keep that exact spelling. When `final.md` is done, seal it: `bash <skill-dir>/scripts/receipt.sh seal <out>/final.md`. Then reply with the status line and one line per problem, and nothing else.
+STATUS is PASS only when every problem showed on the base and is gone on HEAD as claimed (or, for docs and issue drafts, every example held). The `STATUS:`, `SHA:`, and `BODY:` lines are read by the PR gate hook, so keep that exact spelling. For an issue draft, which has no `pr-body.md`, leave `BODY:` out. When `final.md` is done, seal it: `bash <skill-dir>/scripts/receipt.sh seal <out>/final.md`. Then reply with the status line and one line per problem, and nothing else.
