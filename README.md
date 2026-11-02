@@ -32,7 +32,7 @@ Maintainers close low-effort PRs for 3 reasons. houseguest runs a phase against 
 
 Each phase runs in its own subagent, so the agent that wrote the fix never grades its own proof. Phases talk only through a ledger in `.git/houseguest/<branch>/`, which git never tracks.
 
-A hook blocks `gh pr create` until every phase has passed on HEAD with its seal intact. Gerrit projects (Chromium, Go, Android, Qt, Wikimedia) get the same gate on `git cl upload`, `git review`, `repo upload`, and pushes to `refs/for/`.
+`next.sh` reads the ledger and names the first phase that doesn't hold on HEAD, so a new commit or a rewritten PR body sends the job back to the phase that has to rerun. A session that starts on a branch with a ledger gets that line automatically. A hook blocks `gh pr create` until every phase holds, checking the same list, seals included. Gerrit projects (Chromium, Go, Android, Qt, Wikimedia) get the same gate on `git cl upload`, `git review`, `repo upload`, and pushes to `refs/for/`.
 
 Nothing reaches upstream without your yes.
 
@@ -43,10 +43,11 @@ Nothing reaches upstream without your yes.
 | `skills/oss-pr` | The phases, and the references they read |
 | `agents/` | `intent-check`, `maintainer-review`, `finding-check`, `final-check`, plus `second-fix` and `compare` for an optional blind second opinion |
 | `hooks/gate.sh` | The PR gate |
-| `skills/oss-pr/scripts/` | 15 helpers, listed below |
+| `hooks/session.sh` | Prints the next phase when a session starts on a branch with a ledger |
+| `skills/oss-pr/scripts/` | 16 helpers, listed below |
 
 <details>
-<summary>The 15 scripts, and the question each one answers</summary>
+<summary>The 16 scripts, and the question each one answers</summary>
 
 | Script | Question |
 |---|---|
@@ -65,6 +66,7 @@ Nothing reaches upstream without your yes.
 | `checks.sh` | Which property tests, fuzzers, or proofs does the repo already run? |
 | `prove.sh` | Does the test fail without the fix and pass with it? |
 | `receipt.sh` | Were the ledger's verdicts edited by hand? |
+| `next.sh` | Which phase runs next, and why? |
 
 </details>
 

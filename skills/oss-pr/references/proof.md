@@ -4,7 +4,7 @@ The user wants proof a skeptical maintainer can't argue with. For a bug fix, tha
 
 ## Red-green
 
-Commit first. The proof binds to a commit SHA, and the gate hook rejects a proof whose SHA isn't HEAD.
+Commit first. The proof binds to the commit's tree, and the gate hook rejects a proof whose tree isn't HEAD's. Rewording a commit message or squashing keeps the tree, so the proof still holds; any change to a file needs a new proof.
 
 **Tests in separate files** (most JS/TS, Python, Go, Java, Ruby):
 
@@ -17,7 +17,7 @@ bash "<skill-dir>/scripts/prove.sh" \
 
 The script reverts every changed non-test file to the merge-base, runs the test (it must fail), restores the fix, and runs it again (it must pass). Then it checks two more things a reviewer would otherwise find later: that the test covers every part of the fix, and that it isn't flaky (both below). If your test files don't match its default test-path pattern, pass `--tests '<regex>'`.
 
-**Tests inline with the code** (Zig `test` blocks, Rust `#[cfg(test)]` modules, doctests): the script can't split test from fix inside one file. Commit the test alone first, then the fix, and pass the test-only commit as `--red-ref <sha>`. If the repo wants one commit per PR, squash after the proof passes and rerun the proof on the squashed commit; that's cheap, and it keeps the SHA honest.
+**Tests inline with the code** (Zig `test` blocks, Rust `#[cfg(test)]` modules, doctests): the script can't split test from fix inside one file. Commit the test alone first, then the fix, and pass the test-only commit as `--red-ref <sha>`. If the repo wants one commit per PR, squash after the proof passes; the squashed commit has the same tree, so the proof still holds.
 
 ## Why `--expect` matters
 
@@ -123,3 +123,5 @@ A FAIL is the useful outcome; it caught something before a maintainer did. Read 
 - **Flaky:** the logs for each extra run are in `logs/flake-*.log`. Find what differs between a passing and a failing run, and fix the cause in the test, or in the fix if the race is there.
 
 Never edit `proof.md` to say PASS. The PR description quotes it, and the gate hook trusts it.
+
+**Three strikes.** After the proof fails on 3 different trees since it last passed (rerunning one tree counts once), `next.sh` says ASK USER instead of sending the job back to phase 3. A fix that has failed three ways usually has the bug in the wrong place, or a test that can't see it. Show the user what failed each time, ask how to go on, and write their answer to `proof-ack.md`; the budget then lifts.
