@@ -179,7 +179,7 @@ The same go, stop, or ask logic applies to an issue, read as "is filing this her
 - **ASK, meaning post somewhere else first:**
   - The repo routes questions or proposals to Discussions or a forum (check the issue template `config.yml` contact links).
   - The bug lives upstream: in a dependency, the platform API, or a service the tool calls. Write for that venue, not this repo, and say why it belongs there.
-- **Release lines:** when the bug is fixed on a newer line, check whether the user's line is still maintained (a branch for it, recent backport PRs, releases from it). If it is, a backport request is GO. If it isn't, the answer is to upgrade, so STOP and say so.
+- **Release lines:** when the bug is fixed on a newer line, check whether the user's line is still maintained (a branch for it, recent backport PRs, releases from it). If it is, a backport request is GO. If it isn't, STOP, and give the user both ways off in `forks.md`: carry the fixing commit on their own line, or upgrade after reading what the upgrade brings. Upgrading isn't the default answer, since it brings every other commit too.
 
 ## Timing signals
 

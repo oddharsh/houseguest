@@ -8,7 +8,8 @@ description: >
   the user is contributing to a repo they don't own: fixing a bug in a library, "open a PR on X",
   "file an issue upstream", "send a patch", "contribute this fix back", working in a fork, writing a
   PR description or reply to a maintainer's review, or checking whether an existing PR of theirs is
-  sloppy. Also use it when the user asks whether an issue is already fixed or already has a PR.
+  sloppy. Also use it when the user asks whether an issue is already fixed or already has a PR, wants
+  to fork, patch, or trim a dependency to their own use, or asks whether a dependency update is worth taking.
 ---
 
 # oss-pr
@@ -69,7 +70,7 @@ Your job between phases:
 
 The intent check, the second fix, the comparison, the maintainer reviewer, the finding check, and the final check ship as agents with this plugin (`houseguest:intent-check`, `houseguest:second-fix`, `houseguest:compare`, `houseguest:maintainer-review`, `houseguest:finding-check`, `houseguest:final-check`); their files are in `agents/` at the plugin root, two levels above `<skill-dir>`. If the agents aren't listed, launch a general-purpose agent with the agent file's body as its prompt. The other phases run as general-purpose agents told to follow their reference file. A subagent can't launch another one, so you run phase 6 and its finding checks yourself, and send the findings that survive back to the phase that owns them: code findings to a fresh phase 3 (then 4 and 5 again), text findings to a fresh phase 5, each with the findings quoted in full. A closing reason recon missed sends the job back to phase 1.
 
-**Second opinion.** After phase 4 passes on a change that isn't trivial (recon's definition), offer the user a second, independent fix; it roughly doubles the cost of writing one, so run it only on a yes. The second-fix agent works from a scratch clone at the base and never sees your diff, then the compare agent judges both on their own exact trees: ours at HEAD, and the base with `alternative.patch` applied. A fix written blind that comes out smaller, or closer to the neighbors, is the plainest evidence that yours is overbuilt or foreign. Copy both notes into the ledger, then:
+**Second opinion.** After phase 4 passes on a change that isn't trivial (recon's definition), offer the user a second, independent fix; it roughly doubles the cost of writing one, so run it only on a yes. The second-fix agent works from a scratch clone at the base and never sees your diff, then the compare agent judges both on their own exact trees: ours at HEAD, and the base with `alternative.patch` applied. A fix written blind that comes out smaller, or closer to the neighbors, is the plainest evidence that yours is overbuilt or foreign. Slop is variation without selection; the second fix is the variation, and the comparison is the selection. Copy both notes into the ledger, then:
 
 - **The alternative doesn't qualify, or PREFER: OURS or EITHER:** carry on to phase 5. If `compare.md` names something worth borrowing, a fresh phase 3 gets it quoted and decides; phase 4 then runs again. When the alternative qualified, phase 5 may name it as the approach you passed on, with the reason `compare.md` gives.
 - **Disagreements,** whatever the preference: an input where ours is the side that breaks the contract goes to a fresh phase 3, quoted, and its test in `difftests/` can become a regression test. An input where ours is right and the alternative isn't is a case your own test doesn't pin down (both fixes passed it), so a fresh phase 3 adds it to your test. An **undecided** one is a real question about the behavior, so it goes in the PR body as the specific choice the maintainer is handed ("With an empty list this returns `[]`; returning `None` would match `parse()`. Happy to switch.").
@@ -139,3 +140,5 @@ The behavior is deliberate and the docs never said so. Tell the user plainly tha
 ## When recon says stop
 
 Report the reason with links and stop. Offer the useful alternative where one exists. Comment on the existing PR, ask in the issue whether a PR is welcome, or file the repro as an issue. Don't look for a way around a repo's AI policy.
+
+When the stop means upstream won't serve the user's case (a declined change, behavior the project chose on purpose, an unmaintained release line, an archived repo), the user may be the edge case, and a fork they own may serve them better than a PR. Offer it per `references/forks.md`, which also governs any request to fork, trim, or update a dependency. Its rules apply in the user's fork, never upstream.
