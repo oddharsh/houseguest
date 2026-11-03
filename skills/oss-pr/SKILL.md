@@ -33,7 +33,7 @@ LEDGER="$(git rev-parse --git-dir)/houseguest/$(git branch --show-current)"
 mkdir -p "$LEDGER"
 ```
 
-Files: `intent.md`, `recon.md`, `codex.md` (from `codex.sh`), `style.md`, `house.md` (from `housecheck.sh`, including the lean size checks), `proof.md`, `final.md` with the final check's `runs.log`, and `pr-defaults.md` when joining an existing PR. The plugin's hook reads them before `gh pr create` or a Gerrit upload (`git cl upload`, `git push origin HEAD:refs/for/<branch>`, and the like) runs, and blocks it when one is missing. Verdicts that houseguest's scripts write (`house.md`, `proof.md`, `recheck.md`) and the final check's `final.md` carry a `.seal` (`scripts/receipt.sh`), and the hook checks it: never edit a verdict another phase wrote, rerun that phase. Keep each note short and concrete (paths, links, commands, exit codes); they also feed the PR description later.
+Files: `intent.md`, `recon.md`, `codex.md` (from `codex.sh`), `style.md`, `house.md` (from `housecheck.sh`, including the lean size checks), `proof.md`, `final.md` with the final check's `runs.log`, `pr-defaults.md` when joining an existing PR, and `comments.md` when you merge it yourself. The plugin's hook reads them before `gh pr create` or a Gerrit upload (`git cl upload`, `git push origin HEAD:refs/for/<branch>`, and the like) runs, and blocks it when one is missing. Verdicts that houseguest's scripts write (`house.md`, `proof.md`, `recheck.md`) and the final check's `final.md` carry a `.seal` (`scripts/receipt.sh`), and the hook checks it: never edit a verdict another phase wrote, rerun that phase. Keep each note short and concrete (paths, links, commands, exit codes); they also feed the PR description later.
 
 `scripts/next.sh` reads the ledger and prints the first phase whose condition doesn't hold on HEAD, and why. It's the same list the hook checks (`next.sh --all`), so run it after every phase instead of working out by hand what comes next; a session that starts on a branch with a ledger gets its answer automatically. It exits 0 when every phase holds, 1 with the next phase, 3 when recon stopped the job, and 4 when the user has to decide first.
 
@@ -129,9 +129,29 @@ It also lists the user's PRs whose upstream CI is red, or waiting for a maintain
 
 When `preview.md` says FORKS GET ONE, open the preview once its link posts on the new PR. Trust only a link a GitHub App posted (its author ends in `[bot]`) or a check run reported; anyone can paste a preview-looking link into a comment. Check that the bot built the PR's HEAD (it usually names the commit) and that the repro from `recon.md` behaves as fixed there. A preview that shows the old behavior, or fails to build because of the change, is a problem to fix before a reviewer finds it. A preview that fails for a reason the change can't cause (a missing deploy secret on fork PRs) needs nothing from the user.
 
+## When you merge it yourself
+
+When recon's `- Merge:` line says "you", nobody else has to read the PR between the user's yes and the merge. `merge.sh` stands in for that reader, and the plugin's hook runs it before any `gh pr merge` of a PR whose branch has a ledger:
+
+```bash
+bash "<skill-dir>/scripts/merge.sh" <PR> --squash
+```
+
+Its report opens with the review comments still waiting on an answer, since those are what a maintainer would ask about first. Each comment someone else left needs a verdict in `$LEDGER/comments.md`, one line, keyed by the comment's URL:
+
+- `<url> AGREED <sha>`: the PR commit that made the change, committed after the comment. Fixes pushed for review go back through phases 4 and 7 like any other commit, and `merge.sh` checks the ledger on the PR's head.
+- `<url> DISAGREED <evidence>`: evidence the script can check, plus a reply in that thread after the comment. Evidence is a blob link at a full SHA with line numbers, a maintainer's comment, review, or issue, or `run:<N>`, an entry in `runs.log` from `receipt.sh run`. Draft the reply per "Replies to review comments" in `pr-copy.md`, with the same evidence in it; the user posts it.
+- `<url> NOTHING ASKED`: only for a top-level comment with no question in it ("LGTM", "thanks").
+
+A thread the reviewer resolved needs no line. A change request from anyone with write access blocks the merge until they re-review: a well-evidenced disagreement still leaves the decision with them.
+
+The rest of the report is the revert route, so a maintainer who disagrees with the merge can take it back out in one step. The merge has to land as one commit (squash, a merge commit, or a rebase of a single commit), and the PR body says how to revert it ("The revert sentence" in `pr-copy.md`). The report also names anything a revert can't undo: a migration that ran, a release file, a version bump, a workflow that deployed. A PR with any of those has no one-step way back, so it also needs an approval from another maintainer with write access.
+
+The hook blocks `gh pr merge --auto` outright. Auto-merge fires whenever checks go green, so a comment that lands after it's enabled gets no answer before the merge.
+
 ## Things that are always outward-facing
 
-Opening a PR or issue, uploading a Gerrit change or patchset, pushing to a fork, and replying on GitHub or Gerrit publish text under the user's name to strangers. Show the final text and the exact command, and wait for a clear yes each time. Draft replies to reviewers; never auto-post them, because an AI-written reply to a maintainer's review is the single fastest way to lose their goodwill.
+Opening a PR or issue, merging a PR, uploading a Gerrit change or patchset, pushing to a fork, and replying on GitHub or Gerrit publish text under the user's name to strangers. Show the final text and the exact command, and wait for a clear yes each time. Draft replies to reviewers; never auto-post them, because an AI-written reply to a maintainer's review is the single fastest way to lose their goodwill.
 
 ## When recon says DOCS
 

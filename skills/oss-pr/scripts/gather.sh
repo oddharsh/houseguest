@@ -109,8 +109,8 @@ WF_RE='pr|pull|triage|title|description|semantic|label|close|stale|vouch|cla|lin
 
 s_repo() {
   section "Repo"
-  ghf "repo view" gh repo view "$repo" --json defaultBranchRef,description,isArchived,stargazerCount \
-    -q '"- default branch: \(.defaultBranchRef.name)\n- archived today: \(.isArchived)\n- stars today: \(.stargazerCount)\n- description: \(.description)"' \
+  ghf "repo view" gh repo view "$repo" --json defaultBranchRef,description,isArchived,stargazerCount,viewerPermission,squashMergeAllowed,mergeCommitAllowed,rebaseMergeAllowed \
+    -q '"- default branch: \(.defaultBranchRef.name)\n- archived today: \(.isArchived)\n- stars today: \(.stargazerCount)\n- description: \(.description)\n- your access: \(.viewerPermission)\(if (.viewerPermission | test("^(WRITE|MAINTAIN|ADMIN)$")) then " (you can merge PRs here)" else "" end); merge methods: \([if .squashMergeAllowed then "squash" else empty end, if .mergeCommitAllowed then "merge" else empty end, if .rebaseMergeAllowed then "rebase" else empty end] | join(", "))"' \
     || failed "couldn't read the repo"
 }
 

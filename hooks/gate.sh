@@ -6,7 +6,8 @@
 # final check both passed on the current HEAD, and the review loop stopped: every
 # condition skills/oss-pr/scripts/next.sh checks. Stays silent everywhere else: other commands,
 # repos that aren't forks, and your own repos. A `gh issue create` from a branch with a ledger
-# gets only the title check.
+# gets only the title check. A `gh pr merge` of a PR whose branch has a ledger runs
+# skills/oss-pr/scripts/merge.sh, and `gh pr merge --auto` is blocked outright.
 # A user who explicitly wants to skip can prefix the command with HOUSEGUEST_SKIP=1.
 
 input=$(cat)
@@ -22,8 +23,10 @@ printf '%s' "$cmd" | grep -q -E "(^|[;&|[:space:]])($GERRIT_RE)([[:space:]]|\$)"
 printf '%s' "$cmd" | grep -q -E 'git[[:space:]]+review[[:space:]](.*[[:space:]])?(-[dxXNmls]|--(download|cherrypick|cherrypick-indicate|cherrypick-only|compare|list|setup))([[:space:]]|$)' && gerrit=""
 
 # A security report recon marked PRIVATE also blocks public issues and pushes.
-private_only=""
+private_only="" merge=""
 if [ -n "$gerrit" ]; then :
+elif printf '%s' "$cmd" | grep -q -E '(^|[;&|[:space:]])gh[[:space:]]+pr[[:space:]]+merge([[:space:]]|$)'; then
+  merge=1
 elif printf '%s' "$cmd" | grep -q -E '(^|[;&|[:space:]])(gh[[:space:]]+issue[[:space:]]+create|git[[:space:]]+push)([[:space:]]|$)'; then
   private_only=1
 else
@@ -46,6 +49,34 @@ title_flags() {  # title_flags <stats file> <title>: what title.sh flags, joined
   [ -n "$out" ] || out="title.sh couldn't read $1"
   printf '%s' "$out"
 }
+
+if [ -n "$merge" ]; then
+  # Only PRs houseguest made: the PR's head branch has a ledger in this clone.
+  args=$(printf '%s' "$cmd" | sed -E 's/.*gh[[:space:]]+pr[[:space:]]+merge//; s/[;&|].*//')
+  sel=$(printf '%s' "$args" | sed -n -E 's/^[[:space:]]+([^-[:space:]][^[:space:]]*).*/\1/p')
+  repo=$(printf '%s' "$args" | sed -n -E 's/.*(-R|--repo)[ =]+([^[:space:]]+).*/\2/p')
+  head=$(gh pr view ${sel:+"$sel"} ${repo:+-R "$repo"} --json headRefName -q .headRefName 2>/dev/null)
+  ledger="$(git rev-parse --git-dir)/houseguest/$head"
+  [ -n "$head" ] && [ -d "$ledger" ] || exit 0
+  if printf '%s' "$args" | grep -q -E '(^|[[:space:]])--auto([[:space:]=]|$)'; then
+    why="--auto merges whenever checks go green, so a comment that lands after this runs gets no answer before the merge. Run merge.sh, answer what it lists, and merge by hand"
+  else
+    method=""
+    printf '%s' "$args" | grep -q -E '(^|[[:space:]])(-s|--squash)([[:space:]]|$)' && method=--squash
+    printf '%s' "$args" | grep -q -E '(^|[[:space:]])(-m|--merge)([[:space:]]|$)' && method=--merge
+    printf '%s' "$args" | grep -q -E '(^|[[:space:]])(-r|--rebase)([[:space:]]|$)' && method=--rebase
+    out=$(bash "${CLAUDE_PLUGIN_ROOT:-$(dirname "$0")/..}/skills/oss-pr/scripts/merge.sh" ${sel:+"$sel"} ${repo:+-R "$repo"} $method --ledger "$ledger" 2>&1) && exit 0
+    why="merge.sh says it isn't ready:
+$out"
+  fi
+  cat >&2 <<EOF
+houseguest blocked this merge. $why
+
+Answer each open comment ("When you merge it yourself" in the oss-pr skill), then rerun merge.sh.
+If the user explicitly says to merge anyway, rerun the same command prefixed with HOUSEGUEST_SKIP=1.
+EOF
+  exit 2
+fi
 
 if [ -n "$private_only" ]; then
   ledger="$(git rev-parse --git-dir)/houseguest/$(git branch --show-current)"

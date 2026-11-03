@@ -206,6 +206,7 @@ Reason: <one sentence, with link>
 - Predicted objections: <the top 3, each with its basis>
 - Reproduces on: <channels.sh's recon line with each result filled in: yes, no, or how it failed, and the version each run loaded>; trigger removed: <gone / still there>; or "n/a: not a bug fix" for features and docs
 - Timing: <milestone, freeze, last outside merge, or "nothing pending">
+- Merge: <who merges: "maintainers", or "you" when the dump's "your access" line says you can, with the written rule that lets authors merge their own PRs (quoted, with its path) or "no written rule">
 - Disclosure required: <their exact required format and when it applies, or "not required">
 ```
 
