@@ -34,6 +34,8 @@ Each phase runs in its own subagent, so the agent that wrote the fix never grade
 
 `next.sh` reads the ledger and names the first phase that doesn't hold on HEAD, so a new commit or a rewritten PR body sends the job back to the phase that has to rerun. A session that starts on a branch with a ledger gets that line automatically. A hook blocks `gh pr create` until every phase holds, checking the same list, seals included. Gerrit projects (Chromium, Go, Android, Qt, Wikimedia) get the same gate on `git cl upload`, `git review`, `repo upload`, and pushes to `refs/for/`.
 
+When you can merge the PR yourself, the hook also gates `gh pr merge`. Every review comment needs a verdict first: agreed, with the commit that fixed it, or disagreed, with evidence a script can check and a reply posted. The merge has to land as one commit so a maintainer can revert it in one click. Anything a revert can't undo, like a migration, needs another maintainer's approval, and auto-merge is blocked.
+
 Nothing reaches upstream without your yes.
 
 ## When upstream says no
@@ -50,10 +52,10 @@ The fork keeps its rules in `FORK.md`, each in plain words with an example and a
 | `agents/` | `intent-check`, `maintainer-review`, `finding-check`, `final-check`, plus `second-fix` and `compare` for an optional blind second opinion |
 | `hooks/gate.sh` | The PR gate |
 | `hooks/session.sh` | Prints the next phase when a session starts on a branch with a ledger |
-| `skills/oss-pr/scripts/` | 16 helpers, listed below |
+| `skills/oss-pr/scripts/` | 17 helpers, listed below |
 
 <details>
-<summary>The 16 scripts, and the question each one answers</summary>
+<summary>The 17 scripts, and the question each one answers</summary>
 
 | Script | Question |
 |---|---|
@@ -66,6 +68,7 @@ The fork keeps its rules in `FORK.md`, each in plain words with an example and a
 | `prdefaults.sh` | What has an existing PR already settled before you add to it? |
 | `recheck.sh` | What changed upstream since recon? |
 | `followup.sh` | Which of your open PRs and issues are waiting on you, a review bot, or a competing fix? |
+| `merge.sh` | Is every review comment answered, and can a maintainer revert your merge in one step? |
 | `house.sh` | What enforces style in this repo, and how? |
 | `housecheck.sh` | Does your diff pass the house rules and look like PRs that got merged? |
 | `title.sh` | Does your PR or issue title match the ones this repo accepts? |

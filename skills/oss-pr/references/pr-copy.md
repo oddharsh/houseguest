@@ -231,3 +231,11 @@ gh pr create -R <upstream> --head <fork-owner>:<branch> --title "$(cat <ledger>/
 On Gerrit, show `git log -1 --format=%B` (the description as it will appear) and the upload command `recon.md`'s `- Review:` line names: `git cl upload`, `git codereview mail`, `git review`, `repo upload .`, or `git push origin HEAD:refs/for/<branch>`. The gate checks every one of them.
 
 Run it only after a clear yes.
+
+## The revert sentence
+
+When recon's `- Merge:` line says you'll merge the PR yourself, the body gets one more sentence, just above the disclosure line: who merges, why that's allowed, and how a maintainer takes it back out. `merge.sh` won't pass a body that never mentions reverting.
+
+> I'll merge this myself per [MAINTAINERS.md](<link at a full SHA>); it lands as one squash commit, so the Revert button on this PR takes all of it out.
+
+When `merge.sh` lists something a revert can't undo, name it in the same sentence: "Reverting won't drop the `last_seen` column that `0042_last_seen.sql` adds." One sentence covers it; the maintainer needs the way back, not a rollback plan.
