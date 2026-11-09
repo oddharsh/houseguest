@@ -16,7 +16,7 @@ If the policy allows LLM text in a marked form (image-rs wants it in a quote blo
 
 - **A PR-writing skill in the repo wins next.** When `codex.md` lists one (Astro's `astro-pr-writer`), its structure, title rules, and exclusions replace this file's template and length baseline, and its evals show the exact output it expects. Astro's, for one, wants `## Changes`, `## Testing`, and `## Docs`, and no commands or pass counts in the body, so the red-green block stays out. Use the rest of this file only where it's silent.
 - **Text the repo mandates wins, verbatim.** If the template or a workflow requires headings, checkboxes, a disclosure block, or exact wording, keep them as written, even when they break a rule in this file (an em dash in their disclosure line, a "This PR" heading, "please don't delete the checkboxes"). Your rules govern only the sentences you write. Tick only the boxes you actually did.
-- **Length is measured on your own prose.** Count the sentences you wrote. Leave out template headings and boilerplate, checkboxes, the disclosure line, and the collapsed proof block. Then pick the budget by the PR's function (see `lrs.md` section 2):
+- **Length is measured on your own prose.** Count the sentences you wrote above the fold. Leave out template headings and boilerplate, checkboxes, the disclosure line, and every collapsed block. Then pick the budget by the PR's function (see `lrs.md` section 2):
   - **Inform or fix a recognized problem:** aim for the dump's pre-LLM median, and treat its outside-contributor median as a ceiling. The floor is what the reviewer must know to merge without asking: for a dependency or security bump, the advisory or changelog link plus one sentence for each fact a reviewer would otherwise ask about (why this version, what happened to the lockfile, which tests ran). When the baseline is shorter than that floor, the floor wins. Across 12 well-run repos, outside contributors' PR bodies roughly tripled after LLMs arrived (median 207 characters before Dec 2022, 671 since mid-2025; see `research/pre-llm-prs.md` in the plugin repo).
   - **Pose a new problem, or argue a contested change:** skip the baseline. Give each move one or two sentences instead: the instability, the cost, the change, the warrant, and the acknowledgment. A contested change that argues properly in 6 sentences beats a short one that skips its warrant.
 - **Headings:** use them when the template does, or when this repo's own contributors do. If 2 or more of the pre-LLM exemplars use the same headings (`## Before / ## After`), that's a convention. Otherwise write plain paragraphs, which is how most pre-LLM PRs in untemplated repos read.
@@ -66,10 +66,13 @@ These cluster in 2025 to 2026 PRs, and maintainers have learned to spot them:
 
 - A bold thesis line opening the body.
 - "Context & Purpose," "Value," "Scope philosophy," or "Root Cause" sections on a 20-line fix.
-- "Test plan" bullets listing trivial checks, "All existing tests pass," "No behavioral changes."
+- A `## Test plan` section the template doesn't ask for, "All existing tests pass," "No behavioral changes." What you ran is one verification sentence and a collapsed block.
 - Arrows and labels inside code blocks (`<- BUG`), or prose labels like "Honest scope:".
-- Inventories of `file:line` sites the PR doesn't change.
-- Bullet-by-bullet narration of a diff the reviewer can read.
+- Inventories of `file:line` sites the PR doesn't change, and lists of the files it does change. GitHub's Files tab already shows them.
+- Bullet-by-bullet narration of a diff the reviewer can read ("Updated `parse()` to...", "Added a test for..."), or one bullet per commit.
+- Risks nobody checked ("this could affect performance"). Name a risk only when the ledger shows it, with what showed it.
+- An intent nobody stated. Why the user wanted the change comes from the user, the issue, or a maintainer; when none of them said, ask with `[ASK USER: ...]`.
+- An accidental link: `#42` in prose links issue 42, and `@name` pings someone. Write "step 42" or put it in backticks.
 - "Revised <date>" or "Update:" blocks narrating how the PR changed during review, and paragraph-per-test walkthroughs of what each new test asserts.
 - Promotion of the author's other projects. (The disclosure line is one line, at the end, about this PR only.)
 - The negate-then-correct sentence: "This isn't just a cleanup, it's a fix for X." State the positive claim and delete the negation.
@@ -94,12 +97,15 @@ If a `writing-style` skill is installed, apply it as well.
 ```
 <from proof.md: the red failure line, the green pass line, the commands and SHAs>
 ```
+
 </details>
 
 <disclosure line>
 ````
 
 Screenshots from `$LEDGER/shots/` go in after the PR opens (see "What reviewers can see" in `proof.md`). The collapsed block is how the proof stays complete while the prose stays at the repo's baseline length. Leave out anything that would be empty. A typo fix is one sentence and the disclosure line.
+
+**Markup that renders:** leave a blank line after `</summary>` and before `</details>`. Without them GitHub shows the fenced block or table inside as raw text.
 
 **Without `proof.md`:** when there's no red-green run (docs, dependency bumps, or a phase you skipped), drop the collapsed block and state in prose exactly what was run and what it showed. Never write a result that isn't in front of you; use `[ASK USER: did X pass?]` instead.
 
@@ -114,6 +120,38 @@ An invented example of the target shape, for a fictional formatter:
 > This counts display width with the same `unicode-width` call the renderer already uses for alignment. Counting chars would be simpler but still wrong for wide glyphs.
 >
 > Added a test that wraps at 13 columns before this change and 40 after. Only checked on Linux. Fixes #1234.
+
+## Long-form PRs: a curated top, measurements folded
+
+Some PRs carry more evidence than the budget holds: a performance change with benchmarks, a matrix across platforms, a contested change that needs its argument and its numbers. The body then splits in two at a fold. A maintainer reads the top to decide whether this PR deserves their time, and opens the rest only to check a claim. (Simon Willison folds agent-written PR text the same way: https://simonwillison.net/2026/Nov/9/details-summary/.)
+
+**Above the fold is the user's.** The user writes it, or reads houseguest's draft and edits it until every sentence is one they'd sign. It holds the moves from "How human contributors wrote": current behavior, the stake, the change and why this way, one verification sentence with the headline number, and the limits. Every number up there also appears in a block below, so the maintainer can trace it. Draft it anyway; the session the user talks to hands it over before the final check (see "Curating the top" in SKILL.md).
+
+**Below the fold, the measurements.** Put a `### Measurements` heading under the prose (or the repo's own word, when its template or exemplars use one, like `## Testing`), then one collapsed block per set of numbers. Each summary names the tool and the headline result, so a maintainer who never opens it still gets the number:
+
+````markdown
+### Measurements
+
+<details><summary>hyperfine, 10 runs: 412 ms to 96 ms</summary>
+
+```
+<hyperfine output, base and HEAD, with the commands and SHAs>
+```
+
+</details>
+
+<details><summary>Red-green output</summary>
+
+```
+<from proof.md>
+```
+
+</details>
+````
+
+**Agent notes, only when they earn it.** Design reasoning a maintainer may want (the alternatives weighed, a lineage read through 4 commits) can go in one more block whose summary names the model, as Willison's does: `<summary>Notes from Claude Opus 5.5</summary>`. It follows every rule in this file; folding text doesn't excuse a tell. Leave it out when the repo's AI policy bars LLM text, and use the repo's own form when the policy prescribes one.
+
+Short fixes keep the plain template above: one fold (the red-green block), no heading. On Gerrit there is no fold; see "On Gerrit."
 
 ## The disclosure line
 
