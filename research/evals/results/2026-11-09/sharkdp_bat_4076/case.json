@@ -1,0 +1,14 @@
+{
+  "set": "noise",
+  "repo": "sharkdp/bat",
+  "number": 4076,
+  "url": "https://github.com/sharkdp/bat/pull/4076",
+  "merge_base": "fca6c542d4c75f154ded9529abc8f40b43575da2",
+  "head": "bc0a67e07c1eb8e3a6786804e4dfd1e267464dbe",
+  "created": "2026-10-16T20:21:47Z",
+  "title": "Fix the first line of UTF-16BE input swallowing the second line",
+  "body_edited_by_others": [],
+  "reviewer_prompt": "9937d5f4cc5d",
+  "agent": "Claude Code",
+  "note": "merged; maintainer: Nice, thanks"
+}

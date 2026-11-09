@@ -1,0 +1,10 @@
+{"findings":[
+{"summary":"Flag misses permission errors from directory traversal (haystack.rs build_from_result), so the common case still prints and exits 2","class":"blocking"},
+{"summary":"Scratch files pullrequest.txt and purpose.txt committed at repo root","class":"blocking"},
+{"summary":"handle_search_error calls set_errored() directly against the comment in messages.rs","class":"nit"},
+{"summary":"New unit tests race on a process-global ERRORED static and one test cannot fail; no integration test","class":"blocking"},
+{"summary":"--suppress-error=permission duplicates --no-messages, which already suppresses these errors; confusing value names","class":"blocking"},
+{"summary":"Flag/field placement out of alphabetical order and local style differs from --color","class":"nit"},
+{"summary":"zsh completion lists no values and sits in the wrong exclusion group","class":"nit"},
+{"summary":"PR body overstates test coverage and has a broken list","class":"nit"}
+],"verdict":"changes","hit":true,"hit_rank":5,"why":"Finding 5 states that --no-messages already exists and hides these errors so the new flag duplicates it, which matches the maintainer's reason; it also names the one residual difference (exit status) but still calls it a duplicate. Verdict is 'Wouldn't merge as is' without saying close, so changes."}

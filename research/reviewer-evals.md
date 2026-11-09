@@ -1,8 +1,10 @@
 # Scoring the maintainer reviewer
 
-Replayed against 23 public PRs, the maintainer reviewer named the maintainer's real reason on all 12 that were rejected. On the first run (2026-10-26) it also held the merge on 8 of the 11 that maintainers merged as they stood. After the 2026-10-31 prompt change it held 5 of the 11, and 4 of those 5 findings hold up against what happened on GitHub.
+Replayed blind against 23 public PRs on 2026-11-09, the maintainer reviewer named the maintainer's real reason on 11 of the 12 that were rejected, 7 of them as its first finding. It held the merge on 7 of the 11 that maintainers merged as they stood. That run, on the 2026-10-31 prompt, is the baseline later prompt changes get compared against.
 
-Recall is saturated on this set, so it can't tell two prompt versions apart. Noise is where prompt changes get scored.
+The 2026-10-31 run scored the same prompt at 12/12 and 5/11, but its reviewers worked beside a file that held the answer. Its transcripts are gone, so nobody can say whether they read it, and its numbers may be inflated. The 2026-10-26 run had the same file in the same place; its transcripts survive and show no reviewer opened it.
+
+Recall sits near its ceiling on this set, so noise and the rank of the hit are where prompt changes get scored.
 
 This page exists because houseguest can't learn from itself. Its ledger lives in `.git/houseguest/<branch>/` and is deleted with the clone, so nothing records whether the reviewer was right. Anthropic scores its own code reviewer daily against PRs that caused incidents (recall) and PRs known to be clean (noise), and rescores on every prompt or model change. This is the offline version: a corpus built from public history, a harness that replays it, and a first score.
 
@@ -13,11 +15,12 @@ This page exists because houseguest can't learn from itself. Its ledger lives in
 - **Noise set (`evals/noise.jsonl`):** 11 PRs from outside contributors, merged with no changes-requested review, from the same repos and window. `candidates.sh noise <repo>` lists them.
 - **Agent authorship:** flagged where the PR says so (a `codex/` branch, a "Generated with Claude Code" line, a maintainer's "AI junk" label). 3 of the recall PRs and 3 of the noise PRs carry a flag. Most PRs that are agent-written don't say so, so this undercounts.
 - **Replay:** `evals/run.sh prep` rebuilds each PR as the reviewer would have met it. It makes a fresh repo at the PR's merge base with 50 commits of history, puts the PR's final tree on top as one commit, and removes the remote. It runs `policy.sh --as-of` the moment the PR opened, so the reviewer gets the CONTRIBUTING and AI policy of that day. The title is the one the PR opened with: flask's maintainers rename rejected PRs to "AI junk" or "[rejected AI] ...", and the first replay of two flask PRs handed the reviewer that verdict through the title.
+- **Answer key:** prep writes each PR's set, the maintainer's reason and quote, and the prompt hash to `<out>/keys/<case>/case.json`, outside the case directory that the reviewer and the finding check can read. The judge's prompt and grade live there too. Until 2026-11-09 `case.json` sat in the case directory, beside the repo (see the blind rescore).
 - **Review:** `agents/maintainer-review.md`, unchanged, gets the repo, the body, the diff, and the policy dump, with no ledger, because these PRs weren't made with houseguest. It runs offline. Anything on GitHub after the PR opened would leak the outcome, so `run.sh review` gives `claude -p` no WebFetch and allows only read-only git and file commands.
 - **Judge:** a second model reads only the review and the real outcome (`evals/judge.md`). It splits the review into findings and marks each one blocking (a maintainer who agreed would hold the merge) or nit. For the recall set, it says whether one finding states the maintainer's reason in substance.
 - **Scores:** recall is hits over recall PRs. Noise is the share of clean PRs that got at least one blocking finding, plus blocking findings per clean PR.
-- **Rerun after a prompt change:** `rm <out>/*/{review.md,checks.json,judge.json}`, then `./evals/run.sh all <out>`. Each case records the hash of the reviewer prompt it ran, so scores from two prompt versions can't be mixed by accident.
-- **Reproduce:** `cd research && ./evals/run.sh all <out-dir>` needs `gh` and a logged-in `claude` CLI, then `./evals/run.sh archive <out-dir> evals/results/<date>`. A session without the CLI can run `prep`, write each `review.md` from `system.md` plus `prompt.md` and each `judge.json` from `judge.md` plus `judge-prompt.md`, then run `score`. That's how this baseline was made (see the caveats).
+- **Rerun after a prompt change:** `rm <out>/*/{review.md,checks.json} <out>/keys/*/judge.json`, then `./evals/run.sh all <out>`. Each case records the hash of the reviewer prompt it ran, so scores from two prompt versions can't be mixed by accident.
+- **Reproduce:** `cd research && ./evals/run.sh all <out-dir>` needs `gh` and a logged-in `claude` CLI, then `./evals/run.sh archive <out-dir> evals/results/<date>`. A session without the CLI can run `prep`, write each `review.md` from `system.md` plus `prompt.md` in the case directory, and each `judge.json` from `judge.md` plus `judge-prompt.md` in `keys/<case>/`, then run `score`. Whoever writes `review.md` or `checks.json` must stay out of `keys/`. That's how every run on this page was made (see the caveats).
 
 ## First scores
 
@@ -55,6 +58,8 @@ So 8/11 overstates the false-positive rate, though not by enough to dismiss it. 
 
 ## Rescore with the finding check (2026-10-31)
 
+These scores may be inflated: the reviewers could read the answer key (see the blind rescore below).
+
 PR #26 changed the reviewer prompt and added a finding check, both adapted from Anthropic's code-review plugin. The prompt now leaves out things that are true but aren't findings (what a linter catches, code silenced on purpose, hardening no rule asks for), quotes a rule before citing it, and writes each Important finding so it can be checked alone. The check is `agents/finding-check.md`, one run per Important finding, blind to the rest of the review.
 
 | | 2026-10-26 | 2026-10-31 |
@@ -87,12 +92,48 @@ So at most 1 of the 11 clean PRs drew a blocking finding that's wrong, against r
 - **Offline checks are weaker than real ones.** The skill's check runs the finding's input. Here it could only read, and 4 of the 5 noise checks said so.
 - **The runner differs from the baseline's.** Reviews ran as general-purpose subagents told to follow `system.md`, because the installed `houseguest:maintainer-review` agent still carried the old prompt. An audit of all 423 tool calls across reviews, checks, and grades found no network use. Two reviewers read ripgrep's dependencies from the local cargo registry, outside the case directory.
 
+## Blind rescore (2026-11-09)
+
+A rerun on 2026-11-09 caught every reviewer opening `case.json` before it reviewed. Prep wrote that file into the case directory, beside the repo, and it holds the answer key. `set` says whether the PR was rejected or merged clean, and each recall row carries the maintainer's reason and quote. `run.sh review` hands the reviewer that directory (`--add-dir`), and the finding check gets the same access. The judge's prompt quotes the reason too, and it was written there as well, so a rerun that kept an old `judge-prompt.md` would have leaked through it.
+
+Prep now writes the key to `keys/<case>/`. The control, after a fresh prep: no file in any case directory contains `"set": "recall"`, `"set": "noise"`, or a recall case's quote. The same greps find all 23 keys under `keys/`, and 24 files in the 2026-10-31 archive. The judge prompt for ripgrep#3450 still carries the maintainer's reason. (A bare `grep -r '"set"'` also matches 13 upstream files inside `repo/`, globset's `Cargo.toml` and a vendored `jquery.js`, none of them the key.)
+
+**What it means for the earlier runs:**
+
+- **2026-10-26 stands.** Its 25 reviewer transcripts survive in the Claude Code session that built the corpus. No tool call names `case.json`, and no tool result holds the key. 3 reviewers listed the case directory and saw the filename; none opened it.
+- **2026-10-31 can't be checked.** No transcripts from it are left on this machine. Its reviewers worked in the same layout as the 2026-11-09 runners that all opened the file, so its scores may be inflated, and the blind run moved the way a leak would predict.
+
+| | 2026-10-26 | 2026-10-31 | 2026-11-09 blind |
+|---|---|---|---|
+| Reviewer prompt | `2aba6a090a98` | `9937d5f4cc5d` | `9937d5f4cc5d` |
+| Could read the key | yes, didn't | yes, unknown | no |
+| Recall: maintainer's reason named | 12/12 | 12/12 | 11/12 |
+| Named as the first finding | 7/12 | 10/12 | 7/12 |
+| Recall verdicts | 9 close, 3 changes | 7 close, 5 changes | 3 close, 9 changes |
+| Noise: clean PRs with a blocking finding | 8/11 | 5/11 | 7/11 |
+| Blocking findings per clean PR | 1.0 | 0.5 | 0.6 |
+| Noise PRs called mergeable | 2/11 | 6/11 | 4/11 |
+| Noise finding checks / refuted | none | 5 / 0 | 10 / 0 (9 CONFIRMED, 1 UNSURE) |
+
+Reviews ran on Opus 5.5 as general-purpose subagents told to follow `system.md`, because the installed `houseguest:maintainer-review` agent carries prompt `9971a7fc771b`. Each finding check ran alone on Opus 5.5, told to leave `review.md` and the other findings unread. Grades are Sonnet 5.5, one per case, given the checks. Every review, check, and grade is in `evals/results/2026-11-09/`.
+
+**Where the blind run differs from 2026-10-31:**
+
+- **flask#6067 is now a miss.** The reviewer objected to process (no issue, missing tests) and typing. It never said what the maintainer did: `make_response` can already be overridden.
+- **The hit came later on 4 recall PRs.** ripgrep#3239 and bat#3431 put it 5th, black#5222 3rd, ripgrep#3450 2nd. flask#6124 and #6145 moved the other way, from 2nd to 1st.
+- **"Close" fell from 7 of 12 recall verdicts to 3.** A reviewer that knew the PR had been rejected would lean toward close.
+- **Two clean PRs picked up a blocking finding, and the check confirmed both.** On ripgrep#3557, the body benchmarks against the `ignore-0.4.33` tag, 8 commits behind the PR's base, and those commits include #3555, which also cuts allocation for empty matchers. On bat#3877, the new first read through `fill_buf()` drops the `Interrupted` retry that `read_until` gave it. The maintainers merged both, so whether either would have mattered is open.
+
+All four shifts point the same way. I think the leak explains some of the 2026-10-31 score, but one run per case can't say how much: the gap is 1 recall PR and 2 noise PRs, which sampling alone could produce.
+
+**The audit.** All 56 transcripts from this run (23 reviews, 10 checks, 23 grades) were scanned for tool calls and results. None made a network call or read `keys/`, the corpus files, or an earlier archive. The graders read only `judge.md` and their own `judge-prompt.md`. Three reviewers stepped outside their case directory, each logged in its `review.meta.json`: ripgrep#3239 grepped the local cargo registry and got nothing, ripgrep#3414 ran a `bun -e` base64 calculation, and black#5521 looked for a Python with Black's dependencies and found none.
+
 ## What to try next
 
-- **Calibrate "blocking."** The 2026-10-31 prompt cut noise from 8/11 to 5/11, and 4 of the 5 left are real. Most of what's left is "fix before you send" (a changelog line, a branch target), which a guest should hear. Separating that from "blocks the merge" is now a reporting question more than a noise one.
+- **Calibrate "blocking."** Blind, the reviewer holds 7 of 11 clean PRs, and the check refuted none of the 10 findings behind those holds. Most are "fix before you send" (a changelog placeholder, a branch target, a repro that won't run), which a guest should hear. Separating that from "blocks the merge" is a reporting question as much as a noise one.
 - **Give the check something to refute.** A set of reviews with known-false findings (the 2026-10-26 ripgrep#3557 "unmerged PRs" claim is one) would test whether the check catches them.
 - **Give it the ledger.** The real flow hands the reviewer recon's notes, including issue threads and earlier rejected attempts. A recall set that includes thread-only reasons would test that path.
-- **Run each case 3 times.** One run per PR can't separate a real change from sampling noise.
+- **Run each case 3 times.** One run per PR can't separate a real change from sampling noise, and the 2026-10-31 to 2026-11-09 gap is exactly that size.
 
 ## Caveats
 

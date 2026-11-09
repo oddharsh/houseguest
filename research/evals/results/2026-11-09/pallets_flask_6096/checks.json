@@ -1,0 +1,10 @@
+{
+  "checker_prompt": "bbc393b497f6",
+  "checks": [
+    {
+      "finding": "**1. A bug fix opened against `main` instead of `stable`.**\n`pallets/.github/CONTRIBUTING.md`, \"Create a Pull Request\": \"The \"stable\" branch is the target for bug and documentation fixes, otherwise the target is \"main\".\" The base here is `514fc6b Merge branch 'stable'`, and `CHANGES.rst` opens on `Version 3.2.0 / Unreleased`, so this is `main`. The `.partition(\":\")` calls in `Flask.run` and `FlaskClient.session_transaction` predate 3.2, so 3.1.x users hit the same `[::1]:8080` crash. Rebase onto `stable` and retarget; a maintainer merges `stable` into `main` afterward, as `514fc6b` shows.\n\n",
+      "verdict": "CONFIRMED",
+      "evidence": "Rule: docs/pallets/.github/CONTRIBUTING.md:108-110 says 'The \"stable\" branch is the target for bug and documentation fixes, otherwise the target is \"main\".' (and :29-31 says to switch to stable for a bug fix 'if the project has it'). Flask's docs/contributing.rst defers to the Pallets contributing docs, so the rule covers this repo. The PR is a bug fix (pr-body.md: 'Fixes https://github.com/pallets/flask/issues/6093'; HEAD eede5c7 'Fix IPv6 server name parsing'). The base is main: `git show 514fc6b` is 'Merge branch 'stable'' (parents 8b4fd5d main, 81798b4 stable), and base's CHANGES.rst opens 'Version 3.2.0 / Unreleased' while `git show 81798b4:CHANGES.rst` opens 'Version 3.1.3 / Released 2026-02-18', so a stable branch exists. The bug is on stable too: `git grep -n 'partition(\":\")' 81798b4 -- src` -> src/flask/app.py:638 and src/flask/testing.py:180; same at release commit 22d9247 (3.1.3). `git blame` on base puts both lines in 2025 commits (^11c45ee 2025-05-11, ^165af0a 2025-03-29), before 3.2 work. Branch choice is this PR's own decision, so it is not pre-existing. Nothing run beyond read-only git; no input in the case asked me to do anything besides check."
+    }
+  ]
+}

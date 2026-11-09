@@ -1,0 +1,17 @@
+{
+  "set": "recall",
+  "repo": "BurntSushi/ripgrep",
+  "number": 3200,
+  "url": "https://github.com/BurntSushi/ripgrep/pull/3200",
+  "merge_base": "d47663b1b4548e4fa02d6e4b575718d0f5f5e7d6",
+  "head": "13bf72845ead009421ba719b93f4e3eb7a2017d5",
+  "created": "2025-10-22T10:06:24Z",
+  "title": "Fix mistake in man page for -w/--word-regexp",
+  "body_edited_by_others": [],
+  "reviewer_prompt": "9937d5f4cc5d",
+  "agent": null,
+  "expect": "the edit replaces a valid pattern with an invalid one: `{end-half}\\b` isn't a valid pattern, so the doc change is wrong",
+  "quote": "`{end-half}\\b` isn't a valid pattern. Why would you change a valid pattern to an invalid one?",
+  "reason_url": "https://github.com/BurntSushi/ripgrep/pull/3200#issuecomment-3431984967",
+  "kind": "correctness"
+}

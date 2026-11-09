@@ -1,0 +1,14 @@
+{
+  "set": "noise",
+  "repo": "psf/black",
+  "number": 5615,
+  "url": "https://github.com/psf/black/pull/5615",
+  "merge_base": "b75b3552192915e1878592e76d2f920775a7cefe",
+  "head": "9595ec5ca9b4684f304b5e213c72cb42659ebbb8",
+  "created": "2026-10-25T03:50:33Z",
+  "title": "Fix an own-line fmt: skip after a blank line skipping the statement above it",
+  "body_edited_by_others": [],
+  "reviewer_prompt": "9937d5f4cc5d",
+  "agent": "Claude Code",
+  "note": "merged; maintainer: Thanks!"
+}

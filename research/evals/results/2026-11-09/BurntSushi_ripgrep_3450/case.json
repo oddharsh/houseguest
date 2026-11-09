@@ -1,0 +1,17 @@
+{
+  "set": "recall",
+  "repo": "BurntSushi/ripgrep",
+  "number": 3450,
+  "url": "https://github.com/BurntSushi/ripgrep/pull/3450",
+  "merge_base": "dfe4a81d2591daca76d25ae4e052c34b26578155",
+  "head": "3a61affc9ff5a5af05154c6399e4299eaafe7c42",
+  "created": "2026-06-27T05:50:15Z",
+  "title": "fix(types): use BTreeMap instead of HashMap for deterministic ordering",
+  "body_edited_by_others": [],
+  "reviewer_prompt": "9937d5f4cc5d",
+  "agent": null,
+  "expect": "no demonstrated need: no test or benchmark shows nondeterministic output or a speedup, so the change to the status quo isn't justified",
+  "quote": "I'd rather bias toward the status quo rather than changing something without a clear need.",
+  "reason_url": "https://github.com/BurntSushi/ripgrep/pull/3450#issuecomment-4916054004",
+  "kind": "unjustified"
+}

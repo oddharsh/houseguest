@@ -1,0 +1,14 @@
+{
+  "set": "noise",
+  "repo": "psf/black",
+  "number": 5521,
+  "url": "https://github.com/psf/black/pull/5521",
+  "merge_base": "165b9e293354760104fed7482c6466f510a44188",
+  "head": "ff00fa807ab3a5fc3d36c143cd7921a0364af06b",
+  "created": "2026-10-11T16:49:41Z",
+  "title": "Fix string_processing crash on strings in collections at small line lengths",
+  "body_edited_by_others": [],
+  "reviewer_prompt": "9937d5f4cc5d",
+  "agent": null,
+  "note": "merged; maintainer: Thanks!"
+}

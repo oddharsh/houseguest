@@ -11,7 +11,14 @@
 #
 # Corpora default to recall.jsonl and noise.jsonl beside this script. Each
 # stage skips cases whose output already exists, so a rerun after a prompt
-# change only needs `rm <out-dir>/*/{review.md,checks.json,judge.json}` first.
+# change only needs `rm <out-dir>/*/{review.md,checks.json} <out-dir>/keys/*/judge.json`
+# first.
+#
+# The answer key stays out of the case directory, which the reviewer and the
+# finding check can read: <out-dir>/keys/<case>/ holds case.json (the set, the
+# maintainer's reason and quote, the prompt hash), judge-prompt.md, and
+# judge.json. On 2026-11-09 all 23 reviewers opened a case.json left beside
+# the repo before reviewing.
 #
 # prep: for each PR, a fresh git repo at the merge base (50 commits of history,
 #   no remote), with the PR's final tree as one commit on top, plus the body,
@@ -33,8 +40,9 @@
 # status`). A session that can't run one can do those steps itself: write
 # review.md from prompt.md and system.md; checks.json as {checker_prompt,
 # checks: [{finding, verdict, evidence}]} from agents/finding-check.md, one
-# check per Important finding; and judge.json from judge-prompt.md and
-# judge.md, in each case directory. score doesn't care who wrote them.
+# check per Important finding, in each case directory; and judge.json from
+# judge-prompt.md and judge.md, in keys/<case>/. Whoever writes review.md and
+# checks.json must not read keys/. score doesn't care who wrote them.
 
 set -uo pipefail
 here=$(cd "$(dirname "$0")" && pwd)
@@ -57,6 +65,7 @@ mkdir -p "$out"; out=$(cd "$out" && pwd)
 # The reviewer prompt under test, frontmatter stripped, into system.md; prints its
 # hash, which goes in case.json so scores from different prompt versions don't
 # get mixed up.
+key() { echo "$out/keys/${1##*/}"; }  # key <case dir>: where its answer key lives
 system_prompt() {  # system_prompt <case dir>
   awk 'f >= 2; /^---$/ { f++ }' "$plugin/agents/maintainer-review.md" > "$1/system.md"
   git hash-object "$1/system.md" | cut -c1-12
@@ -68,13 +77,16 @@ prep_one() {  # prep_one <set> <json row>
   repo=$(sed -E 's#https://github.com/([^/]+/[^/]+)/pull/.*#\1#' <<<"$url")
   n=${url##*/}
   dir="$out/$(tr / _ <<<"$repo")_$n"
+  local k; k=$(key "$dir")
   if [ -f "$dir/prompt.md" ]; then
+    # A case prepped before the key moved out still has it beside the repo.
+    mkdir -p "$k"; mv "$dir"/{case.json,judge-prompt.md,judge.json} "$k/" 2>/dev/null
     # A cached case still gets today's prompt, or a rerun after a prompt change replays the old one.
-    jq --arg p "$(system_prompt "$dir")" '.reviewer_prompt = $p' "$dir/case.json" > "$dir/case.json.new" \
-      && mv "$dir/case.json.new" "$dir/case.json"
+    jq --arg p "$(system_prompt "$dir")" '.reviewer_prompt = $p' "$k/case.json" > "$k/case.json.new" \
+      && mv "$k/case.json.new" "$k/case.json"
     echo "prep: $repo#$n (cached)"; return
   fi
-  rm -rf "$dir"; mkdir -p "$dir"
+  rm -rf "$dir" "$k"; mkdir -p "$dir" "$k"
 
   local pr base head created mb
   pr=$(gh api "repos/$repo/pulls/$n") || { echo "prep: $repo#$n: PR lookup failed" >&2; return 1; }
@@ -95,7 +107,7 @@ prep_one() {  # prep_one <set> <json row>
     && g checkout -q -b pr \
     && g read-tree -u --reset "$head" \
     && g commit -q --allow-empty -m "$(g log -1 --format=%B "$head")"; } \
-    || { echo "prep: $repo#$n: couldn't rebuild the PR" >&2; rm -rf "$dir"; return 1; }
+    || { echo "prep: $repo#$n: couldn't rebuild the PR" >&2; rm -rf "$dir" "$k"; return 1; }
   # HEAD is now one commit holding the PR's final tree, with the head commit's
   # message, so the reviewer sees what the contributor wrote and none of the
   # PR's later history. Without the remote it can't fetch what came after.
@@ -125,7 +137,7 @@ prep_one() {  # prep_one <set> <json row>
     --arg prompt "$(system_prompt "$dir")" --arg title "$title" \
     --argjson edits "${edits:-[]}" \
     '{set: $set, repo: $repo, number: $n, url: $url, merge_base: $mb, head: $head, created: $created,
-      title: $title, body_edited_by_others: $edits, reviewer_prompt: $prompt} + $row' > "$dir/case.json"
+      title: $title, body_edited_by_others: $edits, reviewer_prompt: $prompt} + $row' > "$k/case.json"
   cat > "$dir/prompt.md" <<EOF
 Review this pull request to $repo.
 
@@ -187,7 +199,7 @@ verify_one() {  # verify_one <case dir>: one finding check per Important finding
   local dir="$1" repo list finding res checks="[]"
   [ -s "$dir/review.md" ] || return
   [ -s "$dir/checks.json" ] && return
-  repo=$(jq -r .repo "$dir/case.json")
+  repo=$(jq -r .repo "$(key "$dir")/case.json")
   list=$(claude -p "Copy out every finding this review tags Important, each verbatim with its instances and evidence, in the order it gives them. Leave out Nits, Pre-existing findings, and lean notes.
 
 <review>
@@ -235,7 +247,7 @@ judge_prompt() {  # judge_prompt <case dir> -> the grader's task on stdout
   local dir="$1"
   jq -r '"Set: \(.set)\nPR: \(.url)\n" + (if .set == "recall" then
     "\nThe maintainer closed it or asked for changes. Their reason, in one line: \(.expect)\nTheir words: \(.quote)\n" else
-    "\nThe maintainers merged it without asking for changes.\n" end)' "$dir/case.json"
+    "\nThe maintainers merged it without asking for changes.\n" end)' "$(key "$dir")/case.json"
   echo; echo "The reviewer's reply, verbatim:"; echo; echo '<review>'; cat "$dir/review.md"; echo '</review>'
   [ -s "$dir/checks.json" ] || return 0
   echo; echo "A second agent then checked each Important finding against the code, one at a time:"; echo
@@ -243,14 +255,15 @@ judge_prompt() {  # judge_prompt <case dir> -> the grader's task on stdout
 }
 
 judge_one() {
-  local dir="$1" res
+  local dir="$1" k res
+  k=$(key "$dir")
   [ -s "$dir/review.md" ] || return
-  [ -s "$dir/judge.json" ] && return
-  res=$(cd "$dir" && claude -p "$(cat "$dir/judge-prompt.md")" --system-prompt "$(cat "$here/judge.md")" \
+  [ -s "$k/judge.json" ] && return
+  res=$(cd "$k" && claude -p "$(cat "$k/judge-prompt.md")" --system-prompt "$(cat "$here/judge.md")" \
     ${model:+--model "$model"} --tools "" --json-schema "$JUDGE_SCHEMA" \
     --output-format json --no-session-persistence 2>/dev/null)
   if jq -e '.structured_output' <<<"$res" >/dev/null 2>&1; then
-    jq '.structured_output' <<<"$res" > "$dir/judge.json"
+    jq '.structured_output' <<<"$res" > "$k/judge.json"
     echo "judge: $(basename "$dir")"
   else
     echo "judge: $(basename "$dir") failed" >&2
@@ -260,21 +273,21 @@ judge_one() {
 prompts() {  # judge-prompt.md for every reviewed case, whoever runs the judge
   local d
   for d in "$out"/*/; do
-    [ -s "$d/review.md" ] && judge_prompt "${d%/}" > "$d/judge-prompt.md"
+    [ -s "$d/review.md" ] && judge_prompt "${d%/}" > "$(key "${d%/}")/judge-prompt.md"
   done
 }
 
 each() {  # each <fn>: run fn over every case dir, $jobs at a time
   local fn="$1" d
-  export -f review_one verify_one judge_one judge_prompt; export model plugin here JUDGE_SCHEMA FINDINGS_SCHEMA CHECK_SCHEMA
-  for d in "$out"/*/; do [ -f "$d/case.json" ] && echo "${d%/}"; done \
+  export -f key review_one verify_one judge_one judge_prompt; export out model plugin here JUDGE_SCHEMA FINDINGS_SCHEMA CHECK_SCHEMA
+  for d in "$out"/*/; do [ -f "$d/prompt.md" ] && echo "${d%/}"; done \
     | xargs -P "$jobs" -I{} bash -c "$fn \"\$1\"" _ {}
 }
 
 # --- score --------------------------------------------------------------------
 score() {
   local rows
-  rows=$(for d in "$out"/*/; do
+  rows=$(for d in "$out"/keys/*/; do
     [ -f "$d/case.json" ] && [ -f "$d/judge.json" ] || continue
     jq -c --slurpfile j "$d/judge.json" '{set, url, agent, kind} + ($j[0] | {verdict, hit, hit_rank,
       blocking: ([.findings[] | select(.class == "blocking")] | length), nits: ([.findings[] | select(.class == "nit")] | length)})' "$d/case.json"
@@ -297,11 +310,11 @@ score() {
 archive() {  # keep what a reader needs to audit a score, without the clones
   local dest="${corpora[0]:?usage: run.sh archive <out-dir> <dest-dir>}" d name
   mkdir -p "$dest"
-  for d in "$out"/*/; do
+  for d in "$out"/keys/*/; do
     [ -f "$d/case.json" ] || continue
     name=$(basename "$d"); mkdir -p "$dest/$name"
-    cp "$d"/{case.json,review.md,checks.json,judge.json} "$dest/$name/" 2>/dev/null
-    [ -f "$d/review.meta.json" ] && cp "$d/review.meta.json" "$dest/$name/"
+    cp "$d"/{case.json,judge.json} "$out/$name"/{review.md,checks.json} "$dest/$name/" 2>/dev/null
+    [ -f "$out/$name/review.meta.json" ] && cp "$out/$name/review.meta.json" "$dest/$name/"
   done
   cp "$out/scores.json" "$dest/" 2>/dev/null
   echo "archived $(ls -d "$dest"/*/ | wc -l | tr -d ' ') cases to $dest"

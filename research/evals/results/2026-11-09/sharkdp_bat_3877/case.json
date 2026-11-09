@@ -1,0 +1,14 @@
+{
+  "set": "noise",
+  "repo": "sharkdp/bat",
+  "number": 3877,
+  "url": "https://github.com/sharkdp/bat/pull/3877",
+  "merge_base": "66ad54c27dad68669bf7600722c3e27ceccec2c3",
+  "head": "5fee86b97b2188e07657a8d6bada15c3bc0d84cb",
+  "created": "2026-08-02T08:53:20Z",
+  "title": "Detect binary content beyond the first line",
+  "body_edited_by_others": [],
+  "reviewer_prompt": "9937d5f4cc5d",
+  "agent": null,
+  "note": "merged; maintainer: Thanks, looks good"
+}

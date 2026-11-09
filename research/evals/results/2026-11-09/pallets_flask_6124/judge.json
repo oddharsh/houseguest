@@ -1,0 +1,6 @@
+{"findings":[
+{"summary":"Context is pushed/popped via `with ctx:` on every chunk and torn down before the body starts, so every teardown runs N+2 times and breaks resources like DB connections and request files","class":"blocking"},
+{"summary":"New test assertion passes with or without the fix, so it doesn't demonstrate the change as the PR template requires","class":"blocking"},
+{"summary":"No CHANGES.rst entry or versionchanged note","class":"nit"},
+{"summary":"AI policy likely applies; body carries marks of tool output (local harness path, template sections)","class":"blocking"}
+],"verdict":"changes","hit":true,"hit_rank":1,"why":"Finding 1 states that the context is pushed and popped on every chunk with full teardown each time, which is the maintainer's inefficiency reason in substance; finding 4 also raises the AI policy, though hedged."}

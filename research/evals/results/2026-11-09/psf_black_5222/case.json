@@ -1,0 +1,17 @@
+{
+  "set": "recall",
+  "repo": "psf/black",
+  "number": 5222,
+  "url": "https://github.com/psf/black/pull/5222",
+  "merge_base": "51abf53080b09eab12143727641ff1e2cd39d8c9",
+  "head": "a229524288ef8fa47db13f0542c83382605a74b4",
+  "created": "2026-07-04T23:05:12Z",
+  "title": "Memory Optimizations",
+  "body_edited_by_others": [],
+  "reviewer_prompt": "9937d5f4cc5d",
+  "agent": null,
+  "expect": "no clear focus: many small opinionated stylistic changes bundled under a performance claim (which doesn't hold under the mypyc build)",
+  "quote": "This PR doesn't have a clear focus and makes many opinionated small stylistic changes.",
+  "reason_url": "https://github.com/psf/black/pull/5222#issuecomment-6392942543",
+  "kind": "focus"
+}

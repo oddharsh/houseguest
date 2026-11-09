@@ -1,0 +1,14 @@
+{
+  "set": "noise",
+  "repo": "pallets/flask",
+  "number": 6096,
+  "url": "https://github.com/pallets/flask/pull/6096",
+  "merge_base": "514fc6b3e8402e4c646d5284e97a4f0ab50a7c4b",
+  "head": "7203feabf723edae0286ae5dc64fec8ac4c91735",
+  "created": "2026-07-14T15:30:46Z",
+  "title": "Fix `.partition(\":\") usage on potential IPv6 addresses",
+  "body_edited_by_others": [],
+  "reviewer_prompt": "9937d5f4cc5d",
+  "agent": null,
+  "note": "merged; maintainer: All looks good, thanks"
+}
