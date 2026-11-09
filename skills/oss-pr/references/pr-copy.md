@@ -214,6 +214,8 @@ Searched for duplicates: <the terms you searched, and closest matches with links
 
 Don't guess at causes you haven't verified; a wrong diagnosis in an issue costs a maintainer more time than none. Link code at a full commit SHA with a line range, one line of context on each side (`https://github.com/<owner>/<repo>/blob/<40-char sha>/src/wrap.rs#L41-L45` for lines 42 to 44). A link to a branch points at other lines once the file changes. Replies and review comments link the same way. A bug that recon checked under "Security reports" and found not exploitable is described as a bug, without security words. One that is exploitable never gets this template; `recon.md` says PRIVATE, and the report goes through SECURITY.md's channel. Use the repo's issue form when it has one, field for field.
 
+Write the repro for a reader in another shell: full commands, no aliases, and no GNU-only flags unless the bug is Linux-only. `fundamentals.md` has the rest, under "Writing for someone who skipped the class."
+
 **Feature requests** replace Repro/Expected/Actual with: what you're trying to do, what blocks it today (the closest current workaround, and why it falls short), and the smallest change that would unblock you. Ask whether it fits the project before offering a PR.
 
 **Length:** an issue is read by someone deciding whether it's real and whether it's theirs. The repro and the exact error carry it; everything else is a sentence at most. The gather dump gives a median for outsiders' issues that maintainers acted on.
