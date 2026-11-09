@@ -1,0 +1,7 @@
+{
+  "runner": "general-purpose subagent (Claude Code desktop, Opus 5.5) told to follow system.md",
+  "tool_calls": 21,
+  "network_calls": [],
+  "read_answer_key": false,
+  "outside_case_dir": "One grep of ~/.cargo/registry for fn io_error, outside the case directory; it returned nothing and the reviewer reported it."
+}

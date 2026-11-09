@@ -1,0 +1,14 @@
+{
+  "set": "noise",
+  "repo": "sharkdp/bat",
+  "number": 3897,
+  "url": "https://github.com/sharkdp/bat/pull/3897",
+  "merge_base": "0acf9417cd6d9635d927dda9f8e6ab5e57176fa4",
+  "head": "2ed7adc49f762ad1029f4ad0b604747c16dac6a7",
+  "created": "2026-08-28T14:22:07Z",
+  "title": "fix: use last occurrence in combined short flags",
+  "body_edited_by_others": [],
+  "reviewer_prompt": "9937d5f4cc5d",
+  "agent": null,
+  "note": "merged; maintainer: Thanks"
+}

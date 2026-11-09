@@ -1,0 +1,6 @@
+{
+  "runner": "general-purpose subagent (Claude Code desktop, Opus 5.5) told to follow system.md",
+  "tool_calls": 12,
+  "network_calls": [],
+  "read_answer_key": false
+}

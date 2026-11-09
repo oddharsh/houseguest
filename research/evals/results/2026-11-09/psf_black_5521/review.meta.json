@@ -1,0 +1,7 @@
+{
+  "runner": "general-purpose subagent (Claude Code desktop, Opus 5.5) told to follow system.md",
+  "tool_calls": 25,
+  "network_calls": [],
+  "read_answer_key": false,
+  "outside_case_dir": "Probed for a Python with Black's dependencies (which, ~/.local/bin, ~/.local/share/uv/python); none had them, so the review read the code instead of running it."
+}
