@@ -1,0 +1,8 @@
+{"findings":[
+{"summary":"Arch list marks common arches (x86_64, aarch64, etc.) and arch macros as invalid, with typos in the list; the new test pins the wrong highlight","class":"blocking"},
+{"summary":"Grammar provenance not recorded per doc/assets.md (loose file, no Non-submodule additions entry) and no upstream license carried","class":"blocking"},
+{"summary":"No evidence the syntax meets the inclusion bar of more than 10,000 Package Control downloads; body gives no link or count","class":"blocking"},
+{"summary":"Tag rules not anchored to line start","class":"nit"},
+{"summary":"Source|Patch rule is dead for normal tags and wrong when it fires","class":"nit"},
+{"summary":"ifos|ifnos alternation order means it can't match","class":"nit"}
+],"verdict":"changes","hit":true,"hit_rank":3,"why":"Finding 3 states the maintainer's reason directly: the PR shows no Package Control link or download count against the doc/assets.md 10,000-download criterion."}

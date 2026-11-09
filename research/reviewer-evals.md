@@ -128,6 +128,34 @@ All four shifts point the same way. I think the leak explains some of the 2026-1
 
 **The audit.** All 56 transcripts from this run (23 reviews, 10 checks, 23 grades) were scanned for tool calls and results. None made a network call or read `keys/`, the corpus files, or an earlier archive. The graders read only `judge.md` and their own `judge-prompt.md`. Three reviewers stepped outside their case directory, each logged in its `review.meta.json`: ripgrep#3239 grepped the local cargo registry and got nothing, ripgrep#3414 ran a `bun -e` base64 calculation, and black#5521 looked for a Python with Black's dependencies and found none.
 
+## Fundamentals in the reviewer prompt (2026-11-09)
+
+The reviewer prompt gained one paragraph pointing at `skills/oss-pr/references/fundamentals.md`, which lists lessons a contributor may have skipped. The paragraph names 3 findings they make common: a test that asserts more than the documented contract promises, a speed claim with no base measured beside it, and "CI passes" resting on a step that pipes its test runner. It ran on the same 23 cases as the blind rescore, with the key out of reach. The runners match too: Opus 5.5 reviews, one Opus check per Important noise finding, one Sonnet grade per case.
+
+| | Blind baseline | Fundamentals |
+|---|---|---|
+| Reviewer prompt | `9937d5f4cc5d` | `eba839129861` |
+| Recall: maintainer's reason named | 11/12 | 12/12 |
+| Named as the first finding | 7/12 | 8/12 |
+| Recall verdicts | 3 close, 9 changes | 3 close, 9 changes |
+| Noise: clean PRs with a blocking finding | 7/11 | 7/11 |
+| Blocking findings per clean PR | 0.6 | 0.6 |
+| Noise PRs called mergeable | 4/11 | 2/11 |
+| Noise finding checks / refuted | 10 / 0 | 13 / 0 (12 CONFIRMED, 1 PRE-EXISTING) |
+
+Every review, check, and grade is in `evals/results/2026-11-09-fundamentals/`.
+
+**Where the two runs differ:**
+
+- **flask#6067 is a hit again,** as the first finding: overriding `make_response` in a subclass already does what the new hook adds, which is the maintainer's reason.
+- **Hit ranks moved both ways.** ripgrep#3239 went from 5th to 4th, ripgrep#3450 from 2nd to 1st, bat#3431 from 5th to 3rd, and bat#3736 from 1st to 2nd.
+- **The same count of clean PRs got held, but not the same PRs.** ripgrep#3564 and bat#3897 picked up a blocking finding, and the check confirmed both. On ripgrep#3564, `Types::matched` is a second caller of `file_name` and now sees names ending in `.`. So `-t` and `-T` flip for a file like `Makefile.`, which the body doesn't mention. On bat#3897, an attached `-l` value (`-pnlperl`) now decides the result, so piped output loses line numbers it printed at base. ripgrep#3557 and bat#3877 lost theirs: the reviewer still tagged their findings Important and the check confirmed them, but the grader called them nits.
+- **The new findings showed up as nits.** On ripgrep#3557, two findings are the speed-claim kind. The numbers were measured against `3fce3b5` instead of the PR's base, and they skip the method `crates/ignore/benches/README.md` asks for. On bat#3877, one is the contract kind: the new test pins a NUL at byte 1025, which is `content_inspector`'s internal limit, and would break on a correct improvement. The grader rated all three nits, so the paragraph added findings without adding holds.
+
+18 of the 23 reviewers opened `fundamentals.md`, and none cited it by name. The differences are 1 recall PR, a rank shift on 4, and 2 noise PRs swapped, which one run per case can produce by sampling alone. So on this set the paragraph cost nothing measurable. The set can't show it helps much either: few of its PRs have a benchmark claim, a pinned implementation detail, or a piped CI step to catch.
+
+**The audit.** A script parsed all 59 transcripts from this run (23 reviews, 13 checks, 23 grades, 685 tool calls). No call used a network tool or command, and no reviewer or checker named `keys/` or `case.json`. The control: the same script, pointed at the earlier run that left the key beside the repo, flags 30 `case.json` reads across its 23 reviews. One reviewer (black#5222) read files in its case directory with `cat` and `sed`, outside the listed commands, and said so.
+
 ## What to try next
 
 - **Calibrate "blocking."** Blind, the reviewer holds 7 of 11 clean PRs, and the check refuted none of the 10 findings behind those holds. Most are "fix before you send" (a changelog placeholder, a branch target, a repro that won't run), which a guest should hear. Separating that from "blocks the merge" is a reporting question as much as a noise one.

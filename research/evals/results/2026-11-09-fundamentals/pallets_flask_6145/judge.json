@@ -1,0 +1,11 @@
+{"findings": [
+{"summary": "PR reads as AI-generated; org AI policy closes such PRs on sight", "class": "blocking"},
+{"summary": "os.PathLike serialized with str() instead of os.fspath(); wrong for DirEntry or __fspath__-only classes", "class": "blocking"},
+{"summary": "Feature (new JSON type) and bug fix (dataclass guard) mixed in one PR, targeting different branches", "class": "blocking"},
+{"summary": "Dataclass-class guard changes only the TypeError message (and makes it worse); not a bug worth catching, drop it", "class": "blocking"},
+{"summary": "Guard leaves an unused type: ignore that likely fails the mypy typing job", "class": "blocking"},
+{"summary": "PR template skipped: no ticket, no docs or versionchanged", "class": "blocking"},
+{"summary": "PR body claims are false or unsupported (stdlib behavior, tested types, all tests pass)", "class": "blocking"},
+{"summary": "Imports inside test functions instead of at top of file", "class": "nit"},
+{"summary": "Decimal missing from DefaultJSONProvider docstring (pre-existing)", "class": "nit"}
+], "verdict": "close", "hit": true, "hit_rank": 1, "why": "Finding 1 names the AI-policy closure, part of the maintainer's stated reason, and finding 4 separately says the changed error message is not worth a fix; the reviewer never objects to adding PathLike as a type on principle, so the match rests mainly on the AI policy and the error-message point."}

@@ -1,0 +1,10 @@
+{
+  "checker_prompt": "bbc393b497f6",
+  "checks": [
+    {
+      "finding": "**1. A bug fix opened against `main` instead of `stable`.**\n`pallets/.github/CONTRIBUTING.md`, \"Create a Pull Request\": \"The \"stable\" branch is the target for bug and documentation fixes, otherwise the target is \"main\".\" The body says this fixes a bug (`Fixes #6093`). The PR's base is `514fc6b Merge branch 'stable'`, a `main`-only commit whose `CHANGES.rst` top section is `Version 3.2.0 / Unreleased`. A `stable` line exists: `CHANGES.rst:33` has `Version 3.1.3`, and both `.partition(\":\")` lines date from before 3.2 (`git blame` puts them at 2025-03-29 and 2025-05-11). Please rebase onto `stable` and retarget (`gh pr edit --base stable`). The diff touches nothing 3.2-only, so it should apply cleanly.\n\n",
+      "verdict": "CONFIRMED",
+      "evidence": "Rule quoted from docs/pallets/.github/CONTRIBUTING.md:107-109: 'Use the GitHub CLI to start creating your pull request. Specify the target branch with `-B`. The \"stable\" branch is the target for bug and documentation fixes, otherwise the target is \"main\".' (also :29-31 for setting up the work branch). The PR is a bug fix (pr-body.md: 'Fixes https://github.com/pallets/flask/issues/6093', IPv6 hosts mis-split by .partition(\":\")). Its base, 514fc6b 'Merge branch stable', is a main commit: pyproject.toml has version = \"3.2.0.dev\" and CHANGES.rst opens with 'Version 3.2.0 / Unreleased'. A stable line exists and carries the same bug: base's second parent 81798b4 has version = \"3.1.3\", `git show base^2:src/flask/app.py` has `sn_host, _, sn_port = server_name.partition(\":\")` at line 638, and `git show base^2:src/flask/testing.py` has `ctx.request.host.partition(\":\")[0],` at line 180. `git blame base` marks both lines on main as boundary commits (^11c45ee 2025-05-11, ^165af0a 2025-03-29), so they predate base. Nothing in the repo or PR body gives a reason to target main. I did not test whether the diff applies cleanly to stable."
+    }
+  ]
+}

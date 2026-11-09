@@ -1,0 +1,10 @@
+{
+  "checker_prompt": "bbc393b497f6",
+  "checks": [
+    {
+      "finding": "**1. The repro in the description doesn't reproduce the bug** (pr-body.md, the first code block)\n\n```python\nx = b'{\"name\": \"é\"}'   # JSON stored as bytes\n```\n\nThis line has a literal `é` and no `\\u` escape. In a bytes literal it's a `SyntaxError` (\"bytes can only contain ASCII literal characters\"). Pasted into `example.py`, Black fails on it while parsing the source AST. That's a different error from the \"not equivalent to the source\" error quoted, and it fails the same way with or without this PR. The `--fast` output for `x` is also identical to the input, so it can't show \"silently changes the values.\" The escape probably got decoded somewhere along the way, and the intended line was something like `b'{\"name\": \"é\"}'`. Put the real escape back, then make the `--fast` output show `é` for that line. A maintainer who pastes the snippet today gets an unrelated error and stops reading.\n\n",
+      "verdict": "CONFIRMED",
+      "evidence": "od -c on pr-body.md shows line 8 is `x = b'{\"name\": \"` followed by bytes 303 251 (UTF-8 for a literal e-acute), with no \\u escape; the --fast output on line 16 is byte-identical. A non-ASCII character in a bytes literal is a Python SyntaxError, so on HEAD and base alike src/black/__init__.py:1874-1882 (assert_equivalent -> parse_ast(src)) raises SourceASTParseError 'cannot use --safe with this file; failed to parse source file AST', not the 'produced code that is not equivalent to the source' error quoted (line 1899). The line has no \\u/\\U/\\N escape for the PR's change in src/black/strings.py to touch, so --fast leaves it unchanged and the block can't show values silently changing. Not run (offline); read the code path and the raw bytes of the body."
+    }
+  ]
+}

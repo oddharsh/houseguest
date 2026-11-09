@@ -104,6 +104,7 @@ A "doesn't reproduce" is the result most likely to be wrong, because a broken se
 
 - **Build it the way the repo says.** Install and build with the commands its CONTRIBUTING or CI uses, not a guess.
 - **Check what's running.** Print the version or commit of the package your repro actually loads (`node -p "require('<pkg>/package.json').version"`, `python -c "import pkg; print(pkg.__version__)"`, `<tool> --version`). A repro that loads a cached or globally installed copy tested nothing.
+- **Same shell, same environment.** Run the repro in the shell the report shows, and name that shell in recon.md. When your result differs from the report's, compare environments before code. `fundamentals.md` lists the differences that most often decide it (zsh against bash, BSD tools against GNU, a global install, an alias).
 - **Prod first, same setup.** "Fixed on head" means something only when prod reproduces in the same environment, one step before. If prod doesn't reproduce either, the setup or the report is incomplete; it isn't evidence of a fix.
 - **Remove the trigger.** Once it reproduces, take out the one thing the report says causes it (the config line, the input, the call) and confirm the bug goes away. That proves the trigger is the cause and not something else in your repro.
 - **Two tries for broken tooling.** If an install, build, or server fails twice for reasons unrelated to the bug, stop. Write `BLOCKED: <stage> <command> <the error>` on the `Reproduces on:` line and ask the user; an environment failure is never a verdict on the bug.
