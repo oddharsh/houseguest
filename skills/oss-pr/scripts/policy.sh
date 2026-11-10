@@ -40,7 +40,7 @@ if [ -n "$asof" ]; then case "$asof" in *T*) asof_ts="$asof" ;; *) asof_ts="${as
 if [ -n "$keep" ]; then dir="$keep"; mkdir -p "$dir"; else dir=$(mktemp -d); trap 'rm -rf "$dir"' EXIT; fi
 sources="$dir/.sources"; : > "$sources"; : > "$dir/.guides"
 
-AI_RE='\bLLMs?\b|large language model|AI[- ]?(generated|assisted|assistance|tools?|agents?|policy|use|usage|written|authored)|generative AI|machine[- ]generated|chatgpt|copilot|claude|gemini|\bGPT\b|vibe[- ]cod|slop'
+AI_RE='\bLLMs?\b|large language model|(^|[^./[:alnum:]_])AI\b|artificial intelligence|coding agents?|machine[- ]generated|chatgpt|copilot|claude|gemini|\bGPT\b|vibe[- ]cod|slop'
 NAME_RE='(^|/)(CONTRIBUTING|CONTRIBUTE|HACKING|DEVELOPMENT|GOVERNANCE|AI_POLICY|AI-POLICY|AGENTS|CLAUDE|TRIAGE)(\.(md|rst|txt|adoc))?$|(^|/)LLMS?[^/]*\.(md|rst|adoc)$|^(\.github/)?README(\.(md|rst|txt|adoc))?$|(^|/)[^/]*(ai|llm|genai)[-_ .]?(policy|policies|usage|use|contribution|contributions|guidelines|rules)[^/]*\.(md|rst|txt|adoc)$|(^|/)[^/]*contribut[^/]*\.(md|rst|txt|adoc)$|^\.github/(PULL_REQUEST_TEMPLATE|ISSUE_TEMPLATE|DISCUSSION_TEMPLATE)|pull_request_template'
 GUIDE_RE='contribut|polic(y|ies)|guideline|governance|code[-_ ]of[-_ ]conduct|hacking|developer[-_ ]guide|(ai|llm)[-_ ]?(use|usage|rules)'
 SKIP_RE='(^|/)(node_modules|vendor|third_party|tests?|fixtures?|\.agents|\.claude|\.cursor|skills|examples?)/'
@@ -90,10 +90,10 @@ ref=$(ref_of "$repo")
 if [ -z "$ref" ]; then echo "- couldn't read $repo at that moment"; exit 0; fi
 
 # 5 starts now, in the background: it reads issue threads, not the docs below.
-enf_thread() {  # enf_thread N -> up to 2 maintainer comments in thread N that apply an AI rule
-  gh api "repos/$repo/issues/$1/comments?per_page=100" 2>/dev/null | jq -r --arg t "$asof_ts" --arg re "$AI_RE" --arg enf "$ENF_RE" --arg n "$1" '
+enf_thread() {  # enf_thread N -> up to 2 maintainer comments in thread N that mention AI
+  gh api "repos/$repo/issues/$1/comments?per_page=100" 2>/dev/null | jq -r --arg t "$asof_ts" --arg re "$AI_RE" --arg n "$1" '
     (if type == "array" then .[] else empty end) | select(.created_at < $t) | select(.author_association | IN("OWNER","MEMBER","COLLABORATOR"))
-    | select(.user.type != "Bot") | select(.body | test($enf; "i"))
+    | select(.user.type != "Bot") | select(.body | test($re; "i"))
     | "- #\($n) **\(.user.login)** (\(.author_association), \(.created_at[:10])): \(.body | gsub("\\s+"; " ") | .[:300])"' 2>/dev/null | head -2
 }
 enforcement() {
@@ -205,9 +205,9 @@ if [ -n "$enf" ]; then echo "$enf" | sed '/^$/d' | head -8; else echo "- none fo
 checked=$(cut -f1 "$sources" | sed 's/^/  - /')
 echo
 if [ "$(cat "$dir/.found")" -gt 0 ]; then
-  echo "**AI POLICY: RULE FOUND** in $(cat "$dir/.found") source(s)$([ -n "$enf" ] && echo ", and maintainers have applied one in earlier threads"). Read each passage above in full, quote the binding rule in recon.md, and follow it. Sources checked:"
+  echo "**AI POLICY: RULE FOUND** in $(cat "$dir/.found") source(s)$([ -n "$enf" ] && echo ", and maintainers have brought AI up in earlier threads"). Read each passage above in full, quote the binding rule in recon.md, and follow it. Sources checked:"
 elif [ -n "$enf" ]; then
-  echo "**AI POLICY: NO WRITTEN RULE, BUT MAINTAINERS HAVE PUSHED BACK.** Read the comments above: they are the policy in practice. Treat the strictest one as binding. Sources checked:"
+  echo "**AI POLICY: NO WRITTEN RULE, BUT MAINTAINERS HAVE COMMENTED ON AI USE.** Read the comments above: one that pushes back is the policy in practice, and the strictest is binding. Sources checked:"
 elif [ -s "$dir/.mention_srcs" ]; then
   echo "**AI POLICY: MENTIONS ONLY.** AI comes up, but nothing reads as a contribution rule. Say so in recon.md. Sources checked:"
 else

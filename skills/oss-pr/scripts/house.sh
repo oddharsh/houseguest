@@ -27,7 +27,7 @@ cd "$(git rev-parse --show-toplevel)" || exit 2
 all=$(git ls-files)
 if [ -n "$files_arg" ]; then mine=$(echo "$files_arg" | tr ',' '\n' | sed '/^$/d'); else mine=""; fi
 exts() { echo "${1:-$all}" | sed -n 's/.*\.\([A-Za-z0-9]*\)$/\1/p' | tr 'A-Z' 'a-z'; }
-has() { echo "$all" | grep -q -E "$1"; }
+has() { grep -q -E "$1" <<< "$all"; }
 pkg_has() { [ -f package.json ] && grep -q -E "$1" package.json; }
 dep() { [ -f package.json ] && jq -e --arg d "$1" '((.devDependencies // {}) + (.dependencies // {})) | has($d)' package.json >/dev/null 2>&1; }
 toml_has() { [ -f pyproject.toml ] && grep -q -E "$1" pyproject.toml; }

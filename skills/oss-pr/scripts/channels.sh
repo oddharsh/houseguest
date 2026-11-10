@@ -56,7 +56,7 @@ sha_of() {
   done
 }
 # A branch's tip as of T.
-branch_at() { api "repos/$repo/commits?sha=$(printf '%s' "$1" | jq -sRr @uri)&until=$T&per_page=1" --jq '.[0].sha // empty'; }
+branch_at() { api "repos/$repo/commits?sha=$(printf '%s' "$1" | jq -sRr @uri)${asof:+&until=$T}&per_page=1" --jq '.[0].sha // empty'; }
 # A tag for a version, in the shapes repos use: 1.2.3, v1.2.3, pkg@1.2.3, oxlint_v1.2.3,
 # crates_v0.153.0, 0.4.21-jpeg. All tags come from one ls-remote; the character after the version
 # must end it (0.4.21 shouldn't match 0.4.210). With several matches, one naming the package wins.

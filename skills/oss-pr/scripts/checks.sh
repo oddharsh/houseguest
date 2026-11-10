@@ -71,7 +71,7 @@ row() {
   echo "$ev" | nearest | sed 's/^/  - `/; s/$/`/'
   if [ -n "$4" ]; then
     # Lines that run a command beat job names and env keys; a workflow can repeat one line.
-    r=$(echo "$runs" | grep -E "$4" | awk '!seen[$0]++ { p = ($0 ~ /run:|RUSTFLAGS|cargo |npx |npm |pnpm |yarn |pytest|go test|make |just |zig |python /) ? 0 : 1; print p "\t" $0 }' \
+    r=$(echo "$runs" | grep -E -e "$4" | awk '!seen[$0]++ { p = ($0 ~ /run:|RUSTFLAGS|cargo |npx |npm |pnpm |yarn |pytest|go test|make |just |zig |python /) ? 0 : 1; print p "\t" $0 }' \
       | sort -s -t$'\t' -k1,1n | cut -f2 | cut -c1-160 | head -2)
     if [ -n "$r" ]; then echo "$r" | sed 's/^/  - runs in /'; else echo "  - nothing in CI or the repo's scripts runs it by name"; fi
   fi
