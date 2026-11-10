@@ -52,6 +52,7 @@ The fork keeps its rules in `FORK.md`, each in plain words with an example and a
 | `agents/` | `intent-check`, `maintainer-review`, `finding-check`, `final-check`, plus `second-fix` and `compare` for an optional blind second opinion |
 | `hooks/gate.sh` | The PR gate |
 | `hooks/session.sh` | Prints the next phase when a session starts on a branch with a ledger |
+| `tests/gate.sh` | Runs the gate, `next.sh`, and `housecheck.sh` on inputs that once passed when they shouldn't: `bash tests/gate.sh` |
 | `skills/oss-pr/scripts/` | 17 helpers, listed below |
 
 <details>
