@@ -23,7 +23,7 @@ GERRIT_RE='git[[:space:]]+cl[[:space:]]+upload|git[[:space:]]+codereview[[:space
 gerrit=""
 printf '%s' "$cmd" | grep -q -E "$B($GERRIT_RE)$E" && gerrit=1
 # git-review also downloads, lists, and compares changes; only its upload publishes anything.
-printf '%s' "$cmd" | grep -q -E 'git[[:space:]]+review[[:space:]](.*[[:space:]])?(-[dxXNmls]|--(download|cherrypick|cherrypick-indicate|cherrypick-only|compare|list|setup))([[:space:]]|$)' && gerrit=""
+printf '%s' "$cmd" | grep -q -E "git[[:space:]]+review[[:space:]](.*[[:space:]])?(-[dxXNmls]|--(download|cherrypick|cherrypick-indicate|cherrypick-only|compare|list|setup))$E" && gerrit=""
 
 api_opens_pr() {  # a `gh api` POST to repos/<owner>/<repo>/pulls: gh POSTs for any field or --input unless -X GET
   case "$cmd" in *gh*api*pulls*) ;; *) return 1 ;; esac
