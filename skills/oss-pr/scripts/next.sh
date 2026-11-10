@@ -117,7 +117,10 @@ p_final() {
   [ -f "$ledger/final.md" ] || { why="final.md missing: run the final check (oss-pr phase 7) on this commit, after review"; return 1; }
   local s; s=$(line final.md 'STATUS:')
   case "$s" in
-    PASS*"checked by the user"*) ;;
+    # A check the user ran on hardware the final check lacks leaves no runs.log. The seal still
+    # binds what they confirmed to the SHA: and BODY: lines checked below.
+    PASS*"checked by the user"*)
+      sealed final.md || { why="final.md says the user checked it, but it isn't sealed as it stands: after writing what they ran and saw, run receipt.sh seal \"$ledger/final.md\""; return 1; } ;;
     PASS*)
       sealed final.md || { why="final.md was edited after the final check sealed it: rerun the final check rather than editing final.md"; return 1; }
       local runs
@@ -128,17 +131,17 @@ p_final() {
       case "$(line proof.md 'STATUS:')" in N/A*) ;; *)
         echo "$runs" | awk '{print $1}' | grep -v -x -e "$head" -e none | grep -q . \
           || { why="runs.log shows nothing run on the base: the final check shows each problem on the base before showing it's gone on HEAD"; return 1; } ;;
-      esac
-      # The final check records the body it read, so rewriting the body makes it stale. A
-      # missing body is phase 5's to report.
-      [ -f "$ledger/pr-body.md" ] || return 1
-      local body; body=$(openssl dgst -sha256 < "$ledger/pr-body.md" | awk '{print $NF}')
-      case "$(line final.md 'BODY:')" in
-        "sha256=$body") ;;
-        "") why="final.md doesn't say which pr-body.md it checked (no BODY: line): rerun the final check"; return 1 ;;
-        *) why="pr-body.md changed after the final check read it: rerun the final check on the new body"; return 1 ;;
       esac ;;
     *) why="final check is '${s:-missing}': the PR doesn't yet show it solves every problem it poses (see $ledger/final.md)"; return 1 ;;
+  esac
+  # The final check records the body it read, so rewriting the body makes it stale. A
+  # missing body is phase 5's to report.
+  [ -f "$ledger/pr-body.md" ] || return 1
+  local body; body=$(openssl dgst -sha256 < "$ledger/pr-body.md" | awk '{print $NF}')
+  case "$(line final.md 'BODY:')" in
+    "sha256=$body") ;;
+    "") why="final.md doesn't say which pr-body.md it checked (no BODY: line): rerun the final check"; return 1 ;;
+    *) why="pr-body.md changed after the final check read it: rerun the final check on the new body"; return 1 ;;
   esac
   on_head final.md "rerun the final check"
 }
@@ -147,6 +150,12 @@ p_recheck() {
   grep -q -E '^STATUS:[[:space:]]*CLEAR' "$ledger/recheck.md" \
     || { why="recheck.sh found changes upstream since recon (see $ledger/recheck.md): act on each, then rerun it with --since set to its Checked: time"; return 1; }
   sealed recheck.md || { why="recheck.md was edited after recheck.sh sealed it: rerun recheck.sh --save rather than editing its report"; return 1; }
+  # "Right before the PR" is an hour: long enough for the user to read the copy and say yes.
+  local checked cutoff
+  checked=$(line recheck.md 'Checked:')
+  cutoff=$(date -u -v-1H +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date -u -d '1 hour ago' +%Y-%m-%dT%H:%M:%SZ)
+  [ -n "$checked" ] && [ "$checked" \> "$cutoff" ] \
+    || { why="recheck.md is over an hour old (Checked: ${checked:-missing}): rerun recheck.sh --save \"$ledger/recheck.md\" right before opening the PR"; return 1; }
 }
 
 # Phase id, label, and what to launch. The order is the graph: the first phase that fails runs next.

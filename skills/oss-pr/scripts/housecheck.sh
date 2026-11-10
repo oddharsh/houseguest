@@ -130,6 +130,9 @@ while IFS=$'\t' read -r name cmd; do
   fi
   [ "$name" = "gofmt" ] && [ -n "${out:-}" ] && emit FAIL "T:gofmt" "" "unformatted: $out"
 done < "$tmp/tools"
+# The tools read the working tree and house.md is sealed for HEAD, so the two have to match.
+unsynced=$(git diff --name-only HEAD -- $changed | tr '\n' ' ' | sed 's/ $//')
+[ -n "$unsynced" ] && emit FAIL T1 "(tree)" "the working tree differs from HEAD in $unsynced: uncommitted edits, or a tool that rewrote files while checking (ruff with fix = true). Commit what belongs in the PR and rerun"
 
 # --- W: whitespace -------------------------------------------------------------
 dc=$(git diff --check "$mb" HEAD 2>&1 | head -12)

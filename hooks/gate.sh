@@ -14,25 +14,40 @@ input=$(cat)
 cmd=$(printf '%s' "$input" | jq -r '.tool_input.command // empty')
 cwd=$(printf '%s' "$input" | jq -r '.cwd // empty')
 
+# A command word also starts inside a subshell or a quoted script: $(gh ...), (gh ...), bash -c "gh ...".
+B=$'(^|[;&|(`"\'[:space:]])' E=$'([;&|)`"\'[:space:]]|$)'
+
 # Gerrit's equivalents of `gh pr create`: Chromium's `git cl upload`, Go's `git codereview mail`,
 # git-review (Wikimedia, Qt, OpenStack), Android's `repo upload`, and a plain push to refs/for/<branch>.
 GERRIT_RE='git[[:space:]]+cl[[:space:]]+upload|git[[:space:]]+codereview[[:space:]]+mail|git[[:space:]]+review|repo[[:space:]]+upload|git[[:space:]]+push[[:space:]][^;&|]*refs/for/[^[:space:];&|]*'
 gerrit=""
-printf '%s' "$cmd" | grep -q -E "(^|[;&|[:space:]])($GERRIT_RE)([[:space:]]|\$)" && gerrit=1
+printf '%s' "$cmd" | grep -q -E "$B($GERRIT_RE)$E" && gerrit=1
 # git-review also downloads, lists, and compares changes; only its upload publishes anything.
 printf '%s' "$cmd" | grep -q -E 'git[[:space:]]+review[[:space:]](.*[[:space:]])?(-[dxXNmls]|--(download|cherrypick|cherrypick-indicate|cherrypick-only|compare|list|setup))([[:space:]]|$)' && gerrit=""
 
-# A security report recon marked PRIVATE also blocks public issues and pushes.
-private_only="" merge=""
+api_opens_pr() {  # a `gh api` POST to repos/<owner>/<repo>/pulls: gh POSTs for any field or --input unless -X GET
+  case "$cmd" in *gh*api*pulls*) ;; *) return 1 ;; esac
+  printf '%s' "$cmd" | tr '\n' ' ' | grep -o -E "${B}gh[[:space:]]+api[[:space:]][^;&|]*" \
+    | grep -E "repos/[^/[:space:]]+/[^/[:space:]]+/pulls$E" \
+    | grep -v -i -E -- '(-X|--method)[[:space:]=]*GET' \
+    | grep -q -i -E -- '(-X|--method)[[:space:]=]*POST|[[:space:]](-f|--(raw-)?field|--input)'
+}
+
+# A security report recon marked PRIVATE also blocks public issues and pushes. A command that
+# opens a PR always reaches the PR's checks, whatever is chained around it: `git push && gh pr create`.
+private_only="" merge="" pr=""
+{ printf '%s' "$cmd" | grep -q -E "${B}gh[[:space:]]+pr[[:space:]]+create$E" || api_opens_pr; } && pr=1
 if [ -n "$gerrit" ]; then :
-elif printf '%s' "$cmd" | grep -q -E '(^|[;&|[:space:]])gh[[:space:]]+pr[[:space:]]+merge([[:space:]]|$)'; then
+elif [ -z "$pr" ] && printf '%s' "$cmd" | grep -q -E "${B}gh[[:space:]]+pr[[:space:]]+merge$E"; then
   merge=1
-elif printf '%s' "$cmd" | grep -q -E '(^|[;&|[:space:]])(gh[[:space:]]+issue[[:space:]]+create|git[[:space:]]+push)([[:space:]]|$)'; then
+elif printf '%s' "$cmd" | grep -q -E "$B(gh[[:space:]]+issue[[:space:]]+create|git[[:space:]]+push)$E"; then
   private_only=1
-else
-  printf '%s' "$cmd" | grep -q -E '(^|[;&|[:space:]])gh[[:space:]]+pr[[:space:]]+create([[:space:]]|$)' || exit 0
+elif [ -z "$pr" ]; then
+  exit 0
 fi
-printf '%s' "$cmd" | grep -q 'HOUSEGUEST_SKIP=1' && exit 0
+# Only a leading environment assignment skips: the same text in a PR body or a commit message doesn't.
+skip_re='^[[:space:]]*([A-Za-z_][A-Za-z0-9_]*=[^[:space:]]*[[:space:]]+)*HOUSEGUEST_SKIP=1[[:space:]]'
+[[ $cmd =~ $skip_re ]] && exit 0
 
 [ -n "$cwd" ] && cd "$cwd" 2>/dev/null
 git rev-parse --git-dir >/dev/null 2>&1 || exit 0
@@ -52,19 +67,21 @@ title_flags() {  # title_flags <stats file> <title>: what title.sh flags, joined
 
 if [ -n "$merge" ]; then
   # Only PRs houseguest made: the PR's head branch has a ledger in this clone.
-  args=$(printf '%s' "$cmd" | sed -E 's/.*gh[[:space:]]+pr[[:space:]]+merge//; s/[;&|].*//')
-  sel=$(printf '%s' "$args" | sed -n -E 's/^[[:space:]]+([^-[:space:]][^[:space:]]*).*/\1/p')
-  repo=$(printf '%s' "$args" | sed -n -E 's/.*(-R|--repo)[ =]+([^[:space:]]+).*/\2/p')
+  args=$(printf '%s' "$cmd" | tr '\n' ' ' | sed -E 's/.*gh[[:space:]]+pr[[:space:]]+merge//; s/[;&|)`].*//')
+  # The PR is the first word that's neither a flag nor a flag's value, wherever it sits.
+  sel=$(printf '%s' "$args" | sed -E -e ':a' -e "s/^[[:space:]]+(-[RAbFt]|--(repo|author-email|body|body-file|subject|match-head-commit))([[:space:]]+|=)(\"[^\"]*\"|'[^']*'|[^[:space:]]+)//" -e ta \
+    -e 's/^[[:space:]]+-[^[:space:]]*//' -e ta -e 's/^[[:space:]]+//; s/[[:space:]].*//' | tr -d "\"'")
+  repo=$(printf '%s' "$args" | sed -n -E 's/.*(-R|--repo)[ =]+([^[:space:]]+).*/\2/p' | tr -d "\"'")
   head=$(gh pr view ${sel:+"$sel"} ${repo:+-R "$repo"} --json headRefName -q .headRefName 2>/dev/null)
   ledger="$(git rev-parse --git-dir)/houseguest/$head"
   [ -n "$head" ] && [ -d "$ledger" ] || exit 0
-  if printf '%s' "$args" | grep -q -E '(^|[[:space:]])--auto([[:space:]=]|$)'; then
+  if printf '%s' "$args" | grep -q -E "(^|[[:space:]])--auto(=|$E)"; then
     why="--auto merges whenever checks go green, so a comment that lands after this runs gets no answer before the merge. Run merge.sh, answer what it lists, and merge by hand"
   else
     method=""
-    printf '%s' "$args" | grep -q -E '(^|[[:space:]])(-s|--squash)([[:space:]]|$)' && method=--squash
-    printf '%s' "$args" | grep -q -E '(^|[[:space:]])(-m|--merge)([[:space:]]|$)' && method=--merge
-    printf '%s' "$args" | grep -q -E '(^|[[:space:]])(-r|--rebase)([[:space:]]|$)' && method=--rebase
+    printf '%s' "$args" | grep -q -E "(^|[[:space:]])(-s|--squash)$E" && method=--squash
+    printf '%s' "$args" | grep -q -E "(^|[[:space:]])(-m|--merge)$E" && method=--merge
+    printf '%s' "$args" | grep -q -E "(^|[[:space:]])(-r|--rebase)$E" && method=--rebase
     out=$(bash "${CLAUDE_PLUGIN_ROOT:-$(dirname "$0")/..}/skills/oss-pr/scripts/merge.sh" ${sel:+"$sel"} ${repo:+-R "$repo"} $method --ledger "$ledger" 2>&1) && exit 0
     why="merge.sh says it isn't ready:
 $out"
@@ -78,12 +95,14 @@ EOF
   exit 2
 fi
 
+# A push chained in front of opening a PR goes on to the PR's checks, unless recon said PRIVATE.
+[ -n "$pr" ] && ! grep -q -E '^DECISION:[[:space:]]*PRIVATE' "$(git rev-parse --git-dir)/houseguest/$(git branch --show-current)/recon.md" 2>/dev/null && private_only=""
 if [ -n "$private_only" ]; then
   ledger="$(git rev-parse --git-dir)/houseguest/$(git branch --show-current)"
   if ! grep -q -E '^DECISION:[[:space:]]*PRIVATE' "$ledger/recon.md" 2>/dev/null; then
     # An issue filed from a branch houseguest keeps a ledger for gets the same title check as a PR,
     # against the titles of issues this repo's maintainers closed as completed.
-    printf '%s' "$cmd" | grep -q -E '(^|[;&|[:space:]])gh[[:space:]]+issue[[:space:]]+create([[:space:]]|$)' && [ -d "$ledger" ] || exit 0
+    printf '%s' "$cmd" | grep -q -E "${B}gh[[:space:]]+issue[[:space:]]+create$E" && [ -d "$ledger" ] || exit 0
     ttl=$(cmd_title "$ledger/issue-title.txt") why=""
     [ -n "$ttl" ] || exit 0
     if [ ! -f "$ledger/issue-titles.json" ]; then

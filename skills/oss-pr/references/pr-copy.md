@@ -256,7 +256,7 @@ Right before shipping, check whether the world moved since recon. Across five co
 bash "<skill-dir>/scripts/recheck.sh" --repo <owner/name> --issue <N> --files <your changed files> --q "<recon's search terms>" --save "$LEDGER/recheck.md"
 ```
 
-On CHANGED, act on each item: a merged fix or a closed issue ends the job (go back to recon); an open PR for the same change means JOIN or STOP; a new commit on your files means merging the base and rerunning the proof. Then rerun it with `--since` set to the previous run's `Checked:` time. The gate wants CLEAR.
+On CHANGED, act on each item: a merged fix or a closed issue ends the job (go back to recon); an open PR for the same change means JOIN or STOP; a new commit on your files means merging the base and rerunning the proof. Then rerun it with `--since` set to the previous run's `Checked:` time. The gate wants CLEAR, checked within the last hour.
 
 On Gerrit, point `--repo` at the project's GitHub mirror (`chromium/chromium`, `golang/go`) and leave out `--issue` when the bug lives elsewhere: it then sees only commits to your files. Check open changes on the review server yourself (`curl -s 'https://<host>/changes/?q=status:open+file:<path>' | sed 1d`, one query per changed file, or `dir:<folder>`) and the bug in its own tracker, and write what you found into `recheck.md` below the script's report.
 
