@@ -47,7 +47,7 @@ A phase that runs in the same context as the one before it inherits that phase's
 
 Your job between phases:
 
-- **Launch** each phase with its reference file, `<skill-dir>`, the absolute ledger path, and the inputs in the table below. Pass facts (repo, issue number, paths, the user's words), never your own reading of them: no "the bug is probably in X," no summary of an earlier phase. A phase that needs an earlier phase's conclusions reads them from the ledger.
+- **Launch** each phase with its reference file, `<skill-dir>`, the absolute ledger path, and the inputs in the table below. Open the prompt with the phase as `next.sh` numbers it ("Run phase 4 (proof) of the houseguest oss-pr skill"): the plugin's meter hook files the run's tokens under that number. Pass facts (repo, issue number, paths, the user's words), never your own reading of them: no "the bug is probably in X," no summary of an earlier phase. A phase that needs an earlier phase's conclusions reads them from the ledger.
 - **Read** the note each phase writes, tell the user the result in a line or two, and decide whether the next phase runs. A STOP or ASK ends the job the same way it did before.
 - **Relay questions.** A subagent can't ask the user anything. It writes an `[ASK USER]` block (below) in its note and stops; you show the user the block as written, then launch the phase again with their answer in their words.
 - **Give blind phases a clean copy.** The intent check, the finding checks, and the final check mustn't see the ledger, so they don't work in your clone. Make each one a scratch clone (`git clone -q <your clone> <scratch>/<phase>`, then check out the commit it needs): a clone never carries `.git/houseguest`, so the ledger isn't there to read, even by accident. Copy in only the files the table gives the phase, and copy the note it writes back into the ledger yourself.
@@ -144,6 +144,14 @@ It lists first the PRs whose linked issue closed, or that another merged or open
 It also lists the user's PRs whose upstream CI is red, or waiting for a maintainer to approve the run; for a red one, find whether the failure is the PR's (fix it and push, with the user's yes) or the base's (draft one comment saying so), since a PR left red reads as abandoned.
 
 When `preview.md` says FORKS GET ONE, open the preview once its link posts on the new PR. Trust only a link a GitHub App posted (its author ends in `[bot]`) or a check run reported; anyone can paste a preview-looking link into a comment. Check that the bot built the PR's HEAD (it usually names the commit) and that the repro from `recon.md` behaves as fixed there. A preview that shows the old behavior, or fails to build because of the change, is a problem to fix before a reviewer finds it. A preview that fails for a reason the change can't cause (a missing deploy secret on fork PRs) needs nothing from the user.
+
+When the user asks how their contributions are doing, or what they cost:
+
+```bash
+bash "<skill-dir>/scripts/outcomes.sh"
+```
+
+It lists each job the meter hook logged, one row per repo and branch: the PR opened from that branch, how it ended, the days it took, how many reviews asked for changes, and the phase runs, review rounds, and tokens spent. LANDED means the maintainers closed the PR after committing it by hand. Its last line is output tokens per merged PR. The meter files a run under the ledger its launch prompt names, and the blind phases get no ledger, so a job's tokens are a floor when one session ran several jobs.
 
 ## When you merge it yourself
 
