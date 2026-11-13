@@ -131,27 +131,7 @@ Adding to someone else's open PR (recon's `DECISION: JOIN`, or the user asks to 
 
 ## After posting
 
-Contributions die quietly when a maintainer asks something and nobody answers; a stale bot closes the thread a few weeks later. Run this whenever the user asks what's waiting on them, and offer it after any session that opened a PR or issue:
-
-```bash
-bash "<skill-dir>/scripts/followup.sh" --days 2
-```
-
-It lists the user's open PRs and issues on others' repos where a human other than the user spoke last, longest wait last. For a project that reviews on Gerrit, add `--gerrit https://<host>` with the host from `recon.md`'s `- Review:` line; it finds the user's open changes there by `git config user.email` (`--email` overrides it) and counts each one's unresolved inline threads. For each, read the thread and draft a reply following "Replies to review comments" in `pr-copy.md`, or say plainly that no reply is needed (a "we'll ping you" note needs none). Never post the replies yourself.
-
-It lists first the PRs whose linked issue closed, or that another merged or open PR also closes. Read that other PR's diff before anything else. When it contains the user's change, draft one sentence naming it and offer to close the user's PR; a maintainer shouldn't have to pick between two copies of the same fix. A PR that's only related, or fixes part of it, is no reason to close: say in one sentence how the two differ, or offer to help there (`existing-pr.md`). Unresolved threads from review bots get their own list with each bot's run count; answer them per "Automated reviewers" in `pr-copy.md`.
-
-It also lists the user's PRs whose upstream CI is red, or waiting for a maintainer to approve the run; for a red one, find whether the failure is the PR's (fix it and push, with the user's yes) or the base's (draft one comment saying so), since a PR left red reads as abandoned.
-
-When `preview.md` says FORKS GET ONE, open the preview once its link posts on the new PR. Trust only a link a GitHub App posted (its author ends in `[bot]`) or a check run reported; anyone can paste a preview-looking link into a comment. Check that the bot built the PR's HEAD (it usually names the commit) and that the repro from `recon.md` behaves as fixed there. A preview that shows the old behavior, or fails to build because of the change, is a problem to fix before a reviewer finds it. A preview that fails for a reason the change can't cause (a missing deploy secret on fork PRs) needs nothing from the user.
-
-When the user asks how their contributions are doing, or what they cost:
-
-```bash
-bash "<skill-dir>/scripts/outcomes.sh"
-```
-
-It lists each job the meter hook logged, one row per repo and branch: the PR opened from that branch, how it ended, the days it took, how many reviews asked for changes, and the phase runs, review rounds, and tokens spent. LANDED means the maintainers closed the PR after committing it by hand. Its last line is output tokens per merged PR. The meter files a run under the ledger its launch prompt names, and the blind phases get no ledger, so a job's tokens are a floor when one session ran several jobs.
+Contributions die quietly when a maintainer asks something and nobody answers. After any session that opened a PR or issue, offer the `houseguest:followup` skill: it lists what's waiting on the user (maintainer questions, review-bot threads, red CI, a competing PR, a fork preview to check) and drafts what each needs. It also answers how past contributions ended and what they cost. A fix it finds needed on a branch with a ledger comes back here, so the proof and final check rerun on the new commit.
 
 ## When you merge it yourself
 
