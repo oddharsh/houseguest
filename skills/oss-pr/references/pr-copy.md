@@ -88,7 +88,7 @@ If a `writing-style` skill is installed, apply it as well.
 
 <What the change does and why this way, 1 to 3 sentences, with a lineage link if there is one. One alternative, if there was an obvious one.>
 
-<One verification sentence with a number.> <Limits of testing, if any.> Fixes #<N>.
+<One verification sentence with a number.> <Limits of testing, if any.> Fixes #<N>. (For a Linear ticket: `Closes <ID>.`)
 
 <Where to look on the preview, from proof.md's Preview section, if the repo builds one for forks.>
 

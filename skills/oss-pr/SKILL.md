@@ -39,6 +39,8 @@ Files: `intent.md`, `recon.md`, `codex.md` (from `codex.sh`), `style.md`, `house
 
 The helper scripts live in `scripts/` next to this file. Wherever a reference says `<skill-dir>`, substitute the base directory shown when this skill loaded.
 
+A job can start from a Linear ticket instead of a GitHub issue (`ENG-123`, or a `linear.app` link). Recon reads it through the Linear connector into `ticket.md` (`references/recon.md`, "Linear tickets"), and from then on `ticket.md` stands wherever the table below says "the issue."
+
 Recon runs before you clone, and so does an issue. Until a clone exists, keep notes in `${TMPDIR:-/tmp}/houseguest/<owner>/<repo>/<topic>/` and move them into the ledger once the branch exists.
 
 ## Each phase runs in its own subagent
@@ -71,16 +73,16 @@ The block hands the user the phase's opinion on purpose. The checking phases get
 
 | # | Phase | Read | Writes | Give the subagent | Keep from it | Can stop the job? |
 |---|-------|------|--------|-------------------|--------------|-------------------|
-| 0 | Intent check | `agents/intent-check.md` | `intent.md` | The repo, a neutral statement of the behavior (below), the files or symbols it lives in, and a scratch clone once one exists | The issue, the user's request, the proposed fix, and every other ledger note | No, but recon decides from it |
-| 1 | Recon | `references/recon.md`, then `references/fundamentals.md` | `recon.md`, `holdout.md` | The user's request, the repo, the issue | Nothing | Yes: duplicate, already fixed (on head, beta, or canary too, per `channels.sh`), won't-fix, AI ban, discussion-first, behavior the project chose on purpose. Or it becomes a docs change, when that choice was never written down where users look |
+| 0 | Intent check | `agents/intent-check.md` | `intent.md` | The repo, a neutral statement of the behavior (below), the files or symbols it lives in, and a scratch clone once one exists | The issue and `ticket.md`, the user's request, the proposed fix, and every other ledger note | No, but recon decides from it |
+| 1 | Recon | `references/recon.md`, then `references/fundamentals.md` | `recon.md`, `holdout.md`, and `ticket.md` when there is a Linear ticket | The user's request, the repo, the issue or ticket | Nothing | Yes: duplicate, already fixed (on head, beta, or canary too, per `channels.sh`), won't-fix, AI ban, discussion-first, behavior the project chose on purpose. Or it becomes a docs change, when that choice was never written down where users look |
 | 2 | Style fingerprint | `references/style.md`, `references/languages.md` | `codex.md` (from `codex.sh`), `style.md` (from `house.sh`), `checks.md` (from `checks.sh`) | The clone and the files it will touch | Nothing | No, but it shapes everything after |
-| 3 | Write the change | `references/lean.md` first, then `references/style.md`, `references/deslop.md`, `references/defaults.md`, `references/fundamentals.md` | the smallest diff that fully solves the issue, committed, then `house.md` | The user's request and the clone, and `decisions.md` once it exists | `holdout.md` | No, but a PR that does two things becomes two PRs |
+| 3 | Write the change | `references/lean.md` first, then `references/style.md`, `references/deslop.md`, `references/defaults.md`, `references/fundamentals.md` | the smallest diff that fully solves the issue, committed, then `house.md` | The user's request and the clone, `ticket.md` when there is one, and `decisions.md` once it exists | `holdout.md` | No, but a PR that does two things becomes two PRs |
 | 4 | Proof | `references/proof.md`, then `references/fundamentals.md` | `proof.md` | The clone, the base ref, and the commit | How the change was written: it gets the diff, not the account of it, and `holdout.md` | Yes: if red-green fails, the fix or the test is wrong |
 | 4b | Second opinion (optional, below) | `agents/second-fix.md`, then `agents/compare.md` | `alternative.md`, `compare.md` | Second fix: a scratch clone at the base, the problem as posed, `codex.md`, `style.md`. Compare: scratch clones of both fixes and the problem as posed | Second fix: your diff, the PR text, and the ledger. Compare: how either fix was made | No, but it can send the job back to phase 3 |
-| 5 | Copy | `references/pr-copy.md`, then `references/lrs.md`, and the last section of `references/fundamentals.md` | `pr-title.txt`, `pr-body.md`, or the issue or reply text | The clone and the user's answers to its questions, and `decisions.md` | The conversation: it writes only what the ledger and the diff show; and `holdout.md` | No |
+| 5 | Copy | `references/pr-copy.md`, then `references/lrs.md`, and the last section of `references/fundamentals.md` | `pr-title.txt`, `pr-body.md`, or the issue or reply text | The clone and the user's answers to its questions, and `decisions.md`, and `ticket.md` when there is one | The conversation: it writes only what the ledger and the diff show; and `holdout.md` | No |
 | 6 | Maintainer review | `agents/maintainer-review.md` | findings, returned to you | What "Maintainer-reviewer pass" in `pr-copy.md` lists, and `rounds.md` from round 2 on | How the change and the text were made, so not `decisions.md` | Yes: if it finds a closing reason |
 | 6b | Finding check, one per Important finding | `agents/finding-check.md` | a verdict, returned to you | A scratch clone at HEAD with the base tagged `base`, the title and body, that one finding quoted in full, and the rule file it cites | The other findings, `rounds.md`, and every ledger note | No, but a finding it doesn't confirm starts no round |
-| 7 | Final check | `agents/final-check.md` | `final.md`, `final.md.seal`, and `runs.log`; copy all 3 into the ledger | A scratch clone at the HEAD you'll push, the base ref, `style.md`, `recon.md`'s `Reproduces on:` line, and the text that poses the problems: `pr-body.md` or the issue draft, plus the linked issue or the user's original report, and `holdout.md` | `proof.md`, and the tests the branch adds: it reproduces the problems as posed, through the interface the report used; and `decisions.md` | Yes: if a problem still shows on HEAD, or never showed on the base |
+| 7 | Final check | `agents/final-check.md` | `final.md`, `final.md.seal`, and `runs.log`; copy all 3 into the ledger | A scratch clone at the HEAD you'll push, the base ref, `style.md`, `recon.md`'s `Reproduces on:` line, and the text that poses the problems: `pr-body.md` or the issue draft, plus the linked issue, `ticket.md`, or the user's original report, and `holdout.md` | `proof.md`, and the tests the branch adds: it reproduces the problems as posed, through the interface the report used; and `decisions.md` | Yes: if a problem still shows on HEAD, or never showed on the base |
 
 The intent check, the second fix, the comparison, the maintainer reviewer, the finding check, and the final check ship as agents with this plugin (`houseguest:intent-check`, `houseguest:second-fix`, `houseguest:compare`, `houseguest:maintainer-review`, `houseguest:finding-check`, `houseguest:final-check`); their files are in `agents/` at the plugin root, two levels above `<skill-dir>`. If the agents aren't listed, launch a general-purpose agent with the agent file's body as its prompt. The other phases run as general-purpose agents told to follow their reference file. A subagent can't launch another one, so you run phase 6 and its finding checks yourself, and send the findings that survive back to the phase that owns them: code findings to a fresh phase 3 (then 4 and 5 again), text findings to a fresh phase 5, each with the findings quoted in full. A closing reason recon missed sends the job back to phase 1.
 
@@ -153,6 +155,20 @@ bash "<skill-dir>/scripts/outcomes.sh"
 
 It lists each job the meter hook logged, one row per repo and branch: the PR opened from that branch, how it ended, the days it took, how many reviews asked for changes, and the phase runs, review rounds, and tokens spent. LANDED means the maintainers closed the PR after committing it by hand. Its last line is output tokens per merged PR. The meter files a run under the ledger its launch prompt names, and the blind phases get no ledger, so a job's tokens are a floor when one session ran several jobs.
 
+## Back to the ticket
+
+When the job came from a Linear ticket, the ticket is where its team looks for status, and some teams keep verification there instead of in the repo (a repo's `AGENTS.md` may say so). Linear's GitHub integration links PRs to tickets on its own, but only where a team installed it: a `linear` bot comment on the repo's PRs means it's on. Without it, nothing connects the two unless houseguest does.
+
+Phase 5 names the ticket ID where the body would say `Fixes #N` ("Closes ENG-123."), so an integration installed later still links it. A private ticket on a public repo gets its ID and nothing more. Once the PR is up, offer the user these writes, each one shown in full and posted only on its own yes:
+
+1. **Link the PR.** `save_issue` with the ticket's `id` and `links: [{url: <PR url>, title: <PR title>}]`. Links only append. Skip it when `ticket.md`'s attachments already hold the PR, or the integration added it.
+2. **Post the verification.** Draft `$LEDGER/ticket-comment.md` from `final.md` and `runs.log`, never from memory. It opens with the PR link and the SHA the final check ran on. Then it gives one line per item of the governing Done-when list: the result, and the command or test that showed it. It ends with what wasn't checked. An item that failed or never ran says so. This is the place for the run detail the PR body folds away; it follows `pr-copy.md`'s voice rules, without headings. Post it with `save_comment` on the ticket.
+3. **Move the status,** only when the team's workflow says to: a doc that says so, or tickets in the same project that moved to In Review when their PR opened. Take the state's exact name from `list_issue_statuses`. Never move a ticket to Done; merging is what finishes it, and that's the team's call, so it waits for a merged PR and the user's yes.
+
+**Reread before writing.** The ticket may have moved since recon. Run `get_issue` and `list_comments` again first. A new assignee, a changed status, or a member's comment that rescopes it goes to the user before anything posts, the same way `recheck.sh` handles upstream drift.
+
+**Waiting on the ticket.** `followup.sh` reads only GitHub and Gerrit. For each open job with a `ticket.md`, also run `list_comments` and list the members' comments newer than your last post there; answer them like review comments, drafted and never auto-posted.
+
 ## When you merge it yourself
 
 When recon's `- Merge:` line says "you", nobody else has to read the PR between the user's yes and the merge. `merge.sh` stands in for that reader, and the plugin's hook runs it before any `gh pr merge` of a PR whose branch has a ledger:
@@ -175,7 +191,7 @@ The hook blocks `gh pr merge --auto` outright. Auto-merge fires whenever checks 
 
 ## Things that are always outward-facing
 
-Opening a PR or issue, merging a PR, uploading a Gerrit change or patchset, pushing to a fork, and replying on GitHub or Gerrit publish text under the user's name to strangers. Show the final text and the exact command, and wait for a clear yes each time. Draft replies to reviewers; never auto-post them, because an AI-written reply to a maintainer's review is the single fastest way to lose their goodwill.
+Opening a PR or issue, merging a PR, uploading a Gerrit change or patchset, pushing to a fork, and replying on GitHub or Gerrit publish text under the user's name to strangers. Writing to a Linear ticket (a comment, a link, a status change) publishes to the user's own team, which reads it as theirs, so it gets the same yes. Show the final text and the exact command, and wait for a clear yes each time. Draft replies to reviewers; never auto-post them, because an AI-written reply to a maintainer's review is the single fastest way to lose their goodwill.
 
 ## When recon says DOCS
 
