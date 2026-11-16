@@ -15,6 +15,7 @@ bash "<skill-dir>/scripts/gather.sh" --repo <owner/name> --issue <N> \
 - **Searches:** GitHub ANDs the words inside one search, so keep each `--q` to 1 to 3 words and give each phrasing its own `--q`. Phrase them the way a maintainer would title the issue (`scrollback crash`, `custom media targets`). A duplicate titled differently is still a duplicate, so try at least 2.
 - **`--files`:** this is the most reliable duplicate check. It lists open PRs that touch the same files, and the recent commits on each file. Guess the files from the issue and a quick look at the repo tree if you haven't written code yet, then rerun once you have a diff.
 - **Reruns:** add `--search-only` to repeat just the searches.
+- **Discussions:** each `--q` also searches the repo's Discussions, where proposals and design questions often get settled without an issue. A section says so when the repo has Discussions turned off.
 - **Failed lookups:** a search that errors (a rate limit, a field GitHub dropped) prints LOOKUP FAILED in its section and in a list at the top, and the script exits 3. That section is unknown, not empty. Rerun before deciding, and never write "no duplicates" or "no open PRs" over a failed search. A list that stopped at its limit says so too; add a narrower `--q` instead of reading it as complete.
 - Inside a clone, it reads docs from disk instead.
 - The dump opens with an **AI policy sweep** (`scripts/policy.sh`, also runnable alone). It reads the repo's docs anywhere in the tree, the owner's `.github` repo, and contribution guides linked from the README, CONTRIBUTING, or templates, including guides in other repos. Then it checks earlier threads for maintainers applying an AI rule. It ends with one verdict: RULE FOUND, MENTIONS ONLY, or NONE FOUND, plus every source it checked.
@@ -46,6 +47,7 @@ The dump is raw. Read the files it points at, in this order:
 3. Any `AGENTS.md` or `CLAUDE.md`, both at the root and in the directories you'll touch (fetch nested ones by path until you clone). These are the maintainers telling an agent how to behave in their repo.
 4. The PR template, and any workflow the dump lists under "Workflows that police PRs." Those workflows enforce the template, so they decide what the body must contain.
 5. The issue thread and every linked PR, open or closed. The dump's "Work linked to" section follows the issue to the PRs that fixed it, then to whatever links to those PRs. An issue, revert, or follow-up PR linked after a fix merged means that fix missed a case, and the user's bug may be that case. For any open PR that matches, read its diff and its maintainer comments, not just its title.
+   Then any Discussion the searches matched that has a maintainer's word or a chosen answer under it. A proposal declined there is a recorded decision, the same as a won't-fix close.
 6. In a docs repo (MDN, a docs site), the writing guidelines for the page type you're editing. They decide where new text belongs.
 
 ## Check intent and lineage
@@ -134,7 +136,7 @@ Run this check whenever the bug could let someone other than the site's or tool'
 
 - The repo bans AI-assisted contributions, or requires something the user can't honestly provide.
 - An open PR already makes this change, or a superset of it. This holds whoever opened it (a bot, a maintainer, another contributor) and whatever state its CI is in. Maintainers usually finish their own bot's PR rather than review a second one. Offer to help on that PR instead: review it, test it, or add the missing piece the way `existing-pr.md` describes (`DECISION: JOIN`).
-- A maintainer closed the issue as won't-fix, or closed a previous PR for this change with a reason that still applies. Quote the reason.
+- A maintainer closed the issue as won't-fix, declined the proposal in a Discussion, or closed a previous PR for this change with a reason that still applies. Quote the reason.
 - The bug no longer reproduces on a build `channels.sh` marked DIFFERS (head, canary, nightly), while prod still reproduces it in the same setup (see "A result you can trust"). Name the commit that fixed it; its list of commits touching your paths is the place to look.
 - The repo is archived, or no outside PR has merged in 6 months and no maintainer has committed in 3. The dump prints the last fork merge date.
 
@@ -146,8 +148,10 @@ Run this check whenever the bug could let someone other than the site's or tool'
 - The change reverses a deliberate choice (`intent.md` says INTENDED or CONFLICTING), or adds a public option, flag, or API that no maintainer has agreed to.
 - The issue is unconfirmed (no maintainer reply), and the change alters behavior someone might rely on. This includes the user's own fresh issue: an issue filed minutes before the PR, with no maintainer reply, hasn't been agreed to. If that issue already asks for agreement ("happy to send a PR if you agree"), ASK means **wait** for the answer; don't post a second comment.
 - Someone is assigned or said "I'll take this" recently.
+- The issue carries a label that holds it for a decision (the dump's "labels that hold it for a decision" line: `needs-decision`, `needs-design`, `needs discussion`), and no maintainer has since said a PR is welcome. Quote the label in the ASK comment; the decision it waits on is the question to ask.
+- The issue has a Linear backlink (the dump's "Linear:" line) and the change is non-trivial. The backlink means a maintainer filed the issue in a tracker you can't read, so a fix may already be under way there. Some teams sync every triaged issue, so the link alone says triaged, not taken; ask whether anyone is on it, and treat it as an objection to predict rather than a stop.
 
-**Go** when none of the above apply. A maintainer-confirmed bug with no open PR touching the same files is the best case.
+**Go** when none of the above apply. A maintainer-confirmed bug with no open PR touching the same files is the best case. A label that invites a PR (`help wanted`, `good first issue`, `accepted`) counts as a maintainer's agreement to the change the issue describes, though not to a different one.
 
 ### What ASK produces
 
@@ -182,6 +186,10 @@ The same go, stop, or ask logic applies to an issue, read as "is filing this her
   - The bug lives upstream: in a dependency, the platform API, or a service the tool calls. Write for that venue, not this repo, and say why it belongs there.
 - **Release lines:** when the bug is fixed on a newer line, check whether the user's line is still maintained (a branch for it, recent backport PRs, releases from it). If it is, a backport request is GO. If it isn't, STOP, and give the user both ways off in `forks.md`: carry the fixing commit on their own line, or upgrade after reading what the upgrade brings. Upgrading isn't the default answer, since it brings every other commit too.
 
+## Demand signals
+
+The issue's reactions and each Discussion's upvotes count how many people want the change. They're useful in an issue draft or ASK comment that has to argue the change matters ("12 people have hit this"), and they never stand in for a maintainer's position: a popular request a maintainer declined is still declined. The dump reads them as they stand today, even in an `--as-of` replay.
+
 ## Timing signals
 
 Check the open milestones and recent releases. A milestone due within 2 weeks usually means a freeze, so non-critical PRs may sit until after release; say so in the note. Newer builds are covered by `channels.sh` above.
@@ -202,7 +210,8 @@ Reason: <one sentence, with link>
 - Review: <GitHub PRs, or Gerrit: the host, the upload command, and the file or doc that says so>
 - AI policy: <the sweep's verdict; the quoted binding rule with its path, or "none found in: <sources>"; and the mode it puts the job in (normal, author mode, or STOP)>
 - Gates: <discussion-first / vouch / DCO / CLA, and whether the user has passed them>
-- Duplicates and prior attempts: <#links with state and the maintainer's reason for each close; open PRs touching the same files>
+- Duplicates and prior attempts: <#links with state and the maintainer's reason for each close, including Discussions; open PRs touching the same files>
+- Tracking: <hold or invite labels, assignee, and the Linear backlink, from the dump's issue section, or "none">
 - Intent and lineage: <intent.md's VERDICT and Basis lines, the commit or PR that made the current behavior, any escape hatch, and what the verdict means for the decision>
 - Predicted objections: <the top 3, each with its basis>
 - Reproduces on: <channels.sh's recon line with each result filled in: yes, no, or how it failed, and the version each run loaded>; trigger removed: <gone / still there>; or "n/a: not a bug fix" for features and docs

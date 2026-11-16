@@ -8,7 +8,7 @@
 # contribution docs through the GitHub API. Inside a clone or fork it reads them
 # from disk and defaults to the fork's parent, where issues and PRs live.
 #
-# --q        one search; repeat it for more. GitHub ANDs the words inside one
+# --q        one search of issues, PRs, and Discussions; repeat it for more. GitHub ANDs the words inside one
 #            search, so give each phrasing its own --q. Bare words form one more.
 # --files    the files your change touches: lists open PRs touching them and the
 #            recent commits on each, which is where lineage and conflicts show up.
@@ -196,13 +196,23 @@ s_issue() {
   section "Issue #$issue"
   local j
   j=$(ghf "issue #$issue" gh issue view "$issue" -R "$repo" \
-    --json title,state,stateReason,closedAt,author,labels,createdAt,url,comments) || { failed "couldn't read issue #$issue"; return; }
+    --json title,state,stateReason,closedAt,author,labels,createdAt,url,comments,body,assignees,reactionGroups) || { failed "couldn't read issue #$issue"; return; }
   echo "$j" | jqa '
       ([.comments[] | select(.createdAt < $t)]) as $c
       | ([$c[] | select(maint and ((.author.login // "") | test("bot"; "i") | not))]) as $m
       | (if $t == "9999" then now else ($t | fromdateiso8601) end) as $now
       | (($now - (.createdAt | fromdateiso8601)) / 3600) as $h
-      | "- \(.title)\n- opened \(.createdAt[:16])Z by \(.author.login)\(if .author.login == $me then " (you)" else "" end), \(if $h < 48 then "\($h | floor) hours" else "\($h / 24 | floor) days" end) before this view\n- state then: \(state_asof($t))\(reason_asof($t))\n- labels: \([.labels[].name] | join(", "))\n- comments before then: \($c | length), from maintainers (OWNER/MEMBER/COLLABORATOR, non-bot): \($m | length)\n- url: \(.url)\n\nLast 6 comments before then:",
+      | ([.labels[].name]) as $l
+      | ([.body, $c[].body] | map(. // "" | scan("https://linear\\.app/[^/\\s\"<>)]+/issue/[A-Za-z0-9]+-[0-9]+[^\\s\"<>)]*")) | unique) as $lin
+      | "- \(.title)\n- opened \(.createdAt[:16])Z by \(.author.login)\(if .author.login == $me then " (you)" else "" end), \(if $h < 48 then "\($h | floor) hours" else "\($h / 24 | floor) days" end) before this view\n- state then: \(state_asof($t))\(reason_asof($t))\n- labels: \($l | join(", "))",
+        "- labels that hold it for a decision: \([$l[] | select(test("needs.?(decision|design|discussion|rfc|proposal|approval)|wont.?fix|not.planned|rejected|declined|blocked|on.hold"; "i"))] | if length == 0 then "none" else join(", ") end)",
+        "- labels that invite a PR: \([$l[] | select(test("help.wanted|good.first|accepted|pr.welcome|contributions?.welcome|up.for.grabs"; "i"))] | if length == 0 then "none" else join(", ") end)",
+        "- assigned to: \([.assignees[].login] | if length == 0 then "nobody" else join(", ") end)",
+        "- reactions: \([.reactionGroups[] | select(.users.totalCount > 0) | "\(.content | ascii_downcase) \(.users.totalCount)"] | if length == 0 then "none" else join(", ") end)",
+        "- Linear: \(if ($lin | length) == 0 then "no backlink" else "tracked internally as \($lin | join(", "))" end)",
+        "- comments before then: \($c | length), from maintainers (OWNER/MEMBER/COLLABORATOR, non-bot): \($m | length)\n- url: \(.url)",
+        (if $t != "9999" then "\n(Labels, assignees, and reactions read as they stand today; GitHub keeps no history of them here.)" else empty end),
+        "\nLast 6 comments before then:",
         (if ($c | length) == 0 then "- (none)" else ($c[-6:][] | "- **\(.author.login)**\(if .author.login == $me then " (you)" else "" end) (\(.authorAssociation), \(.createdAt[:10])): \(.body | gsub("\\s+"; " ") | .[:600])") end)'
   echo
   echo "(authorAssociation can understate: an active maintainer may show as CONTRIBUTOR. Check who merges PRs in the list below.)"
@@ -387,6 +397,32 @@ s_qprs() {
   return 0
 }
 
+# Proposals and design questions often get settled in Discussions, never in an issue.
+# Replies nest under comments, so a maintainer's word can sit one level down.
+s_qdiscussions() {
+  section "Discussions matching: $1"
+  local j
+  j=$(ghf "discussion search: $1" gh api graphql -F o="${repo%/*}" -F r="${repo#*/}" -f q="repo:$repo $1$before" -f query='
+query($o:String!,$r:String!,$q:String!){
+  repository(owner:$o,name:$r){hasDiscussionsEnabled}
+  search(type:DISCUSSION,query:$q,first:10){nodes{... on Discussion{
+    number title url createdAt closed closedAt answerChosenAt upvoteCount category{name}
+    answer{author{login} authorAssociation createdAt body}
+    comments(last:15){nodes{author{login} authorAssociation createdAt body
+      replies(last:5){nodes{author{login} authorAssociation createdAt body}}}}}}}}') \
+    || { failed "discussion search for \"$1\""; return; }
+  echo "$j" | jqa '.data
+    | if .repository.hasDiscussionsEnabled | not then "- (Discussions are off in this repo)"
+      elif (.search.nodes | length) == 0 then "- (none)"
+      else .search.nodes[]
+        | ([.comments.nodes[] | ., .replies.nodes[]] | map(select(.createdAt < $t and maint and ((.author.login // "") | test("bot"; "i") | not)))) as $m
+        | "- #\(.number) [\(if .closed and (.closedAt // "9999") < $t then "CLOSED" else "OPEN" end)\(if (.answerChosenAt // "9999") < $t then ", answered" else "" end)] \(.title) (\(.category.name), \(.upvoteCount) upvotes today, opened \(.createdAt[:10])) \(.url)",
+          (if .answer and (.answerChosenAt // "9999") < $t then "    - chosen answer by **\(.answer.author.login)** (\(.answer.authorAssociation)): \(.answer.body | gsub("\\s+"; " ") | .[:300])" else empty end),
+          (if ($m | length) > 0 then $m | max_by(.createdAt) | "    - last maintainer word, **\(.author.login)** (\(.authorAssociation), \(.createdAt[:10])): \(.body | gsub("\\s+"; " ") | .[:300])" else empty end)
+      end'
+  capped "$(echo "$j" | jq '.data.search.nodes | length')" 10
+}
+
 # --- Your history here ---------------------------------------------------------
 my_closed() {
   ghf "PR #$1 comments" gh pr view "$1" -R "$repo" --json comments | jqa --arg n "$1" '[.comments[] | select(.createdAt < $t) | select(.author.login != $me)] | if length > 0 then .[-1] | "  - why #\($n) closed, last word from **\(.author.login)**: \(.body | gsub("\\s+"; " ") | .[:300])" else "  - #\($n) closed with no comment from others" end' \
@@ -515,6 +551,7 @@ fi
 for qq in ${queries[@]+"${queries[@]}"}; do
   bg s_qissues "$qq"
   bg s_qprs "$qq"
+  bg s_qdiscussions "$qq"
 done
 if [ -z "$search_only" ]; then
   bg s_mine
