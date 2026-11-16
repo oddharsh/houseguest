@@ -49,6 +49,8 @@ The fork keeps its rules in `FORK.md`, each in plain words with an example and a
 | Piece | Job |
 |---|---|
 | `skills/oss-pr` | The phases, and the references they read |
+| `skills/pr-copy` | PR, issue, and review-reply text outside an oss-pr job, such as in your own repos, using oss-pr's `pr-copy.md` |
+| `skills/followup` | What's waiting on you across your open contributions, and how past ones ended (`followup.sh`, `outcomes.sh`) |
 | `agents/` | `intent-check`, `maintainer-review`, `finding-check`, `final-check`, plus `second-fix` and `compare` for an optional blind second opinion |
 | `hooks/gate.sh` | The PR gate |
 | `hooks/session.sh` | Prints the next phase when a session starts on a branch with a ledger |
