@@ -25,7 +25,7 @@ The idea underneath most of these: a type is a claim about data, and slop fabric
 
 | Principle | From | Looks like |
 |---|---|---|
-| One pass when two eager passes do the same job. | `no-array-filter-map` | `.filter().map()` over a large array; Python `[f(x) for x in [y for y in z if p(y)]]`. Lazy iterator chains (Rust iterators, Python generators) are fine. |
+| One pass when two eager passes do the same job. | `no-array-filter-map` | `.filter().map()` over a large array or on a hot path; Python `[f(x) for x in [y for y in z if p(y)]]`. Lazy iterator chains (Rust iterators, Python generators) are fine. On a small or cold array the native chain is the simpler code, so keep it (`lean.md`, "Simple and native"). |
 | Don't copy the accumulator on every iteration. | `no-reduce-accumulator-copy` | `reduce((acc, x) => ({...acc, [x.k]: x}))`; Python `acc = acc + [x]` in a loop. Quadratic for no reason. |
 | Omit optional fields plainly. | `no-conditional-empty-object-spread` | `{...(cond ? {a} : {})}`. Use the repo's normal way to build optional fields. |
 | Name things by meaning, not structure. | `no-shape-in-symbol-names` (generalized) | `userShape`, `dataObj`, `resultInfo`, `FooHelper`, `handleStuff`. |
