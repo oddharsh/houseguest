@@ -2,6 +2,8 @@
 
 Where each language keeps its house rules, and which conventions to read off neighboring files when nothing enforces them. `house.sh` finds the configured tools; this file covers what tools don't decide. Repo config and neighbors always win over anything here.
 
+For a repo in Lisp, ML or Haskell, Erlang or Elixir, Prolog, Forth, or an HDL, `fundamentals.md` under "Language families" names the house rules that flip there.
+
 For every language, read these off the 2 or 3 files nearest your change: naming per kind, error style, comment density and placement, import order, how tests are named and what they assert with.
 
 ## TypeScript and JavaScript

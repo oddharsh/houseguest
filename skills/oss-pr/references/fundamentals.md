@@ -1,6 +1,6 @@
 # Fundamentals: the classics, and everyone who skipped one
 
-houseguest leans on a handful of open courses: MIT's [Missing Semester](https://missing.csail.mit.edu/) (2026 edition) for the tools, and a few cult-classic courses for what the tools run on. It uses each lesson two ways.
+houseguest leans on a handful of open courses: MIT's [Missing Semester](https://missing.csail.mit.edu/) (2026 edition) for the tools, a few cult-classic courses for what the tools run on, and one classic text per language family for the habits each family teaches. It uses each lesson two ways.
 
 1. **It knows the lesson.** Its own scripts, repros, tests, and claims follow it.
 2. **It doesn't assume anyone else does.** A reporter, the repo's CI, a maintainer, a review bot, another agent, the user, and houseguest's own earlier phases can each be missing the one lesson that matters today. So each lesson is also a check on what houseguest is handed, and a constraint on what it hands back.
@@ -148,6 +148,66 @@ Each entry gives what houseguest knows, what it won't assume of others, and the 
 - **Know:** the same-origin policy is the browser's main wall; cookies carry sessions, so `SameSite`, `HttpOnly`, and `Secure` matter; escaping depends on context (HTML body, attribute, URL, script); any page the user opens can send requests to a localhost server, and DNS rebinding can let it read the replies.
 - **Don't assume** HTML escaping protects an attribute or a URL, or that a dev server on `127.0.0.1` is private.
 - **Check:** recon's security check covers any web-facing change. Escape with the context-aware escaping the repo's template engine already does; a hand-written `replace("<", "&lt;")` in the diff is a finding.
+
+## Language families
+
+Norvig's [Teach Yourself Programming in Ten Years](https://norvig.com/21-days.html) asks for languages from several families, since each one teaches a habit the others don't. houseguest's house rules already borrow habits from several families without saying which. Meanwhile `languages.md` covers one cluster: imperative and object-oriented languages with some ML borrowed in.
+
+Each entry gives the family's lesson, the house rule it backs, where a house rule flips in that family's repos, and the check. The families shape how houseguest reads a problem. They never license bringing one family's idioms into another family's repo; the precedence order still holds, and the repo wins.
+
+### Lisp: code is data
+
+[Structure and Interpretation of Computer Programs](https://mitp-content-server.mit.edu/books/content/sectbyfn/books_pres_0/6515/sicp.zip/index.html)
+
+- **Know:** a program is a list the language can read and rewrite, so a macro adds syntax and a DSL is often a few functions; abstraction barriers (SICP chapter 2) let a representation change behind its constructors and selectors; the REPL is where you debug.
+- **Backs:** rung 2 of the laziness ladder (is it already in this codebase?), and no wrapper with one caller.
+- **Flips:** "parse at the boundary, then trust the type" has no static type to trust. The boundary is whatever schema the repo uses (`clojure.spec`, malli), or there isn't one. A macro that would be speculative generality in TypeScript can be the house idiom, so read the neighbors before calling one slop.
+- **Check:** before writing a generator, a helper, or new syntax, search the repo for its macros (`defmacro`) and DSLs. Repro at the REPL the repo's docs use, and paste the form with its printed result.
+
+### ML and Haskell: make illegal states unrepresentable
+
+Yaron Minsky's [Effective ML](https://blog.janestreet.com/effective-ml-revisited/)
+
+- **Know:** a sum type with an exhaustive match lets the compiler list every place a new case needs handling; a signature is a claim the compiler checks; purity keeps deciding apart from doing.
+- **Backs:** one sum type for exclusive states, no catch-all arms, parse at the boundary, and decision logic in plain functions with thin I/O glue. This family wrote most of the house type rules.
+- **Flips:** the flip runs the other way, into languages with no sum types. Emulate one only where the neighbors already do. `deslop.md` counts Go type switches over a real sum type as idiomatic, while an interface hierarchy built for one fix reads as ceremony.
+- **Check:** when a fix adds a state, add the variant first and let the compiler (or `const _exhaustive: never`) list the sites. The diff touches every site on that list, and nothing else.
+
+### Erlang and Elixir: let it crash
+
+Joe Armstrong's thesis, [Making reliable distributed systems in the presence of software errors](https://erlang.org/download/armstrong_thesis_2003.pdf) (2003)
+
+- **Know:** processes share nothing and fail alone; a supervisor restarts a failed process into a known-good state; Armstrong argues that recovery code inside the worker is where errors hide, so the worker codes the happy path and the supervision tree handles failure.
+- **Backs:** never swallow an error, no try/catch around a failure nobody has explained, and make anything retryable safe to rerun.
+- **Flips:** defensive handling is the slop here. A `try`/`rescue` around a call inside a GenServer, or a `{:error, _} -> :ok` clause, hides a crash the supervisor was built to handle. Maintainers expect the process to die and restart.
+- **Check:** a fix that adds error handling names which supervisor restarts the process today, and why a restart isn't enough. When a restart is enough, the fix belongs in the state the process restarts into, or nowhere.
+
+### Prolog and Datalog: state what's true, let the engine search
+
+[Learn Prolog Now!](https://lpn.swi-prolog.org/)
+
+- **Know:** a program is facts and rules; a query asks for every binding that makes it true, and failure is an ordinary answer; clause order and the cut (`!`) change what the search finds and how long it takes.
+- **Backs:** fix the bug where it starts, by reading the relation instead of stepping through a procedure. In mainstream code the same lesson is property-based testing: state the property and let the tool search for a counterexample.
+- **Flips:** a test that a query fails (`\+ Goal`) asserts an exact result. Pairing every absence assertion with a presence assertion matters even more, because a query with a misspelled atom also fails.
+- **Check:** in a logic-language repo, a test collects every answer (`findall/3`) and compares the list to a literal, instead of checking only the first. In a mainstream repo that already uses a property-based tool (Hypothesis, fast-check, proptest), state the fix's property there before writing example tests.
+
+### Forth: small words, explicit stack
+
+Leo Brodie's [Thinking Forth](https://thinking-forth.sourceforge.net/)
+
+- **Know:** a Forth program is a dictionary of short words built bottom-up; data passes on a stack, so a word that juggles many items is hard to read and gets factored; Brodie factors until each word does one thing and its name says what.
+- **Backs:** `lean.md`, names that carry domain meaning, and subtract before adding.
+- **Flips:** "no helper with one caller" doesn't hold. Forth factors a word out for its name alone, so a single-use word is often the idiom. The lesson that carries over is narrower: a piece of code earns a name when the name says what its body can't.
+- **Check:** a new function in the diff that takes more than 3 positional arguments is a word Forth would flag. Factor it, or use the options shape `defaults.md` asks for.
+
+### Verilog and VHDL: everything runs at once
+
+Clifford Cummings, [Nonblocking Assignments in Verilog Synthesis, Coding Styles That Kill!](http://www.sunburst-design.com/papers/CummingsSNUG2000SJ_NBA.pdf) (SNUG 2000)
+
+- **Know:** an HDL describes a circuit, so every `always` block runs concurrently; clocked logic uses nonblocking assignment (`<=`), and mixing in blocking assignment (`=`) creates simulation races; simulation and synthesis can disagree, and timing decides whether a correct design works at speed.
+- **Backs:** OSTEP's lesson that a race is a property of the schedule, and verify the real artifact (the synthesized design, beyond the simulation).
+- **Flips:** "reproduce first" means a testbench and a waveform. Rerunning a green test 10 times adds nothing on a deterministic simulator; a seed sweep over constrained-random tests does. The diff stops being the whole fence too, because a one-line change can move a timing path the diff never shows.
+- **Check:** prove a fix with the repo's own simulator and testbench on base and HEAD, and name the failing signal and cycle from the waveform. Say in the PR body whether synthesis or timing was rerun, and on which tool.
 
 ## Writing for someone who skipped the class
 
