@@ -72,11 +72,11 @@ Record each check you ran under `## Beyond the example` in `proof.md`: the comma
 
 ## Performance
 
-Only when the change touches a hot path, or the repo has a benchmark suite covering the code:
+Only when the change touches a hot path, the repo has a benchmark suite covering the code, or the diff adds complexity for speed (`lean.md`, "Simple and native"):
 
 - Use the repo's own benchmark tool (`cargo bench`, `go test -bench`, `pytest-benchmark`, `vitest bench`, a `src/bench*` directory). For CLI-level timing, `hyperfine` with `--warmup 3`.
 - Run base and head on the same machine, back to back, at least 10 runs each. Report the median and spread for both, plus the delta.
-- Treat a delta inside the noise as "no measurable change" and say exactly that. Don't round noise into a win.
+- Treat a delta inside the noise as "no measurable change" and say exactly that. Don't round noise into a win. When the diff added complexity for speed and the delta sits inside the noise, take the complexity back out.
 - Append results to `proof.md` under `## Performance` with the exact commands.
 
 Don't add a benchmark harness to a repo that has none unless the PR is about performance; it's code the maintainers didn't ask to own.
