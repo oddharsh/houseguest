@@ -123,6 +123,10 @@ These are TS-only. Most also apply to JS projects that typecheck with JSDoc.
   Why: maintainers trust a fix they can watch fail first; `proof.md` records both runs.
 - **When the neighboring tests state properties, snapshot output, or test types, test your fix the same way, beside one literal case.**
   Why: the literal case shows the bug, and the property, snapshot, or type test states the rule, so the next change that breaks it fails loudly. `checks.md` lists what the repo keeps near your files. Never add the framework.
+- **For a port, rewrite, or speedup, run a differential check against the base over seeded, generated inputs.**
+  Why: the base is an oracle the maintainer already trusts, so "same output on 10,000 inputs, seed 42" is a claim they can rerun. Commit the check only where the repo keeps tests like it; otherwise it goes in `proof.md` under "Beyond the example" (`proof.md`, "Differential runs").
+- **In new code, take the clock, randomness, and I/O through the seam the neighboring code already uses.**
+  Why: a failing run then replays from its seed or fake, where a direct `Date.now()` or `rand()` call makes it a one-off.
 - **Skip the new test when it needs heavy harness setup, brittle mocks, or big fixture churn.**
   Why: pstack's rule fits here: "Prefer no new test over a bad test." Describe the closest real check in the PR instead.
 - **Run real code instead of mocking it when it runs locally.**
@@ -185,6 +189,10 @@ pstack tells owners to leave the design simpler than they found it and to hunt f
   Why: stray `print`, `console.log`, or `dbg!` lines read as debugging residue in a PR.
 - **Keep secrets and tokens out of logs and error messages.**
   Why: logs get pasted into public issues, and that's where credentials leak.
+- **Give every loop, queue, retry, and recursion your diff adds a fixed upper bound, and make hitting it an error.**
+  Why: an unbounded retry turns a bug into a hang with no error to read. This is TigerStyle's "put a limit on everything" ([TIGER_STYLE.md](https://github.com/tigerbeetle/tigerbeetle/blob/main/docs/TIGER_STYLE.md)).
+- **Where the repo asserts invariants (`debug_assert!`, Zig `assert`, `invariant()`), assert the ones your code relies on: what you expect and what you rule out.**
+  Why: an assertion crashes on a programmer error at its cause, and it turns every fuzz run over your code into a search for that bug. Operating errors (a bad file, a dropped connection) still get handled. In a repo with no assertions, add none.
 
 ## Where this conflicts with a repo
 
