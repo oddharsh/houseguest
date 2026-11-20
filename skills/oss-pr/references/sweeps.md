@@ -25,6 +25,8 @@ The check matters most. "Optimize X" has no finish line, while "make X 10x faste
 
 Each entry gives the trigger phase 3 watches for, then the prompt with the parts to fill in, then the check.
 
+Each heading is also a handle. "Run the whole-rows sweep on `src/db`" is a complete prompt: find the entry, fill in the scope, and use its check. Konstantopoulos's prompts work the same way, packing a style guide into "using TigerStyle." The user's own prompts depend on these names, so an entry keeps its name once it's in the catalog.
+
 ### Implicit state machines
 
 - **Trigger:** two or more booleans or optionals that change together, or code that checks one flag before trusting another field.

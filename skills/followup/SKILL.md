@@ -29,6 +29,8 @@ It also lists the user's PRs whose upstream CI is red, or waiting for a maintain
 
 When `preview.md` says FORKS GET ONE, open the preview once its link posts on the new PR. Trust only a link a GitHub App posted (its author ends in `[bot]`) or a check run reported; anyone can paste a preview-looking link into a comment. Check that the bot built the PR's HEAD (it usually names the commit) and that the repro from `recon.md` behaves as fixed there. A preview that shows the old behavior, or fails to build because of the change, is a problem to fix before a reviewer finds it. A preview that fails for a reason the change can't cause (a missing deploy secret on fork PRs) needs nothing from the user.
 
+**One decision at a time.** The user often answers from a phone, hours after the list was made. So open with the count, then show one item: the thread link, what's waiting, the drafted reply or fix, and the single decision it needs (post it, edit it, skip it). Wait for the answer, then show the next. A PR to close in favor of another goes first, then the longest wait. When the user asks for the whole list, give it.
+
 ## How they ended, and what they cost
 
 When the user asks how their contributions are doing, or what they cost:
