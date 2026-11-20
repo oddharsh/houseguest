@@ -76,7 +76,7 @@ The block hands the user the phase's opinion on purpose. The checking phases get
 | 0 | Intent check | `agents/intent-check.md` | `intent.md` | The repo, a neutral statement of the behavior (below), the files or symbols it lives in, and a scratch clone once one exists | The issue and `ticket.md`, the user's request, the proposed fix, and every other ledger note | No, but recon decides from it |
 | 1 | Recon | `references/recon.md`, then `references/fundamentals.md` | `recon.md`, `holdout.md`, and `ticket.md` when there is a Linear ticket | The user's request, the repo, the issue or ticket | Nothing | Yes: duplicate, already fixed (on head, beta, or canary too, per `channels.sh`), won't-fix, AI ban, discussion-first, behavior the project chose on purpose. Or it becomes a docs change, when that choice was never written down where users look |
 | 2 | Style fingerprint | `references/style.md`, `references/languages.md` | `codex.md` (from `codex.sh`), `style.md` (from `house.sh`), `checks.md` (from `checks.sh`) | The clone and the files it will touch | Nothing | No, but it shapes everything after |
-| 3 | Write the change | `references/lean.md` first, then `references/style.md`, `references/deslop.md`, `references/defaults.md`, `references/fundamentals.md` | the smallest diff that fully solves the issue, committed, then `house.md` | The user's request and the clone, `ticket.md` when there is one, and `decisions.md` once it exists | `holdout.md` | No, but a PR that does two things becomes two PRs |
+| 3 | Write the change | `references/lean.md` first, then `references/style.md`, `references/deslop.md`, `references/defaults.md`, `references/fundamentals.md`, `references/sweeps.md` | the smallest diff that fully solves the issue, committed, then `house.md`, and `sweeps.md` when a sweep ran | The user's request and the clone, `ticket.md` when there is one, and `decisions.md` once it exists | `holdout.md` | No, but a PR that does two things becomes two PRs |
 | 4 | Proof | `references/proof.md`, then `references/fundamentals.md` | `proof.md` | The clone, the base ref, and the commit | How the change was written: it gets the diff, not the account of it, and `holdout.md` | Yes: if red-green fails, the fix or the test is wrong |
 | 4b | Second opinion (optional, below) | `agents/second-fix.md`, then `agents/compare.md` | `alternative.md`, `compare.md` | Second fix: a scratch clone at the base, the problem as posed, `codex.md`, `style.md`. Compare: scratch clones of both fixes and the problem as posed | Second fix: your diff, the PR text, and the ledger. Compare: how either fix was made | No, but it can send the job back to phase 3 |
 | 5 | Copy | `references/pr-copy.md`, then `references/lrs.md`, and the last section of `references/fundamentals.md` | `pr-title.txt`, `pr-body.md`, or the issue or reply text | The clone and the user's answers to its questions, and `decisions.md`, and `ticket.md` when there is one | The conversation: it writes only what the ledger and the diff show; and `holdout.md` | No |
@@ -100,7 +100,7 @@ The intent check, the second fix, the comparison, the maintainer reviewer, the f
 
 The tag decides what a finding costs. Every finding sent back means a fresh phase 3 or 5, then 4, then 7 again. When Anthropic ran `git blame` on what its own reviewer kept flagging, about 59% was code older than the PR.
 
-- **Important** findings start the next round once a finding check confirms them (below). Quote the bug class and every instance the reviewer listed, and have the phase fix the whole class across the diff, not only the cited lines. A class that comes back in a later round means the sweep missed an instance, so name the one it missed.
+- **Important** findings start the next round once a finding check confirms them (below). Quote the bug class and every instance the reviewer listed, and have the phase sweep the whole class across the diff, not only the cited lines (`references/sweeps.md`). A class that comes back in a later round means the sweep missed an instance, so name the one it missed.
 - **Nits** never start a round on their own. A phase already rerunning for an Important finding may take them; otherwise log them as `left` and show them to the user with the PR.
 - **Pre-existing** findings never go back to a phase, since cleaning up code the PR didn't touch is a second PR nobody asked for (`deslop.md`). Log them, and at the end offer the user an issue draft for any that matter.
 
@@ -130,6 +130,10 @@ Run the intent check first, before recon writes anything to the ledger, so there
 Start where the ledger says: run `next.sh`. Someone asking "write the PR description" with a finished branch still needs the ledger checked, but not a redo of everything.
 
 Adding to someone else's open PR (recon's `DECISION: JOIN`, or the user asks to help on a PR) runs every phase through `references/existing-pr.md`: the PR's own choices and its reviewers' asks outrank the repo's neighbors, and the least intrusive way in wins. Issues and feature requests only need phases 0 and 1, the issue section of phase 5, and phase 7, which runs the issue's repro exactly as written before anyone posts it. When recon says ASK, the job ends with the comment draft described in `recon.md`. Docs or typo PRs skip phase 4; say so in `proof.md` (`STATUS: N/A (docs-only)`), and don't invent a test.
+
+## Sweeps worth keeping
+
+When a job ends, posted, stopped, or parked, read `$LEDGER/sweeps.md`. Show the user each sweep that ran as a prompt they can paste, with what it found and the check that proved it, and offer to add any marked `NEW` to the catalog (`references/sweeps.md`, "Handing them back").
 
 ## After posting
 
