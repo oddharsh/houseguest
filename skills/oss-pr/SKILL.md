@@ -133,7 +133,7 @@ Adding to someone else's open PR (recon's `DECISION: JOIN`, or the user asks to 
 
 ## Sweeps worth keeping
 
-When a job ends, posted, stopped, or parked, read `$LEDGER/sweeps.md`. Show the user each sweep that ran as a prompt they can paste, with what it found and the check that proved it, and offer to add any marked `NEW` to the catalog (`references/sweeps.md`, "Handing them back").
+When a job ends, posted, stopped, or parked, read `$LEDGER/sweeps.md`. Show the user each sweep that ran as a prompt they can paste, with what it found and the check that proved it, and offer to add any marked `NEW` to the catalog (`references/sweeps.md`, "Handing them back"). When `$LEDGER/climb.md` exists, show its table too, reverted steps included, since they record what didn't work.
 
 ## After posting
 

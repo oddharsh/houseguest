@@ -19,7 +19,7 @@ A sweep prompt that works names 4 things:
 3. **The scope:** a directory, a module, or the diff.
 4. **The check that says it's done:** a compile error, a differential run, a benchmark number, a query count.
 
-The check matters most. "Optimize X" has no finish line, while "make X 10x faster, measured by `<bench>`" gives the agent a number to climb toward and a point to stop. An agent can grade its own sweep against a check, so leave it running unattended.
+The check matters most. "Optimize X" has no finish line, while "make X 10x faster, measured by `<bench>`" gives the agent a number to climb toward and a point to stop. An agent can grade its own sweep against a check, so leave it running unattended. When the check is a number, the sweep is a hillclimb: run it step by step per `proof.md`, "Hillclimbing."
 
 ## The catalog
 

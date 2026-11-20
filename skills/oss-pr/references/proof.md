@@ -82,6 +82,20 @@ Only when the change touches a hot path, the repo has a benchmark suite covering
 
 Don't add a benchmark harness to a repo that has none unless the PR is about performance; it's code the maintainers didn't ask to own.
 
+### Hillclimbing
+
+When the job itself is to make something faster or smaller (the issue is about speed, or a sweep's check is a number), run it as a hillclimb. The shape comes from training a model: a metric, a target, many small steps, and a log of each one. Georgios Konstantopoulos argues in [Effective Swarm Riding for Engineers](https://www.paradigm.xyz/writing/swarms) that agent work now looks like this, with a "loss curve-style UI" for performance.
+
+1. **One metric, one instrument, one control.** Name the number (the median of `<bench>`, peak RSS, bytes on the wire), then show the instrument can see a change: a deliberate slowdown it catches.
+2. **A target, never a direction.** "10x faster" or "under 5 ms" says when to stop, where "faster" never does. The size of the target picks the search: 10% invites tuning, and 10x forces a redesign of the IO, memory, or algorithm.
+3. **Baseline first:** the base's median and spread over 10+ runs.
+4. **One change per step, measured against the current best,** back to back on the same machine. A step that beats the noise stays as its own commit. A step inside the noise gets reverted, complexity and all (`lean.md`, "Simple and native").
+5. **The oracle stays green at every step.** The differential run or the suite passes after each kept step, so speed never buys a wrong answer. Name the guard metrics that may not regress (memory, binary size, cold start) and the bound on each.
+6. **Log every step, kept or reverted,** in `$LEDGER/climb.md`, one row each: step, change, median and spread, kept or reverted, and the commit. The table is the loss curve. The reverted rows show what didn't work, which is the part a reviewer and the user learn the most from.
+7. **Stop** at the target, at the time budget, or at a plateau of 3 steps in a row inside the noise. Say which one stopped it.
+
+In someone else's repo, each kept step still has to fit the PR's one concern. A climb that ends in a redesign of a maintainer's module belongs in an issue with the curve attached, as a proposal. The PR body gives the base and HEAD headline and the step count above the fold, with `climb.md`'s table in a collapsed block below it (`pr-copy.md`).
+
 ## Non-code changes
 
 Docs, typos, CI config, and build metadata have nothing to red-green. Write `proof.md` by hand:
