@@ -135,7 +135,7 @@ Adding to someone else's open PR (recon's `DECISION: JOIN`, or the user asks to 
 
 Contributions die quietly when a maintainer asks something and nobody answers. After any session that opened a PR or issue, offer the `houseguest:followup` skill: it lists what's waiting on the user (maintainer questions, review-bot threads, red CI, a competing PR, a fork preview to check) and drafts what each needs. It also answers how past contributions ended and what they cost. A fix it finds needed on a branch with a ledger comes back here, so the proof and final check rerun on the new commit.
 
-When a job finishes (a PR or issue posts, or recon stops it), ask the user for `judgment.md` lines: what they caught that the agent got wrong, where the agent didn't help, and what they threw away. The format is in `../practice/references/craft.md`. Offer drafts from `rounds.md` and `decisions.md`, write only the lines the user says are true, and skip the file when there's nothing to record. The `houseguest:practice` skill reads these across jobs.
+When a job finishes (a PR or issue posts, or recon stops it), ask the user for `judgment.md` lines: what they caught wrong in the change, where the agent didn't help, and what they threw away. The format is in `../practice/references/craft.md`. Offer drafts from `rounds.md` and `decisions.md`, write only the lines the user says are true, and skip the file when there's nothing to record. The `houseguest:practice` skill reads these across jobs.
 
 ## Back to the ticket
 

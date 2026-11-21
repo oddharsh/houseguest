@@ -2,7 +2,7 @@
 name: practice
 description: >
   Track the user's own engineering judgment across their houseguest jobs: how often recon stopped a
-  job, which decisions they steered, what they caught that the agent got wrong, where the agent didn't
+  job, which decisions they steered, what they caught wrong in the change, where the agent didn't
   help, and what they threw away. Reads the oss-pr ledgers, flags drift, and says which skill to work
   on next. Triggers on "how am I doing," "am I on track," "what should I practice," "review my
   judgment," "am I just rubber-stamping the agent," "what skills should I build," and
