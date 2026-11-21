@@ -8,6 +8,9 @@
 #                                  its output, and the command, chained to the entry before
 #   receipt.sh verify LOG          exit 0 when LOG's chain is intact; prints
 #                                  "<commit> <exit> <command>" for each entry
+#   receipt.sh body FILE           print the text of a PR body that gets posted: FILE without a
+#                                  leading YAML frontmatter block, trimmed, with one final newline.
+#                                  final.md's BODY: line is the sha256 of this output
 #
 # prove.sh, housecheck.sh, and recheck.sh seal the verdicts they write, and the final check
 # runs every repro through `run`, then seals final.md. The PR gate checks the seals and the
@@ -75,5 +78,18 @@ $entry")" = "$m" ] || { echo "broken at entry $i: the log was edited, reordered,
       prev="$m"
     done < "$log"
     ;;
-  *) sed -n '2,20p' "$0"; [ "$cmd" = "-h" ] || [ "$cmd" = "--help" ]; exit $? ;;
+  body)
+    # A pr-body.md symlinked to an outbox draft opens with frontmatter that is never posted
+    # (Writing/_tools/outbox.ts strips it the same way), so it can't count as part of the body.
+    f="${1:?usage: receipt.sh body FILE}"
+    [ -f "$f" ] || { echo "receipt.sh: no such file $f" >&2; exit 2; }
+    text=$(cat "$f"; printf x); text=${text%x}
+    if [[ $text == $'---\n'* ]]; then
+      rest=${text#$'---\n'}
+      [[ $rest == *$'\n---'* ]] && { text=${rest#*$'\n---'}; text=${text#$'\n'}; }
+    fi
+    text=${text#"${text%%[![:space:]]*}"}; text=${text%"${text##*[![:space:]]}"}
+    printf '%s\n' "$text"
+    ;;
+  *) sed -n '2,23p' "$0"; [ "$cmd" = "-h" ] || [ "$cmd" = "--help" ]; exit $? ;;
 esac

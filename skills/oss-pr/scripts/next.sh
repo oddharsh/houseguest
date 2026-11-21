@@ -137,7 +137,7 @@ p_final() {
   # The final check records the body it read, so rewriting the body makes it stale. A
   # missing body is phase 5's to report.
   [ -f "$ledger/pr-body.md" ] || return 1
-  local body; body=$(openssl dgst -sha256 < "$ledger/pr-body.md" | awk '{print $NF}')
+  local body; body=$(bash "$here/receipt.sh" body "$ledger/pr-body.md" | openssl dgst -sha256 | awk '{print $NF}')
   case "$(line final.md 'BODY:')" in
     "sha256=$body") ;;
     "") why="final.md doesn't say which pr-body.md it checked (no BODY: line): rerun the final check"; return 1 ;;
