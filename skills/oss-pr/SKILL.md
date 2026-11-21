@@ -152,6 +152,8 @@ When a job ends, posted, stopped, or parked, read `$LEDGER/sweeps.md`. Show the 
 
 Contributions die quietly when a maintainer asks something and nobody answers. After any session that opened a PR or issue, offer the `houseguest:followup` skill: it lists what's waiting on the user (maintainer questions, review-bot threads, red CI, a competing PR, a fork preview to check) and drafts what each needs. It also answers how past contributions ended and what they cost. A fix it finds needed on a branch with a ledger comes back here, so the proof and final check rerun on the new commit.
 
+When a job finishes (a PR or issue posts, or recon stops it), ask the user for `judgment.md` lines: what they caught wrong in the change, where the agent didn't help, and what they threw away. The format is in `../practice/references/craft.md`. Offer drafts from `rounds.md` and `decisions.md`, write only the lines the user says are true, and skip the file when there's nothing to record. The `houseguest:practice` skill reads these across jobs.
+
 ## Back to the ticket
 
 When the job came from a Linear ticket, the ticket is where its team looks for status, and some teams keep verification there instead of in the repo (a repo's `AGENTS.md` may say so). Linear's GitHub integration links PRs to tickets on its own, but only where a team installed it: a `linear` bot comment on the repo's PRs means it's on. Without it, nothing connects the two unless houseguest does.

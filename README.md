@@ -69,12 +69,14 @@ The fork keeps its rules in `FORK.md`, each in plain words with an example and a
 | `skills/oss-pr` | The phases, and the references they read |
 | `skills/pr-copy` | PR, issue, and review-reply text outside an oss-pr job, such as in your own repos, using oss-pr's `pr-copy.md` |
 | `skills/followup` | What's waiting on you across your open contributions, and how past ones ended (`followup.sh`, `outcomes.sh`) |
+| `skills/practice` | Your own judgment across jobs: what you caught, steered, and threw away, read from the ledgers (`practice.sh`), against the skills in `craft.md` |
 | `agents/` | `intent-check`, `maintainer-review`, `finding-check`, `final-check`, plus `second-fix` and `compare` for an optional blind second opinion |
 | `hooks/gate.sh` | The PR gate |
 | `hooks/session.sh` | Prints the next phase when a session starts on a branch with a ledger |
 | `hooks/meter.sh` | Logs each phase's tokens and time to `~/.local/state/houseguest/phases.jsonl` when its subagent stops |
 | `tests/gate.sh` | Runs the gate, `next.sh`, and `housecheck.sh` on inputs that once passed when they shouldn't: `bash tests/gate.sh` |
 | `tests/meter.sh` | Runs the meter and `outcomes.sh` on transcripts shaped like Claude Code's: `bash tests/meter.sh` |
+| `tests/practice.sh` | Runs `practice.sh` on ledgers shaped like real ones: `bash tests/practice.sh` |
 | `skills/oss-pr/scripts/` | 19 helpers, listed below |
 
 <details>
@@ -93,6 +95,7 @@ The fork keeps its rules in `FORK.md`, each in plain words with an example and a
 | `recheck.sh` | What changed upstream since recon? |
 | `followup.sh` | Which of your open PRs and issues are waiting on you, a review bot, or a competing fix? |
 | `outcomes.sh` | What did each job spend, and did its PR merge? |
+| `practice.sh` | Across your jobs, what did you catch, steer, and throw away, and where are you drifting? |
 | `merge.sh` | Is every review comment answered, and can a maintainer revert your merge in one step? |
 | `house.sh` | What enforces style in this repo, and how? |
 | `housecheck.sh` | Does your diff pass the house rules and look like PRs that got merged? |
