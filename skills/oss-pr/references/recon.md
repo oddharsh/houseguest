@@ -236,6 +236,7 @@ DECISION: GO | STOP | ASK | DOCS
 Reason: <one sentence, with link>
 
 - Room: <room.sh's ROOM line: own, agents, or guest, with its counts>
+- Source: <only for a harvested finding (`harvest.md`): the harvest repo and the finding's HARVEST.md line; leave the line out otherwise>
 - Review: <GitHub PRs, or Gerrit: the host, the upload command, and the file or doc that says so>
 - AI policy: <the sweep's verdict; the quoted binding rule with its path, or "none found in: <sources>"; and the mode it puts the job in (normal, author mode, or STOP)>
 - Gates: <discussion-first / vouch / DCO / CLA, and whether the user has passed them>

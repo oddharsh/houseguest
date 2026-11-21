@@ -62,6 +62,10 @@ Sometimes you're the edge case: the maintainers declined the change, chose the b
 
 The fork keeps its rules in `FORK.md`, each in plain words with an example and a counterexample that are also its tests, so the code can be regenerated and rechecked. It updates only for a named commit that fixes something you hit, after reading every commit the update brings. These are houseguest's rules for your fork; upstream, the house rules still win. [skills/oss-pr/references/forks.md](skills/oss-pr/references/forks.md)
 
+## Building big to post small
+
+A port, a differential harness, or a fuzzer is cheap to build now, and too big to send anyone. houseguest can run one as a harvest: you build it in a repo you own, oracle first, and each upstream bug it finds goes out as its own small PR with red-green proof. The build stays home. [skills/oss-pr/references/harvest.md](skills/oss-pr/references/harvest.md)
+
 ## What's in it
 
 | Piece | Job |
