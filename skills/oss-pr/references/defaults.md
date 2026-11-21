@@ -6,6 +6,8 @@ These defaults never justify changing code a maintainer wrote or suggested, code
 
 pstack was written for people shaping their own code, so it pushes hard on restructuring. A guest can't do that. Every rule here applies only to lines your diff already adds or changes; code outside that fence stays as you found it. `deslop.md` covers casts, mock-only tests, narrating comments, and defensive slop, so this file skips what it already says.
 
+Rules tagged (TigerStyle) come from TigerBeetle's [TIGER_STYLE.md](https://github.com/tigerbeetle/tigerbeetle/blob/main/docs/TIGER_STYLE.md), checked at `ba8d4b3` (2026-07-16). TigerBeetle wrote it for a Zig database built around it from day one. The rules that only fit a codebase like that are listed under "Where this conflicts with a repo," so a guest never imposes them.
+
 ## Comments
 
 - **Match the comment density and voice of the file you're editing.**
@@ -23,6 +25,11 @@ pstack was written for people shaping their own code, so it pushes hard on restr
   Bad: `n := 3 // number of retries` Good: `maxRetries := 3`
 - **Keep license headers, public API doc comments, and formatter directives the repo already uses.**
   Why: these carry contracts or tooling behavior, so they're the standing exceptions to "fewer comments."
+- **When your code picks one way over an obvious other, say why, with the number behind it.** (TigerStyle)
+  Why: the reader can see what the code does, but not what you rejected or what measurement decided it. "Always motivate, always say why."
+  Bad: `// use a linear scan` Good: `// Linear scan: n stays under 16 here, and it beat the map in bench_lookup.`
+- **Put the why in the commit message as well as the PR body, unless the repo squash-merges the body into the commit.** (TigerStyle)
+  Why: the PR body isn't stored in git, so `git blame` can't reach it.
 - **Encode a constraint in a test or type before writing a warning comment.**
   Why: `// IMPORTANT: do not reorder` gets ignored, while a failing test can't be.
 - **Don't add a lint or type suppression to get CI green.**
@@ -45,6 +52,18 @@ pstack measures maintainability by reader load: how many layers a reader traces 
 - **Don't add a wrapper, adapter, or helper with one caller.**
   Why: each layer is one more hop between a reader's question and the answer.
   Bad: `def get_config(): return load_config()`
+  A branch-free helper that carries real logic out of a function past 70 lines is a different thing; see "Control flow."
+- **Put units and qualifiers in new names, last, with the most significant word first.** (TigerStyle)
+  Why: `timeout` leaves the reader guessing seconds or milliseconds, and `latency_ms_max` lines up with `latency_ms_min` when it arrives. Follow the repo's word order where it has one.
+  Bad: `timeout = 30` Good: `timeout_ms = 30_000`, or `timeoutMs` in a camelCase repo.
+- **Spell new names out, and give related names the same length where you can.** (TigerStyle)
+  Why: `source` and `target` line up in `source_offset` and `target_offset`, so a reader checks the arithmetic by eye; `src` and `dest` don't. Keep the abbreviations the repo already uses (`ctx`, `err`).
+- **Name a helper after the function it serves, and put callbacks last.** (TigerStyle)
+  Why: `read_sector` and `read_sector_callback` show the call history in the name, and a callback listed last runs last.
+- **Don't give one name two meanings.** (TigerStyle)
+  Why: TigerBeetle first called pending transfers "two-phase commit transfers," which collided with the two-phase commit in its consensus protocol.
+- **Declare each new variable in the smallest scope, right before it's used.** (TigerStyle)
+  Why: a value checked in one place and used far from it leaves a place-of-check to place-of-use gap, TOCTOU's quieter cousin, and fewer variables in scope means fewer to misuse.
 - **Don't add a layer that forwards the same arguments to a function with the same shape.**
   Why: a pass-through hides nothing, so it costs a hop and buys no clarity.
 - **Prefer locals and return values over new fields, module state, or globals.**
@@ -93,6 +112,26 @@ These generalize across typed languages. For new types and functions your change
   Per language: Rust `struct UserId(String)`, Go `type UserID string`, Python `NewType`, Swift wrapper struct, TS brand. Skip it when the repo passes raw primitives.
 - **Keep decision logic in plain functions and the I/O or framework glue thin.**
   Why: logic without framework dependencies can be tested without the framework.
+- **Give a new function the simplest return type its callers can use.** (TigerStyle)
+  Why: every case a caller must handle spreads up the call chain. TigerStyle ranks them `void`, then `bool`, then `u64`, then `?u64`, then `!u64`.
+- **Pass a library option explicitly when its default decides correctness.** (TigerStyle)
+  Why: when the library changes the default, your call changes behavior with no diff to review. This covers timeouts, encodings, rounding modes, and ordering, and leaves alone options that don't change the result (`lean.md` forbids boilerplate).
+  Bad: `fetch(url)` in a path that must not hang. Good: `fetch(url, { signal: AbortSignal.timeout(5_000) })`.
+
+## Control flow
+
+These shape functions your diff adds. Existing functions keep their shape, however long.
+
+- **Keep the branching in the parent function and the helpers branch-free.** (TigerStyle)
+  Why: one function then owns every decision, so a reader checks the cases in one place, and the helpers stay pure and testable. matklad calls it ["push ifs up and fors down"](https://matklad.github.io/2023/11/15/push-ifs-up-and-fors-down.html).
+- **Keep a new function under about 70 lines.** (TigerStyle)
+  Why: past one screen the reader scrolls and loses the shape. Split it along the rule above, with the parent deciding and the helpers computing. Never split an existing function to meet the limit; that's a refactor the maintainer didn't ask for.
+- **Split a compound condition into nested branches, and give an `if` its `else` when the other side matters.** (TigerStyle)
+  Why: `if (a && !b || c)` hides a case, nested branches show each one, and the `else` makes you handle or assert the negative space. `lean.md` asks for the same thing from the other side.
+- **State invariants positively.** (TigerStyle)
+  Why: `if (index < count)` reads the way a loop condition does; `if (index >= count)` makes the reader negate it.
+- **Use iteration with an explicit bound over recursion in new code, unless the language or the neighbors recurse.** (TigerStyle)
+  Why: TigerStyle bans recursion so every execution that should be bounded is. A tree walker in a functional language or a parser that already recurses keeps the idiom, with a depth limit where the input is untrusted.
 
 ### TypeScript specifics
 
@@ -119,6 +158,8 @@ These are TS-only. Most also apply to JS projects that typecheck with JSDoc.
   Why: an expected value computed by the code under test agrees with any bug in it.
 - **Pair an absence assertion with a presence assertion on another input.**
   Why: "nothing came back" also passes when the code is broken for every input.
+- **Test invalid input and the edge where valid input turns invalid, beside the valid case.** (TigerStyle)
+  Why: bugs cluster where data crosses from valid to invalid, so a limit of N gets tests at N and N + 1.
 - **For a bug fix, add a test that fails before the fix and passes after, when the repo has a cheap test path near the bug.**
   Why: maintainers trust a fix they can watch fail first; `proof.md` records both runs.
 - **When the neighboring tests state properties, snapshot output, or test types, test your fix the same way, beside one literal case.**
@@ -174,7 +215,7 @@ pstack tells owners to leave the design simpler than they found it and to hunt f
 - **Validate input and handle errors at the boundary, then propagate them inside.**
   Why: when handling is scattered, nobody can tell where the guarantee actually lives.
 - **Never swallow an error.**
-  Why: the failure resurfaces later, somewhere further from its cause.
+  Why: the failure resurfaces later, somewhere further from its cause. In the [OSDI 2014 study](https://www.usenix.org/system/files/conference/osdi14/osdi14-paper-yuan.pdf) TigerStyle cites, 92% of catastrophic failures in distributed systems came from mishandled non-fatal errors.
   Bad: `except Exception: pass`, `_ = err`, `catch {}`, `let _ = fallible();`
 - **Wrap errors with context in the repo's style.**
   Why: "file not found" with no path or operation sends the next debugger hunting.
@@ -190,9 +231,15 @@ pstack tells owners to leave the design simpler than they found it and to hunt f
 - **Keep secrets and tokens out of logs and error messages.**
   Why: logs get pasted into public issues, and that's where credentials leak.
 - **Give every loop, queue, retry, and recursion your diff adds a fixed upper bound, and make hitting it an error.**
-  Why: an unbounded retry turns a bug into a hang with no error to read. This is TigerStyle's "put a limit on everything" ([TIGER_STYLE.md](https://github.com/tigerbeetle/tigerbeetle/blob/main/docs/TIGER_STYLE.md)).
-- **Where the repo asserts invariants (`debug_assert!`, Zig `assert`, `invariant()`), assert the ones your code relies on: what you expect and what you rule out.**
+  Why: an unbounded retry turns a bug into a hang with no error to read. This is TigerStyle's "put a limit on everything." A loop meant to run forever, like an event loop, asserts that it is one.
+- **Where the repo asserts invariants (`debug_assert!`, Zig `assert`, `invariant()`), assert the ones your code relies on: what you expect and what you rule out.** (TigerStyle)
   Why: an assertion crashes on a programmer error at its cause, and it turns every fuzz run over your code into a search for that bug. Operating errors (a bad file, a dropped connection) still get handled. In a repo with no assertions, add none.
+- **Write those assertions the way TigerStyle does.** (TigerStyle)
+  Why: each form tells you more when it fires.
+  - Split compound assertions: `assert(a); assert(b);` names the one that failed, where `assert(a and b)` doesn't.
+  - Write an implication as `if (a) assert(b)`.
+  - Pair them: check a property on two paths, like before a write and after the read.
+  - Assert relationships between constants at compile time where the language can (Zig `comptime`, Rust `const _: () = assert!(...)`, C++ `static_assert`), so a design error fails the build.
 
 ## Where this conflicts with a repo
 
@@ -205,9 +252,18 @@ These pstack defaults clash most often with real projects. In each case, the rep
 - **Layered architecture.** Service, repository, and adapter layers with one implementation each are convention in some projects. Add your code in the matching layer.
 - **Optional-field structs and boolean flags.** If the module models state with optionals, extend that shape instead of introducing a sum type for one new case.
 
+TigerStyle rules that only fit a codebase built around them. Follow them where the repo already does, and never introduce them:
+
+- **Static allocation.** TigerBeetle allocates all memory at startup and never after. Adding that to one function in a heap-allocating codebase makes it foreign.
+- **Explicitly sized integers over `usize`.** It fits Zig and C. In Rust, indexes and lengths are `usize` across the standard library, so a `u32` index means casts at every call.
+- **Two assertions per function.** That density belongs to repos that hold it. Elsewhere, assert what your code relies on, per "Error handling."
+- **Zero dependencies, scripts in the main language, 100 columns, 4-space indents, braces on every multi-line `if`.** These are the repo's own tooling and formatter decisions.
+
 ## Attribution
 
 Adapted from pstack by Lauren Tan, MIT License, https://github.com/cursor/plugins/tree/main/pstack
+
+The (TigerStyle) rules summarize TigerBeetle's TIGER_STYLE.md, Apache License 2.0, https://github.com/tigerbeetle/tigerbeetle/blob/main/docs/TIGER_STYLE.md
 
 ```
 MIT License

@@ -75,6 +75,8 @@ Record each check you ran under `## Beyond the example` in `proof.md`: the comma
 
 Only when the change touches a hot path, the repo has a benchmark suite covering the code, or the diff adds complexity for speed (`lean.md`, "Simple and native"):
 
+- Sketch before you measure. Write a few lines in `proof.md`: which of network, disk, memory, and CPU the path spends, whether bandwidth or latency binds, and the number you expect. Start with the slowest resource, weighted by how often the path touches it, since a cache miss repeated 1,000 times can cost as much as one fsync. TigerStyle puts it this way: "The lack of back-of-the-envelope performance sketches is the root of all evil." The sketch picks what to measure and sets the target. The measurement below still decides what ships.
+
 - Use the repo's own benchmark tool (`cargo bench`, `go test -bench`, `pytest-benchmark`, `vitest bench`, a `src/bench*` directory). For CLI-level timing, `hyperfine` with `--warmup 3`.
 - Run base and head on the same machine, back to back, at least 10 runs each. Report the median and spread for both, plus the delta.
 - Treat a delta inside the noise as "no measurable change" and say exactly that. Don't round noise into a win. When the diff added complexity for speed and the delta sits inside the noise, take the complexity back out.
