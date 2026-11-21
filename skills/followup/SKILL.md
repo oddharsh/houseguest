@@ -41,6 +41,8 @@ bash "<skill-dir>/../oss-pr/scripts/outcomes.sh"
 
 It lists each job the meter hook logged, one row per repo and branch: the PR opened from that branch, how it ended, the days it took, how many reviews asked for changes, and the phase runs, review rounds, and tokens spent. LANDED means the maintainers closed the PR after committing it by hand. Its last line is output tokens per merged PR. The meter files a run under the ledger its launch prompt names, and the blind phases get no ledger, so a job's tokens are a floor when one session ran several jobs.
 
+When the user asks how they're doing rather than how their PRs are, that's the `houseguest:practice` skill: it reads the same ledgers for their own judgment across jobs.
+
 ## Outward-facing
 
 Replying on GitHub or Gerrit, pushing a fix, and closing a PR publish under the user's name. Show the text and the exact command, and wait for a clear yes each time. An AI-written reply posted to a maintainer's review is the fastest way to lose their goodwill, so replies stay drafts the user posts.
