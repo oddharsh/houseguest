@@ -73,7 +73,10 @@ Tooling: <format cmd> | <lint cmd> | <test cmd> (from house.sh)
 Commit format: <pattern, with a real example subject>
 Review nits that apply: <inline comments from merged PRs, with links>
 Fallback conflicts: <any deslop.md or defaults.md rule this repo contradicts, so you skip it>
+House offers: <agents room only: each house default on performance, safety, or robustness the neighbors break, with 2 or more path:line instances; or "none">
 ```
+
+In an `agents` room (`recon.md`'s `- Room:` line), a fallback conflict on performance, safety, or robustness goes under "House offers" instead, and the diff follows the house default. Conflicts on naming, layout, and comments stay fallback conflicts.
 
 ## Writing the change
 

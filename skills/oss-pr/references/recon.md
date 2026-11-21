@@ -18,6 +18,7 @@ bash "<skill-dir>/scripts/gather.sh" --repo <owner/name> --issue <N> \
 - **Discussions:** each `--q` also searches the repo's Discussions, where proposals and design questions often get settled without an issue. A section says so when the repo has Discussions turned off.
 - **Failed lookups:** a search that errors (a rate limit, a field GitHub dropped) prints LOOKUP FAILED in its section and in a list at the top, and the script exits 3. That section is unknown, not empty. Rerun before deciding, and never write "no duplicates" or "no open PRs" over a failed search. A list that stopped at its limit says so too; add a narrower `--q` instead of reading it as complete.
 - Inside a clone, it reads docs from disk instead.
+- **Room:** run `bash "<skill-dir>/scripts/room.sh" --repo <owner/name>` and copy its `ROOM:` line into `recon.md`. A rooms-file entry or a detected `agents` room changes what the later phases may do ("Read the room" in SKILL.md); an `own` room means this job shouldn't be running, so tell the user and hand the text to `houseguest:pr-copy`.
 - The dump opens with an **AI policy sweep** (`scripts/policy.sh`, also runnable alone). It reads the repo's docs anywhere in the tree, the owner's `.github` repo, and contribution guides linked from the README, CONTRIBUTING, or templates, including guides in other repos. Then it checks earlier threads for maintainers applying an AI rule. It ends with one verdict: RULE FOUND, MENTIONS ONLY, or NONE FOUND, plus every source it checked.
 
 ## Where changes go
@@ -173,7 +174,7 @@ Run this check whenever the bug could let someone other than the site's or tool'
   - **Trivial**, for these rules, means all of: no change to public behavior, API, config, or output format; the non-test diff is small (roughly 50 lines or fewer); and it follows a pattern the repo has already merged (link the precedent). Everything else is non-trivial. When the repo defines trivial itself, its definition wins.
   - Some repos invite unsolicited fixes ("we favor asking for forgiveness over permission"). Their stated stance overrides the generic ASK rules below for bug fixes.
 - The change reverses a deliberate choice (`intent.md` says INTENDED or CONFLICTING), or adds a public option, flag, or API that no maintainer has agreed to.
-- The issue is unconfirmed (no maintainer reply), and the change alters behavior someone might rely on. This includes the user's own fresh issue: an issue filed minutes before the PR, with no maintainer reply, hasn't been agreed to. If that issue already asks for agreement ("happy to send a PR if you agree"), ASK means **wait** for the answer; don't post a second comment.
+- The issue is unconfirmed (no maintainer reply), and the change alters behavior someone might rely on. This includes the user's own fresh issue: an issue filed minutes before the PR, with no maintainer reply, hasn't been agreed to. If that issue already asks for agreement ("happy to send a PR if you agree"), ASK means **wait** for the answer; don't post a second comment. In an `agents` room (`room.sh`, "Read the room" in SKILL.md), a trivial change, or one a single revert undoes, is GO instead, and the open question goes in the PR body as the choice the maintainer is handed.
 - Someone is assigned or said "I'll take this" recently.
 - The issue carries a label that holds it for a decision (the dump's "labels that hold it for a decision" line: `needs-decision`, `needs-design`, `needs discussion`), and no maintainer has since said a PR is welcome. Quote the label in the ASK comment; the decision it waits on is the question to ask.
 - The issue has a Linear backlink (the dump's "Linear:" line) and the change is non-trivial. This applies only when you can't read the ticket; a readable one goes through "Linear tickets" above instead. The backlink means a maintainer filed the issue in a tracker you can't read, so a fix may already be under way there. Some teams sync every triaged issue, so the link alone says triaged, not taken; ask whether anyone is on it, and treat it as an objection to predict rather than a stop.
@@ -234,6 +235,7 @@ If you haven't cloned yet, write recon notes to `${TMPDIR:-/tmp}/houseguest/<own
 DECISION: GO | STOP | ASK | DOCS
 Reason: <one sentence, with link>
 
+- Room: <room.sh's ROOM line: own, agents, or guest, with its counts>
 - Review: <GitHub PRs, or Gerrit: the host, the upload command, and the file or doc that says so>
 - AI policy: <the sweep's verdict; the quoted binding rule with its path, or "none found in: <sources>"; and the mode it puts the job in (normal, author mode, or STOP)>
 - Gates: <discussion-first / vouch / DCO / CLA, and whether the user has passed them>
