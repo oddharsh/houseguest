@@ -36,7 +36,7 @@ If a step needs something you don't have (hardware, an account, an OS, a paid se
 # Final check: <branch>
 STATUS: PASS | FAIL | BLOCKED
 SHA: <git rev-parse HEAD>
-BODY: sha256=<openssl dgst -sha256 < the pr-body.md you were given | awk '{print $NF}'>
+BODY: sha256=<bash <skill-dir>/scripts/receipt.sh body <the pr-body.md you were given> | openssl dgst -sha256 | awk '{print $NF}'>
 
 ## Unannounced changes
 - <input: base output vs HEAD output, the difftests/ file that shows it, or "none found in <N> inputs tried">

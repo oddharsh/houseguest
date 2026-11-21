@@ -199,6 +199,19 @@ nx 1 'checked by the user and sealed, then pr-body.md rewritten' 'pr-body.md cha
 echo "Body." > "$L/pr-body.md"
 final PASS "$body"; seal "$L/final.md"
 
+# pr-body.md can be a symlink to a draft whose YAML frontmatter is never posted, so the
+# BODY: hash covers the text under it.
+printf -- '---\nstatus: needs-review\n---\n\nBody.\n' > "$W/draft.md"
+rm "$L/pr-body.md"; ln -s "$W/draft.md" "$L/pr-body.md"
+nx 0 'pr-body.md a symlink to a draft with frontmatter over the same body'
+printf -- '---\nstatus: needs-review\nnext: OK the text\n---\n\nBody.\n' > "$W/draft.md"
+nx 0 'only the draft frontmatter edited'
+printf -- '---\nstatus: needs-review\n---\n\nBody, rewritten.\n' > "$W/draft.md"
+nx 1 'the body under the frontmatter rewritten' 'pr-body.md changed after the final check read it'
+printf -- '---\nstatus: needs-review\nBody.\n' > "$W/draft.md"
+nx 1 'a draft whose frontmatter never closes' 'pr-body.md changed after the final check read it'
+rm "$L/pr-body.md"; echo "Body." > "$L/pr-body.md"
+
 # recheck.md is good for an hour, by its sealed Checked: line.
 recheck 2026-11-01T00:00:00Z
 nx 1 'recheck.md checked on 2026-11-01' 'recheck.md is over an hour old'
