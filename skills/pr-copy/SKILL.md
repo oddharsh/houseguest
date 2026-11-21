@@ -23,7 +23,7 @@ git rev-parse --git-dir >/dev/null 2>&1 && ls "$(git rev-parse --git-dir)/houseg
 ```
 
 - **The branch has a ledger,** or the target repo belongs to someone else and the user is contributing a change: stop here and use the `houseguest:oss-pr` skill. Its copy phase runs blind to the conversation and feeds the PR gate, and this skill does neither.
-- **Anything else** (the user's own repo, a teammate's PR, text for a PR that's already open): carry on below.
+- **Anything else** (the user's own repo, a teammate's PR, text for a PR that's already open): carry on below. `bash "<skill-dir>/../oss-pr/scripts/room.sh" --quick` settles whose repo it is when that's unclear: `ROOM: own` means the user's.
 
 ## What stands in for the ledger
 

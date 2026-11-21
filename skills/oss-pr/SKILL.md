@@ -24,6 +24,18 @@ Each phase below removes one of those reasons. The phases run in order because t
 
 **Precedence.** Every phase leans on this order. The repo's own enforced tooling beats its written rules, which beat its observed conventions, which beat deslop principles, which beat your defaults. A contribution that looks native and slightly imperfect gets merged more often than one that is "better" but foreign.
 
+## Read the room
+
+How much houseguest holds back depends on who reads the PR. `scripts/room.sh --repo <owner/name>` names the room, and recon copies its `ROOM:` line into `recon.md`. Entries in `~/.config/houseguest/rooms` (an owner or `owner/name`, then `own`, `agents`, or `guest`) beat detection, and a repo's line beats its owner's.
+
+- **own:** the owner is the user's gh login, or the rooms file says `own`. There's no maintainer to win over, so this skill doesn't run: the gate lets PRs, merges, and issues through without `HOUSEGUEST_SKIP=1`, and `houseguest:pr-copy` writes the text in the user's own style. A recon that marked a security report PRIVATE still blocks a public push.
+- **agents:** of the last 30 merged PRs by other people, at least 5 were sampled and 75% or more carry a coding agent's mark (a `Co-Authored-By:` trailer, a `claude/` or `codex/` branch, or the agent's bot account). Maintainers there take agent PRs as they come, and the neighbors are mostly what a stock harness wrote. Every phase runs and the proof bar stays where it is. Four things loosen:
+  1. **Precedence:** house defaults (`defaults.md`, `deslop.md`) beat observed conventions where performance, safety, or robustness turns on them: error handling, bounds, assertions, parsing at boundaries, exact test assertions. Naming, layout, and comment density still follow the neighbors, and the repo's tooling and written rules still beat both.
+  2. **Recon:** an unconfirmed issue no longer forces ASK when the change is trivial or reversible in one revert. The PR body asks the open question instead (`recon.md`).
+  3. **Copy:** the pre-LLM baseline and the neighbors' PR bodies measure what the repo's agents wrote, which is the text `pr-copy.md` strips. Phase 5 writes to `pr-copy.md`'s own rules, sized by the PR's function. A template, a PR-writing skill, or mandated text still wins.
+  4. **Taste, offered:** when phase 3 finds a house default on performance, safety, or robustness that the neighbors break in 2 or more places, it lists the rule and the `path:line` instances under "House offers" in `style.md`. When the job ends, offer the user a separate PR that writes those rules into the repo's `AGENTS.md`, or turns on the lint rule that enforces them, since every agent that works there reads it. Never fold it into the fix.
+- **guest:** everything else, and the default when `room.sh` can't tell. Everything in this file applies as written.
+
 ## The ledger
 
 Each phase writes a short note to the ledger, a directory inside `.git` so it can never be committed to the upstream repo:

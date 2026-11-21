@@ -16,12 +16,19 @@ set -u
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 SC="$ROOT/skills/oss-pr/scripts"
 W=$(mktemp -d); trap 'rm -rf "$W"' EXIT
-export HOUSEGUEST_RECEIPT_KEY="$W/receipt.key" CLAUDE_PLUGIN_ROOT="$ROOT" GH_LOG="$W/gh.log"
+export HOUSEGUEST_RECEIPT_KEY="$W/receipt.key" CLAUDE_PLUGIN_ROOT="$ROOT" GH_LOG="$W/gh.log" XDG_CONFIG_HOME="$W/config"
 
 mkdir "$W/bin"
 cat > "$W/bin/gh" <<'EOF'
 #!/bin/bash
 echo "gh $*" >> "$GH_LOG"
+# room.sh asks for the login, the set-default, and whether the repo is a fork (GH_PARENT).
+case "$*" in
+  "config get -h github.com user") echo me; exit 0 ;;
+  "repo set-default --view") [ -z "${GH_DEFAULT:-}" ] || echo "$GH_DEFAULT"; exit 0 ;;
+  "repo view "*isFork,parent*) echo "${GH_PARENT:-no}"; exit 0 ;;
+  "repo view --json isFork -q .isFork") [ "${GH_PARENT:-no}" = no ] && echo false || echo true; exit 0 ;;
+esac
 case "$1 $2 $* " in "pr view "*" 123 "*) echo feat; exit 0 ;; esac
 exit 1
 EOF
@@ -202,6 +209,50 @@ recheck "$(ago 61)"
 nx 1 'recheck.md from 61 minutes ago' 'recheck.md is over an hour old'
 recheck
 nx 1 'recheck.md with no Checked: line' 'recheck.md is over an hour old'
+
+# --- Your own repos: no skip flag needed --------------------------------------------------
+# origin is yours (gh login "me"); upstream is the template it came from, which gh targets
+# first when nothing names a repo. The branch's ledger is empty, so a gated command blocks.
+repo "$W/mine"
+echo one > a.txt; git add a.txt; git commit -q -m "init"
+git remote add origin https://github.com/me/tool.git
+git remote add upstream git@github.com:tmpl/tool.git
+git switch -q -c feat; mkdir -p .git/houseguest/feat
+gate 2 'gh pr create --fill' "$PR"
+gate 0 'gh pr create -R me/tool --fill'
+gate 0 'gh pr create --repo=me/tool --fill'
+gate 0 'gh pr create --repo "Me/tool" --fill'
+gate 0 'gh api repos/me/tool/pulls -f title=x'
+gate 2 'gh pr create -R me/tool --fill && gh pr create -R tmpl/tool --fill' "$PR"
+gate 0 'gh pr merge -R me/tool 123 --squash'
+export GH_DEFAULT=me/tool
+gate 0 'gh pr create --fill'
+export GH_DEFAULT=tmpl/tool
+gate 2 'gh pr create --fill' "$PR"
+unset GH_DEFAULT
+mkdir -p "$W/config/houseguest"
+echo "acme own" > "$W/config/houseguest/rooms"
+gate 0 'gh pr create -R acme/tool --fill'
+gate 2 'gh pr create -R acmeco/tool --fill' "$PR"
+printf '# a repo line beats its owner, and the login\nme/tool guest\n' > "$W/config/houseguest/rooms"
+gate 2 'gh pr create -R me/tool --fill' "$PR"
+rm "$W/config/houseguest/rooms"
+printf 'DECISION: PRIVATE\n' > .git/houseguest/feat/recon.md
+export GH_DEFAULT=me/tool
+gate 2 'git push origin feat' 'DECISION: PRIVATE'
+unset GH_DEFAULT
+rm .git/houseguest/feat/recon.md
+
+# A fork you own sends its PRs to the parent, which isn't yours.
+repo "$W/myfork"
+echo one > a.txt; git add a.txt; git commit -q -m "init"
+git remote add origin https://github.com/me/fork.git
+git switch -q -c feat; mkdir -p .git/houseguest/feat
+export GH_PARENT=tmpl/fork
+gate 2 'gh pr create --fill' "$PR"
+export GH_PARENT=no
+gate 0 'gh pr create --fill'
+unset GH_PARENT
 
 # --- housecheck.sh: the files it checked have to be the files at HEAD --------------------
 if command -v ruff >/dev/null 2>&1; then

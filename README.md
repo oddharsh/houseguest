@@ -38,6 +38,24 @@ When you can merge the PR yourself, the hook also gates `gh pr merge`. Every rev
 
 Nothing reaches upstream without your yes.
 
+## Rooms
+
+`room.sh` sorts the target repo into one of 3 rooms, and the job changes with it:
+
+| Room | When | What changes |
+|---|---|---|
+| own | The owner is your gh login, or the rooms file says so | The gate stays out of the way, so no `HOUSEGUEST_SKIP=1`. Only a PRIVATE security report still blocks a push |
+| agents | 75% or more of the last 30 merged PRs by others carry a coding agent's mark, with at least 5 sampled | Every phase still runs. House defaults beat the neighbors on performance, safety, and robustness, PR text follows houseguest's rules over the repo's agent-written baseline, and a small reversible fix doesn't wait for a maintainer's yes. houseguest offers a separate `AGENTS.md` PR with the house rules the repo keeps breaking |
+| guest | Everything else | Everything, as written |
+
+The rooms file at `~/.config/houseguest/rooms` takes an owner or `owner/name` per line, then the room, and beats detection. A repo's line beats its owner's:
+
+```
+your-org own
+your-org/shared-with-clients guest
+someone/agent-run-repo agents
+```
+
 ## When upstream says no
 
 Sometimes you're the edge case: the maintainers declined the change, chose the behavior on purpose, or stopped maintaining your release line. houseguest then offers a fork you own, as light as it can be: a patch your package manager applies, or the source vendored at one commit and trimmed to what your code calls.
@@ -57,15 +75,16 @@ The fork keeps its rules in `FORK.md`, each in plain words with an example and a
 | `hooks/meter.sh` | Logs each phase's tokens and time to `~/.local/state/houseguest/phases.jsonl` when its subagent stops |
 | `tests/gate.sh` | Runs the gate, `next.sh`, and `housecheck.sh` on inputs that once passed when they shouldn't: `bash tests/gate.sh` |
 | `tests/meter.sh` | Runs the meter and `outcomes.sh` on transcripts shaped like Claude Code's: `bash tests/meter.sh` |
-| `skills/oss-pr/scripts/` | 18 helpers, listed below |
+| `skills/oss-pr/scripts/` | 19 helpers, listed below |
 
 <details>
-<summary>The 18 scripts, and the question each one answers</summary>
+<summary>The 19 scripts, and the question each one answers</summary>
 
 | Script | Question |
 |---|---|
 | `gather.sh` | What does recon need from upstream, in one pass? |
 | `policy.sh` | What's the repo's AI policy, wherever it lives? |
+| `room.sh` | Is this your repo, one run on coding agents, or someone else's house? |
 | `codex.sh` | Which written rule sets (`AGENTS.md`, `REVIEW.md`, style guides) govern this change? |
 | `cites.sh` | Do the files, lines, and functions a report cites exist? |
 | `channels.sh` | Could a beta, canary, or nightly build behave differently for this bug? |

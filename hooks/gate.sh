@@ -5,7 +5,8 @@
 # check found no deliberate choice in the way, a style note exists, a proof and the
 # final check both passed on the current HEAD, and the review loop stopped: every
 # condition skills/oss-pr/scripts/next.sh checks. Stays silent everywhere else: other commands,
-# repos that aren't forks, and your own repos. A `gh issue create` from a branch with a ledger
+# repos that aren't forks, and your own repos (room.sh says own: your gh login, or the rooms
+# file), where only a recon that said PRIVATE still blocks. A `gh issue create` from a branch with a ledger
 # gets only the title check. A `gh pr merge` of a PR whose branch has a ledger runs
 # skills/oss-pr/scripts/merge.sh, and `gh pr merge --auto` is blocked outright.
 # A user who explicitly wants to skip can prefix the command with HOUSEGUEST_SKIP=1.
@@ -51,6 +52,21 @@ skip_re='^[[:space:]]*([A-Za-z_][A-Za-z0-9_]*=[^[:space:]]*[[:space:]]+)*HOUSEGU
 
 [ -n "$cwd" ] && cd "$cwd" 2>/dev/null
 git rev-parse --git-dir >/dev/null 2>&1 || exit 0
+
+# Your own repos need no skip flag. Every repo the command names (-R, --repo, or a gh api path)
+# has to be yours, or with none named, the repo gh would target from this clone. Gerrit hosts
+# never are. A recon that marked a security report PRIVATE still blocks.
+if [ -z "$gerrit" ]; then
+  room="${CLAUDE_PLUGIN_ROOT:-$(dirname "$0")/..}/skills/oss-pr/scripts/room.sh"
+  targets=$(printf '%s' "$cmd" | tr '\n' ' ' | grep -o -E -- "(-R|--repo)[[:space:]=]+[^[:space:];&|)]+|repos/[^/[:space:]]+/[^/[:space:]]+/pulls" \
+    | sed -E 's/^(-R|--repo)[[:space:]=]+//; s#^repos/##; s#/pulls$##' | tr -d "\"'")
+  own=1
+  for t in ${targets:-.}; do
+    if [ "$t" = . ]; then out=$(bash "$room" --quick); else out=$(bash "$room" --quick --repo "$t"); fi
+    case "$out" in "ROOM: own"*) ;; *) own=""; break ;; esac
+  done
+  [ -n "$own" ] && ! grep -q -E '^DECISION:[[:space:]]*PRIVATE' "$(git rev-parse --git-dir)/houseguest/$(git branch --show-current)/recon.md" 2>/dev/null && exit 0
+fi
 
 cmd_title() {  # cmd_title <ledger title file>: the file's first line when the command reads it, else the command's --title
   # The file comes first: in `--title "$(cat .../pr-title.txt)"` the quoted text is the `$(cat ...)` itself.
