@@ -156,6 +156,7 @@ s_docs() {
 
 s_policy() {
   bash "$(dirname "$0")/policy.sh" --repo "$repo" ${asof:+--as-of "$asof_ts"} --keep "$poldir"
+  [ $? -eq 3 ] && echo "AI policy sweep: some of its lookups failed (listed in its section)" >> "$GH_FAILED"
   echo
 }
 

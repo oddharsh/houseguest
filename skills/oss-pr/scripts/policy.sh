@@ -17,7 +17,7 @@
 # Pages outside GitHub can only be read live; the output marks them. They count as a rule
 # only when the URL or page title names contribution guidance; otherwise they're mentions.
 # --keep DIR leaves the fetched docs in DIR so other checks can grep them.
-# Read-only: GET requests only.
+# Read-only: GET requests only. Exits 3 when a lookup failed (not a 404), listing each one.
 
 set -uo pipefail
 . "$(dirname "$0")/lib.sh"
@@ -39,6 +39,8 @@ if [ -n "$asof" ]; then case "$asof" in *T*) asof_ts="$asof" ;; *) asof_ts="${as
 
 if [ -n "$keep" ]; then dir="$keep"; mkdir -p "$dir"; else dir=$(mktemp -d); trap 'rm -rf "$dir"' EXIT; fi
 sources="$dir/.sources"; : > "$sources"; : > "$dir/.guides"
+# A lookup that errors with anything but a 404 lands here, so the verdict reads UNKNOWN, never NONE.
+GH_FAILED="$dir/.failed"; : > "$GH_FAILED"
 
 AI_RE='\bLLMs?\b|large language model|(^|[^./[:alnum:]_])AI\b|artificial intelligence|coding agents?|machine[- ]generated|chatgpt|copilot|claude|gemini|\bGPT\b|vibe[- ]cod|slop'
 NAME_RE='(^|/)(CONTRIBUTING|CONTRIBUTE|HACKING|DEVELOPMENT|GOVERNANCE|AI_POLICY|AI-POLICY|AGENTS|CLAUDE|TRIAGE)(\.(md|rst|txt|adoc))?$|(^|/)LLMS?[^/]*\.(md|rst|adoc)$|^(\.github/)?README(\.(md|rst|txt|adoc))?$|(^|/)[^/]*(ai|llm|genai)[-_ .]?(policy|policies|usage|use|contribution|contributions|guidelines|rules)[^/]*\.(md|rst|txt|adoc)$|(^|/)[^/]*contribut[^/]*\.(md|rst|txt|adoc)$|^\.github/(PULL_REQUEST_TEMPLATE|ISSUE_TEMPLATE|DISCUSSION_TEMPLATE)|pull_request_template'
@@ -48,13 +50,13 @@ SKIP_RE='(^|/)(node_modules|vendor|third_party|tests?|fixtures?|\.agents|\.claud
 ref_of() {  # ref_of owner/repo -> last commit sha before the as-of moment
   local u="repos/$1/commits?per_page=1"
   [ "$asof_ts" != "9999" ] && u="$u&until=$asof_ts"
-  gh api "$u" --jq '.[0].sha' 2>/dev/null
+  gh404 "latest commit of $1" gh api "$u" --jq '.[0].sha'
 }
 fetch() {  # fetch owner/repo ref path label
   local dest="$dir/$1/$3"
   [ -s "$dest" ] && return 0
   mkdir -p "$(dirname "$dest")"
-  if gh api -H "Accept: application/vnd.github.raw" "repos/$1/contents/$3?ref=$2" > "$dest" 2>/dev/null && [ -s "$dest" ]; then
+  if gh404 "$1/$3" gh api -H "Accept: application/vnd.github.raw" "repos/$1/contents/$3?ref=$2" > "$dest" && [ -s "$dest" ]; then
     printf '%s\t%s\t%s\n' "$1/$3" "${2:0:10}" "$4" >> "$sources"
   else
     rm -f "$dest"
@@ -63,7 +65,7 @@ fetch() {  # fetch owner/repo ref path label
 fetch_one() {  # fetch_one owner/repo ref path: download only, no source record
   local dest="$dir/$1/$3"
   mkdir -p "$(dirname "$dest")"
-  { gh api -H "Accept: application/vnd.github.raw" "repos/$1/contents/$3?ref=$2" > "$dest" 2>/dev/null && [ -s "$dest" ]; } || rm -f "$dest"
+  { gh404 "$1/$3" gh api -H "Accept: application/vnd.github.raw" "repos/$1/contents/$3?ref=$2" > "$dest" && [ -s "$dest" ]; } || rm -f "$dest"
 }
 fetch_many() {  # fetch_many owner/repo ref label < paths: download in parallel, record sources in input order
   local p todo
@@ -77,7 +79,7 @@ fetch_many() {  # fetch_many owner/repo ref label < paths: download in parallel,
 }
 list_tree() {  # list_tree owner/repo ref -> blob paths (whole tree; notes truncation)
   local out
-  out=$(gh api "repos/$1/git/trees/$2?recursive=1" 2>/dev/null) || return 0
+  out=$(gh404 "$1 file tree" gh api "repos/$1/git/trees/$2?recursive=1") || return 0
   [ "$(echo "$out" | jq -r .truncated)" = "true" ] && echo "TRUNCATED" >&2
   echo "$out" | jq -r '.tree[] | select(.type == "blob") | .path'
 }
@@ -87,11 +89,14 @@ echo
 
 # 1 and 2: the repo itself, whole tree.
 ref=$(ref_of "$repo")
+if [ -z "$ref" ] && [ -s "$GH_FAILED" ]; then
+  echo "- LOOKUP FAILED: $(cat "$GH_FAILED")"; echo; echo "**AI POLICY: UNKNOWN.** Couldn't read $repo; rerun before deciding."; exit 3
+fi
 if [ -z "$ref" ]; then echo "- couldn't read $repo at that moment"; exit 0; fi
 
 # 5 starts now, in the background: it reads issue threads, not the docs below.
 enf_thread() {  # enf_thread N -> up to 2 maintainer comments in thread N that mention AI
-  gh api "repos/$repo/issues/$1/comments?per_page=100" 2>/dev/null | jq -r --arg t "$asof_ts" --arg re "$AI_RE" --arg n "$1" '
+  ghf "AI comments: thread #$1" gh api "repos/$repo/issues/$1/comments?per_page=100" | jq -r --arg t "$asof_ts" --arg re "$AI_RE" --arg n "$1" '
     (if type == "array" then .[] else empty end) | select(.created_at < $t) | select(.author_association | IN("OWNER","MEMBER","COLLABORATOR"))
     | select(.user.type != "Bot") | select(.body | test($re; "i"))
     | "- #\($n) **\(.user.login)** (\(.author_association), \(.created_at[:10])): \(.body | gsub("\\s+"; " ") | .[:300])"' 2>/dev/null | head -2
@@ -102,7 +107,7 @@ enforcement() {
   for terms in '(LLM OR "AI-generated" OR "AI generated" OR "AI-assisted")' '(ChatGPT OR Copilot OR Claude OR slop)'; do
     q="repo:$repo in:comments $terms"
     [ "$asof_ts" != "9999" ] && q="$q created:<$asof_ts"
-    nums="$nums $(gh api -X GET search/issues -f q="$q" -f per_page=10 --jq '.items[].number' 2>/dev/null | grep -E '^[0-9]+$')"
+    nums="$nums $(ghf "AI comments: search $terms" gh api -X GET search/issues -f q="$q" -f per_page=10 --jq '.items[].number' | grep -E '^[0-9]+$')"
   done
   echo $nums | tr ' ' '\n' | sort -rn | uniq | head -16 | pmap 8 enf_thread  # newest threads first
 }
@@ -113,7 +118,7 @@ echo "$tree" | grep -iE "$NAME_RE" | grep -v -iE "$SKIP_RE" | head -40 \
   | fetch_many "$repo" "$ref" "repo"
 
 # 3: org-wide defaults in owner/.github.
-if [ "$repo" != "$owner/.github" ] && gh api "repos/$owner/.github" --jq .full_name >/dev/null 2>&1; then
+if [ "$repo" != "$owner/.github" ] && gh404 "$owner/.github" gh api "repos/$owner/.github" --jq .full_name >/dev/null; then
   oref=$(ref_of "$owner/.github")
   if [ -n "$oref" ]; then
     list_tree "$owner/.github" "$oref" 2>/dev/null | grep -iE "$NAME_RE|^profile/README\.md$" | head -20 \
@@ -137,7 +142,10 @@ follow_link() {  # follow_link url -> source records for what it fetched, on std
   elif ! echo "$url" | grep -qiE '^https?://([a-z0-9-]+\.)*(github\.com|shields\.io|badge|crates\.io|docs\.rs|npmjs\.com|opensource\.guide|contributor-covenant\.org|choosealicense\.com|creativecommons\.org|semver\.org|keepachangelog\.com|conventionalcommits\.org|opensource\.org|apache\.org/licenses|gnu\.org)'; then
     safe=$(echo "$url" | sed -E 's#^https?://##; s#[^A-Za-z0-9._/-]#_#g')
     dest="$dir/live/$safe.txt"; mkdir -p "$(dirname "$dest")"
-    if curl -sL --max-time 10 "$url" > "$dest.html" 2>/dev/null && sed -e 's/<[^>]*>/ /g' "$dest.html" | tr -s ' \t' > "$dest" && [ -s "$dest" ]; then
+    # A dead link (404, 410) is absent; a timeout or any other status is a page nobody read.
+    code=$(curl -sL --max-time 10 -o "$dest.html" -w '%{http_code}' "$url")
+    case "$code" in 200|404|410) ;; *) echo "linked page $url: HTTP $code" >> "$GH_FAILED" ;; esac
+    if [ "$code" = 200 ] && sed -e 's/<[^>]*>/ /g' "$dest.html" | tr -s ' \t' > "$dest" && [ -s "$dest" ]; then
       printf '%s\t%s\t%s\n' "$url" "live" "linked page outside GitHub (read live, not as of then)" >> "$sources"
       # Product pages talk about AI in words that look like rules ("required", "issues"), so a
       # live page joins the verdict only when its URL or <title> says it's contribution guidance.
@@ -200,11 +208,20 @@ echo
 echo "### Maintainer comments on AI or LLM use in earlier issues and PRs"
 wait
 enf=$(cat "$dir/.enf" 2>/dev/null)
-if [ -n "$enf" ]; then echo "$enf" | sed '/^$/d' | head -8; else echo "- none found"; fi
+if [ -n "$enf" ]; then echo "$enf" | sed '/^$/d' | head -8
+elif grep -q '^AI comments:' "$GH_FAILED"; then echo "- LOOKUP FAILED: unknown, not none (listed below)"
+else echo "- none found"; fi
 
 checked=$(cut -f1 "$sources" | sed 's/^/  - /')
 echo
-if [ "$(cat "$dir/.found")" -gt 0 ]; then
+if [ -s "$GH_FAILED" ]; then
+  echo "**LOOKUPS FAILED: $(sort -u "$GH_FAILED" | wc -l | tr -d ' ').** What they would have read is unknown, not absent:"
+  sort -u "$GH_FAILED" | sed 's/^/- /' | head -12
+  echo
+fi
+if [ "$(cat "$dir/.found")" -eq 0 ] && [ -s "$GH_FAILED" ]; then
+  echo "**AI POLICY: UNKNOWN.** No rule turned up, but the failed lookups above could hold one. Rerun policy.sh, and read any source that fails twice by hand. Sources checked:"
+elif [ "$(cat "$dir/.found")" -gt 0 ]; then
   echo "**AI POLICY: RULE FOUND** in $(cat "$dir/.found") source(s)$([ -n "$enf" ] && echo ", and maintainers have brought AI up in earlier threads"). Read each passage above in full, quote the binding rule in recon.md, and follow it. Sources checked:"
 elif [ -n "$enf" ]; then
   echo "**AI POLICY: NO WRITTEN RULE, BUT MAINTAINERS HAVE COMMENTED ON AI USE.** Read the comments above: one that pushes back is the policy in practice, and the strictest is binding. Sources checked:"
@@ -214,3 +231,5 @@ else
   echo "**AI POLICY: NONE FOUND.** Sources checked:"
 fi
 if [ -n "$checked" ]; then echo "$checked"; else echo "  - (no contribution docs found anywhere)"; fi
+[ -s "$GH_FAILED" ] && exit 3
+exit 0

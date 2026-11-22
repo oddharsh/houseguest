@@ -87,6 +87,13 @@ up() {
   done
 }
 cat_tracked() { git show "HEAD:$1" 2>/dev/null; }   # works in sparse checkouts too
+# A package.json jq can't parse drops its scripts, packageManager, and engines from every check
+# below, which would read as "the repo has none".
+pkgjson_bad=""
+if [ -f package.json ] && ! jq empty package.json 2>/dev/null; then
+  pkgjson_bad="- package.json doesn't parse as JSON, so what it would say here is unknown, not absent"
+  echo "house.sh: package.json doesn't parse as JSON; its scripts, packageManager, and engines are left out" >&2
+fi
 tools=""
 add() { tools="$tools$1	$2
 "; }
@@ -223,6 +230,7 @@ fi
 
 echo
 echo "### Scripts and CI steps that enforce style"
+[ -n "$pkgjson_bad" ] && echo "$pkgjson_bad"
 if [ -f package.json ]; then
   jq -r '.scripts // {} | to_entries[] | select(.key | test("lint|format|fmt|check|style|prettier|typecheck|test"; "i")) | "- npm script `\(.key)`: `\(.value)`"' package.json 2>/dev/null | head -12
 fi
@@ -243,6 +251,7 @@ echo "### Tool versions CI pins (use these; newer versions can break the repo's 
 pins=$( { [ -d .github/workflows ] && grep -h -E '^\s*[A-Za-z_-]*(VERSION|version)\s*:' .github/workflows/*.y*ml 2>/dev/null | grep -i -E 'node|deno|python|go|rust|zig|bun|pnpm|ruby|java|swift|toolchain' | grep -v -F '${{' | sed -E 's/^[[:space:]]+//' | sort -u | head -8
   for f in .nvmrc .node-version .python-version .tool-versions rust-toolchain rust-toolchain.toml .zig-version; do [ -f "$f" ] && echo "$f: $(tr '\n' ' ' < "$f" | cut -c1-80)"; done
   [ -f package.json ] && jq -r '"packageManager: \(.packageManager // empty)", (.engines // {} | to_entries[] | "engines.\(.key): \(.value)")' package.json 2>/dev/null; } | sed '/^packageManager: $/d')
+[ -n "$pkgjson_bad" ] && echo "$pkgjson_bad"
 if [ -n "$pins" ]; then echo "$pins" | sed 's/^/- /'; else echo "- none found"; fi
 
 echo

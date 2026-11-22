@@ -13,7 +13,7 @@
 #   - the package manifest above --paths (dependencies changed).
 # A channel that differs needs its own repro; one that doesn't is skipped, and the
 # prod result stands for it. An experimental build of a commit already listed only matters for
-# flag-gated code. Ends with REPRODUCE ON and SKIP lines, plus a line for recon.md.
+# flag-gated code. Ends with REPRODUCE ON and SKIP lines, plus a line for recon.md; exits 3 when a lookup failed.
 #
 # --prod     what the user runs: a tag, a version (tried as <package>@V, vV, V), or a sha.
 #            Default: npm's latest for --package, else the newest stable GitHub release.
@@ -41,8 +41,25 @@ done
 
 T="9999"; [ -n "$asof" ] && { case "$asof" in *T*) T="$asof" ;; *) T="${asof}T00:00:00Z" ;; esac; }
 # Failed calls are recorded, so a channel whose evidence couldn't be fetched reads UNKNOWN, never SAME.
-errf=$(mktemp); trap 'rm -f "$errf"' EXIT
-api() { gh api "$@" 2>/dev/null || { echo 1 > "$errf"; return 1; }; }
+errf=$(mktemp) regraw=$(mktemp); trap 'rm -f "$errf" "$regraw"' EXIT
+# A 404, or a 422 "No commit found", is an answer (that tag or branch doesn't exist), so sha_of's guesses don't count as failures.
+api() {
+  local out e; e=$(mktemp)
+  if out=$(gh api "$@" 2>"$e"); then rm -f "$e"; printf '%s\n' "$out"; return 0; fi
+  grep -q -E '\(HTTP 404\)|No commit found for SHA' "$e" || echo 1 > "$errf"
+  rm -f "$e"; return 1
+}
+# reg_get URL FILE: a registry's JSON into FILE. A 404 leaves FILE empty; anything else stops
+# the run, so call it outside $(...).
+reg_get() {
+  local code
+  code=$(curl -s -o "$2" -w '%{http_code}' -H 'User-Agent: houseguest (github.com/oddharsh/houseguest)' "$1")
+  case "$code" in
+    200) ;;
+    404) : > "$2" ;;
+    *) echo "channels.sh: couldn't read $1 (HTTP $code); rerun rather than guess the channels" >&2; exit 3 ;;
+  esac
+}
 left=$(gh api rate_limit --jq '.resources.core | "\(.remaining) \(.reset | todate)"' 2>/dev/null)
 [ -n "$left" ] && [ "${left%% *}" -lt 150 ] && { echo "channels.sh: only ${left%% *} GitHub API calls left until ${left#* }; a run needs about 100, so wait rather than get guesses" >&2; exit 2; }
 short() { echo "${1:0:9}"; }
@@ -63,7 +80,7 @@ branch_at() { api "repos/$repo/commits?sha=$(printf '%s' "$1" | jq -sRr @uri)${a
 alltags=""
 tag_for() {
   local v="$1" vre m
-  [ -n "$alltags" ] || alltags=$(git ls-remote --tags "https://github.com/$repo" 2>/dev/null | awk '{print $2}' | sed 's#^refs/tags/##; s#\^{}$##' | sort -u)
+  [ -n "$alltags" ] || alltags=$(git ls-remote --tags "https://github.com/$repo" 2>/dev/null | awk '{print $2}' | sed 's#^refs/tags/##; s#\^{}$##' | sort -u) || echo 1 > "$errf"
   vre=$(printf '%s' "$v" | sed 's/[.+]/\\&/g')
   m=$(echo "$alltags" | grep -E "(^|[^0-9.])v?$vre(\$|[-_+][A-Za-z])")
   [ -n "$m" ] || return 1
@@ -112,9 +129,16 @@ eco=npm; case "$pkg" in crates:*) eco=crates; pkg=${pkg#crates:} ;; pypi:*) eco=
 reg=""
 if [ -n "$pkg" ]; then
   case "$eco" in
-    npm) reg=$(npm view "$pkg" dist-tags time --json 2>/dev/null | jq -c '{versions: [.time | to_entries[] | select(.key != "created" and .key != "modified") | {v: .key, t: .value}], tags: .["dist-tags"]}') ;;
-    crates) reg=$(curl -s -H 'User-Agent: houseguest (github.com/oddharsh/houseguest)' "https://crates.io/api/v1/crates/$pkg" | jq -c '{versions: [.versions[]? | select(.yanked | not) | {v: .num, t: .created_at}], tags: {}}') ;;
-    pypi) reg=$(curl -s "https://pypi.org/pypi/$pkg/json" | jq -c '{versions: [.releases | to_entries[] | select(.value | length > 0) | {v: .key, t: (.value | map(.upload_time_iso_8601) | min)}], tags: {}}') ;;
+    npm)
+      npmerr=$(mktemp)
+      if raw=$(npm view "$pkg" dist-tags time --json 2>"$npmerr"); then
+        reg=$(echo "$raw" | jq -c '{versions: [.time | to_entries[] | select(.key != "created" and .key != "modified") | {v: .key, t: .value}], tags: .["dist-tags"]}')
+      elif ! grep -q -E 'code E404' "$npmerr"; then
+        echo "channels.sh: couldn't read $pkg from npm ($(grep -m1 -E 'npm error' "$npmerr" | cut -c1-120)); rerun rather than guess the channels" >&2; rm -f "$npmerr"; exit 3
+      fi
+      rm -f "$npmerr" ;;
+    crates) reg_get "https://crates.io/api/v1/crates/$pkg" "$regraw"; reg=$(jq -c '{versions: [.versions[]? | select(.yanked | not) | {v: .num, t: .created_at}], tags: {}}' "$regraw") ;;
+    pypi) reg_get "https://pypi.org/pypi/$pkg/json" "$regraw"; reg=$(jq -c '{versions: [.releases | to_entries[] | select(.value | length > 0) | {v: .key, t: (.value | map(.upload_time_iso_8601) | min)}], tags: {}}' "$regraw") ;;
   esac
   [ "$(echo "$reg" | jq '.versions | length' 2>/dev/null)" -gt 0 ] 2>/dev/null || { echo "channels.sh: no $eco versions found for $pkg" >&2; reg=""; }
 fi
@@ -192,7 +216,9 @@ if [ -n "$reg" ]; then
             (([$v | capture("-(?<id>[A-Za-z]+)")?] | first | .id) // $k) as $id
             | [$vs[] | select(.v | test("-" + $id + "\\b")) | select(.t < $t)] | max_by(.t) | .v // empty end)
         | select(. != null and . != "") | "\($k)\t\(.)"
-      else [$vs[] | select((.v | pre) and .t < $t) | select(.v | newer)] | max_by(.t) | select(. != null) | "prerelease\t\(.v)" end' 2>/dev/null | head -6 > "${TMPDIR:-/tmp}/hg-tags.$$"
+      else [$vs[] | select((.v | pre) and .t < $t) | select(.v | newer)] | max_by(.t) | select(. != null) | "prerelease\t\(.v)" end' > "$regraw" \
+    || { echo "channels.sh: couldn't read $pkg's prerelease tags from the registry data (jq error above)" >&2; exit 3; }
+  head -6 "$regraw" > "${TMPDIR:-/tmp}/hg-tags.$$"
   while IFS=$'\t' read -r tag ver; do
     [ -n "$ver" ] || continue
     s=$(ver_sha "$ver" "$(echo "$reg" | jq -r --arg v "$ver" '[.versions[] | select(.v == $v) | .t] | first // empty')")
@@ -207,6 +233,9 @@ for e in ${extra[@]+"${extra[@]}"}; do
 done
 
 # --- Compare each channel with prod ---------------------------------------------------
+# A failed lookup while finding the channels (the branch list, the prerelease, a tag) can drop a
+# build from the report without a trace, so it marks the whole report incomplete.
+listing_failed=""; [ -s "$errf" ] && listing_failed=1
 pjson=$(printf '%s' "$paths" | jq -R 'split(",") | map(select(length > 0) | sub("/+$"; ""))')
 # Terms match whole words in commit subjects. Bodies are PR descriptions full of incidental words,
 # and short or numeric words ("27", "age") match PR numbers and "message".
@@ -217,6 +246,7 @@ echo "# Build channels: $repo"
 echo
 echo "Prod: $prod_label, commit $(short "$prod_sha") ($prod_date)"
 echo "Paths: ${paths:-none}. Terms: $(printf '%s; ' ${queries[@]+"${queries[@]}"} | sed 's/; $//')${asof:+. As of $T}"
+[ -n "$listing_failed" ] && { echo; echo "**LOOKUPS FAILED while finding the channels** (rate limit or network). A build missing below may still exist; rerun before trusting SKIP."; }
 
 repro="prod ($prod_label)" skip="" flagged="" deps="" sweeps="" recon="prod $prod_label: <reproduces? yes/no>" seen=" $prod_sha "
 while IFS=$'\t' read -r name label sha how; do
@@ -307,3 +337,5 @@ sweeps="${sweeps#, }"; [ -n "$sweeps" ] && echo "READ THE COMMITS FIRST (sweeps 
 echo
 echo "For recon.md (fill in each result):"
 echo "- Reproduces on: $recon${skip:+; skipped: $skip}"
+[ -n "$listing_failed" ] && exit 3
+exit 0

@@ -19,13 +19,18 @@ pmap() (
 
 # ghf WHAT gh ARGS...: run gh; on failure append "WHAT: <gh's error>" to $GH_FAILED
 # (when set) and return 1, so a failed lookup can't read as an empty result.
-ghf() {
-  local what="$1" out err rc
-  shift
+# gh404 is the same, except a 404 means the thing isn't there: it returns 1 unrecorded.
+ghf() { _gh_record all "$@"; }
+gh404() { _gh_record not404 "$@"; }
+_gh_record() {
+  local which="$1" what="$2" out err rc
+  shift 2
   err=$(mktemp)
   out=$("$@" 2>"$err"); rc=$?
   if [ "$rc" -ne 0 ]; then
-    [ -n "${GH_FAILED:-}" ] && printf '%s: %s\n' "$what" "$(grep -v '^$' "$err" | head -1 | cut -c1-160)" >> "$GH_FAILED"
+    if [ -n "${GH_FAILED:-}" ] && { [ "$which" = all ] || ! grep -q -F '(HTTP 404)' "$err"; }; then
+      printf '%s: %s\n' "$what" "$(grep -v '^$' "$err" | head -1 | cut -c1-160)" >> "$GH_FAILED"
+    fi
     rm -f "$err"
     return 1
   fi

@@ -79,6 +79,7 @@ A port, a differential harness, or a fuzzer is cheap to build now, and too big t
 | `hooks/session.sh` | Prints the next phase when a session starts on a branch with a ledger |
 | `hooks/meter.sh` | Logs each phase's tokens and time to `~/.local/state/houseguest/phases.jsonl` when its subagent stops |
 | `tests/gate.sh` | Runs the gate, `next.sh`, and `housecheck.sh` on inputs that once passed when they shouldn't: `bash tests/gate.sh` |
+| `tests/lookups.sh` | Runs `policy.sh`, `channels.sh`, and `house.sh` against stub `gh`, `curl`, and `npm` that fail on cue, checking a failed lookup reads unknown: `bash tests/lookups.sh` |
 | `tests/meter.sh` | Runs the meter and `outcomes.sh` on transcripts shaped like Claude Code's: `bash tests/meter.sh` |
 | `tests/practice.sh` | Runs `practice.sh` on ledgers shaped like real ones: `bash tests/practice.sh` |
 | `tests/retro.sh` | Runs `retro.sh` on a repo with commits on fixed dates: `bash tests/retro.sh` |
