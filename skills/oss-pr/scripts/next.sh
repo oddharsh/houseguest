@@ -149,7 +149,7 @@ p_recheck() {
   [ -f "$ledger/recheck.md" ] || { why="recheck.md missing: run recheck.sh --save \"$ledger/recheck.md\" right before opening the PR"; return 1; }
   grep -q -E '^STATUS:[[:space:]]*CLEAR' "$ledger/recheck.md" \
     || { why="recheck.sh found changes upstream since recon (see $ledger/recheck.md): act on each, then rerun it with --since set to its Checked: time"; return 1; }
-  sealed recheck.md || { why="recheck.md was edited after recheck.sh sealed it: rerun recheck.sh --save rather than editing its report"; return 1; }
+  sealed recheck.md || { why="recheck.md was edited after recheck.sh sealed it: rerun recheck.sh --save, and write your own findings in recheck-notes.md, which no seal covers"; return 1; }
   # "Right before the PR" is an hour: long enough for the user to read the copy and say yes.
   local checked cutoff
   checked=$(line recheck.md 'Checked:')
