@@ -52,4 +52,4 @@ The same rule holds when the user asks whether to bump a dependency in their own
 
 ## Sending something back
 
-A real upstream bug found while trimming is an upstream contribution: run the normal phases on it from phase 0. The fork's own rules stay in the fork. They describe one user's edge, and upstream's job is the median.
+A real upstream bug found while trimming is an upstream contribution: run the normal phases on it from phase 0. A fork built to find such bugs on purpose is a harvest (`harvest.md`). The fork's own rules stay in the fork. They describe one user's edge, and upstream's job is the median.

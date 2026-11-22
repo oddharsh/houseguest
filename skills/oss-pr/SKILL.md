@@ -201,3 +201,7 @@ The behavior is deliberate and the docs never said so. Tell the user plainly tha
 Report the reason with links and stop. Offer the useful alternative where one exists. Comment on the existing PR, ask in the issue whether a PR is welcome, or file the repro as an issue. Don't look for a way around a repo's AI policy.
 
 When the stop means upstream won't serve the user's case (a declined change, behavior the project chose on purpose, an unmaintained release line, an archived repo), the user may be the edge case, and a fork they own may serve them better than a PR. Offer it per `references/forks.md`, which also governs any request to fork, trim, or update a dependency. Its rules apply in the user's fork, never upstream.
+
+## Harvest projects
+
+When the user asks what to contribute, or wants to build a port, a differential harness, or a fuzzer against a project, offer a harvest per `references/harvest.md`. The ambitious build lives in a repo the user owns and starts with its oracle. Each upstream bug it finds runs this skill from phase 0 as its own job, and the build itself never gets posted.
