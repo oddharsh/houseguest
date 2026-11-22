@@ -90,12 +90,26 @@ else
 fi
 cov_files=$(git diff --name-only "$cov_from" HEAD | { [ -n "$red_ref" ] && cat || grep -v -E "$tests_re"; })
 
+# put_back <file>: make the file match HEAD again. A file HEAD lacks (the fix deleted or never
+# had it) gets removed; any other git failure stops the proof, since every later run would
+# measure a tree that isn't HEAD.
+put_back() {
+  if git cat-file -e HEAD:"$1" 2>/dev/null; then
+    git checkout -q HEAD -- "$1" || die "couldn't restore $1 from HEAD; the tree no longer matches HEAD"
+  else
+    git rm -q --cached --ignore-unmatch -- "$1" || die "couldn't unstage $1, which HEAD doesn't have"
+    rm -f -- "$1"
+  fi
+}
+
 restore() {
-  [ -n "${cov_files:-}" ] && echo "$cov_files" | while IFS= read -r f; do git checkout -q HEAD -- "$f" 2>/dev/null; done
+  if [ -n "${cov_files:-}" ]; then
+    while IFS= read -r f; do put_back "$f"; done <<< "$cov_files"
+  fi
   if [ -n "$red_ref" ]; then
-    git checkout -q "$branch" 2>/dev/null
+    git checkout -q "$branch" || die "couldn't check out $branch again; the tree is still at --red-ref $red_ref"
   elif [ -n "$fix_files" ]; then
-    echo "$fix_files" | while IFS= read -r f; do git checkout -q HEAD -- "$f" 2>/dev/null; done
+    while IFS= read -r f; do put_back "$f"; done <<< "$fix_files"
   fi
 }
 trap restore EXIT INT TERM
@@ -132,8 +146,8 @@ for i in $(seq 1 "$runs"); do
     if [ -z "$expect" ] || sed $'s/\x1b\\[[0-9;]*[A-Za-z]//g' "$log" | grep -q -E "$expect"; then red_expect_ok=$((red_expect_ok + 1)); fi
   fi
 done
-restore
 trap - EXIT INT TERM
+restore
 
 # Flake check: the green test, many more times on HEAD.
 flake_pass=0
@@ -171,7 +185,7 @@ for p in "$cov_dir"/*.patch; do
   if [ "$rc" -eq 0 ] && [ -n "$suite" ]; then
     bash -c "$suite" >"$ledger/logs/hunk-$(basename "$p" .patch)-suite.log" 2>&1; src_h=$?
   fi
-  git checkout -q HEAD -- "$file" 2>/dev/null || rm -f "$file"
+  put_back "$file"
   if [ "$rc" -ne 0 ]; then
     cov_ok=$((cov_ok + 1))
   elif [ -n "$src_h" ] && [ "$src_h" -ne 0 ]; then

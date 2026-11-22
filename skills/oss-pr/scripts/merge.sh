@@ -97,7 +97,7 @@ verdict() { awk -v k="$1" '$1 == k { v = $0 } END { sub(/^[^ ]+ +/, "", v); prin
 
 # check_evidence <token>: prints what it found; returns 0 only when the token checks out.
 check_evidence() {
-  local t="$1" r path from to lines kind id api assoc login
+  local t="$1" r path from to lines body kind id api assoc login
   if [[ "$t" =~ ^run:([0-9]+)$ ]]; then
     lines=$(bash "$here/receipt.sh" verify "$ledger/runs.log" 2>&1) || { echo "$t: runs.log: $lines"; return 1; }
     from=$(printf '%s\n' "$lines" | sed -n "${BASH_REMATCH[1]}p")
@@ -106,9 +106,16 @@ check_evidence() {
   fi
   if [[ "$t" =~ ^https://github\.com/([^/]+/[^/]+)/blob/([0-9a-f]{40})/([^#]+)#L([0-9]+)(-L([0-9]+))?$ ]]; then
     r="${BASH_REMATCH[1]}" path="${BASH_REMATCH[3]}" from="${BASH_REMATCH[4]}" to="${BASH_REMATCH[6]:-${BASH_REMATCH[4]}}"
-    lines=$(gh api -H "Accept: application/vnd.github.raw" "repos/$r/contents/$path?ref=${BASH_REMATCH[2]}" 2>/dev/null | awk 'END { print NR }')
-    [ "${lines:-0}" -ge "$to" ] && [ "$from" -ge 1 ] && { echo "$t: lines $from-$to exist"; return 0; }
-    echo "$t: $path has ${lines:-no} lines at that commit"; return 1
+    if ! body=$(gh api -H "Accept: application/vnd.github.raw" "repos/$r/contents/$path?ref=${BASH_REMATCH[2]}" 2>&1); then
+      case "$body" in
+        *"(HTTP 404)"*) echo "$t: $path isn't at that commit" ;;
+        *) echo "$t: couldn't fetch $path to check the lines: $(printf '%s' "$body" | grep -v '^$' | head -1 | cut -c1-160)" ;;
+      esac
+      return 1
+    fi
+    lines=$(printf '%s\n' "$body" | awk 'END { print NR }')
+    [ "$lines" -ge "$to" ] && [ "$from" -ge 1 ] && { echo "$t: lines $from-$to exist"; return 0; }
+    echo "$t: $path has $lines lines at that commit"; return 1
   fi
   if [[ "$t" =~ ^https://github\.com/([^/]+/[^/]+)/(issues|pull)/([0-9]+)(#(issuecomment-|discussion_r|pullrequestreview-)([0-9]+))?$ ]]; then
     r="${BASH_REMATCH[1]}" kind="${BASH_REMATCH[5]}" id="${BASH_REMATCH[6]}"
@@ -220,7 +227,12 @@ lasting=$(jq -r '.files.nodes[].path' <<< "$pr" | awk '
   /(^|\/)(migrations?|migrate|alembic)\// || /\.sql$/ { print "- " $0 ": a migration that ran stays run"; next }
   /^\.changeset\// { print "- " $0 ": queues a release; a published version stays published"; next }
   /^\.github\/workflows\// { print "- " $0 ": a workflow change; whatever it ran or deployed stays done"; next }')
-bumps=$(gh pr diff "$n" -R "$repo" 2>/dev/null | awk '
+diff_read=1
+if ! diff=$(gh pr diff "$n" -R "$repo" 2>&1); then
+  echo "- couldn't read the diff to look for version bumps: $(printf '%s' "$diff" | grep -v '^$' | head -1 | cut -c1-160)"; block
+  diff="" diff_read=""
+fi
+bumps=$(printf '%s\n' "$diff" | awk '
   /^diff --git / { f = $NF; sub(/^b\//, "", f); next }
   f ~ /(^|\/)(package\.json|Cargo\.toml|pyproject\.toml)$/ && /^\+[[:space:]]*"?version"?[[:space:]]*[:=]/ { print "- " f ": bumps the version; a release cut from it stays out" }' | sort -u)
 lasting=$(printf '%s\n%s\n' "$lasting" "$bumps" | sed '/^$/d')
@@ -231,7 +243,7 @@ if [ -n "$lasting" ]; then
   approved=$(jq -r --arg me "$me" '[.latestOpinionatedReviews.nodes[] | select(.state == "APPROVED" and .author.login != $me) | .author.login] | join(", ")' <<< "$pr")
   if [ -n "$approved" ]; then echo "- approved by a maintainer with write access: $approved"
   else echo "- so a maintainer with write access approves it before you merge; none has yet"; block; fi
-else
+elif [ -n "$diff_read" ]; then
   echo "- nothing in the diff acts outside the repo (no migrations, release files, version bumps, or workflows)"
 fi
 if jq -r .body <<< "$pr" | grep -q -i 'revert'; then
