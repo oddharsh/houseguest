@@ -112,6 +112,27 @@ gate 0 '(git review -d 1234)'
 gate 0 'bash -c "git review -l"'
 gate 0 "sh -c 'git review --list'"
 
+# --- Every matcher and exemption shares one command boundary -----------------------------
+# git-review's read-only exemption once ran past the end of its own command, and a path
+# in front of gh or git once hid the command word.
+gate 2 'git review -t topic && ls -l' "$GERRIT"
+gate 2 'git review -l; git review' "$GERRIT"
+gate 2 'git review -d 1234 && git review' "$GERRIT"
+gate 2 'git cl upload && git review -l' "$GERRIT"
+gate 2 '/usr/bin/git review' "$GERRIT"
+gate 0 '/usr/bin/git review -l'
+gate 0 'git review -d 1234 && git review -l'
+gate 2 '/opt/homebrew/bin/gh pr create --fill' "$PR"
+gate 2 '{ gh pr create --fill; }' "$PR"
+gate 2 'xargs gh pr create --fill' "$PR"
+gate 2 'gh api repos/o/r/pulls \
+  -f title=x' "$PR"
+gate 0 'gh api repos/o/r/pulls; echo -f title=x'
+git switch -q -c unreviewed  # no ledger, no review config: only `repo upload` makes this Gerrit
+gate 2 'repo upload .' "$GERRIT"
+gate 0 'git cl upload -m "fix repo uploads"'
+git switch -q feat
+
 # --- recon said PRIVATE: no push, no issue, in a fork or out of one ----------------------
 PRIVATE='DECISION: PRIVATE'
 printf 'DECISION: PRIVATE\n' > .git/houseguest/feat/recon.md
