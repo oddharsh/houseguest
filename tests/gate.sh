@@ -223,6 +223,17 @@ nx 1 'recheck.md from 61 minutes ago' 'recheck.md is over an hour old'
 recheck
 nx 1 'recheck.md with no Checked: line' 'recheck.md is over an hour old'
 
+# --- What a person checks by hand goes beside the sealed recheck.md, not inside it ----------
+# On Gerrit, recheck.sh can't see the review server, so the contributor writes what it shows.
+# Written into recheck.md, that broke the seal, and next.sh said to rerun recheck.sh, which
+# overwrote the findings: a loop. They live in recheck-notes.md, which no seal covers.
+recheck "$(ago 0)"
+echo "- no open changes on the review server touch a.txt" > "$L/recheck-notes.md"
+nx 0 'findings in recheck-notes.md beside a sealed CLEAR recheck.md, no reseal'
+echo "- no open changes on the review server touch a.txt" >> "$L/recheck.md"
+nx 1 'findings appended to recheck.md itself' 'write your own findings in recheck-notes.md'
+rm -f "$L/recheck-notes.md"; recheck "$(ago 0)"
+
 # --- Your own repos: no skip flag needed --------------------------------------------------
 # origin is yours (gh login "me"); upstream is the template it came from, which gh targets
 # first when nothing names a repo. The branch's ledger is empty, so a gated command blocks.

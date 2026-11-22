@@ -11,6 +11,7 @@
 #   - commits on the default branch since that touch --files.
 # Your own PRs are left out. Ends with STATUS: CLEAR or STATUS: CHANGED, and exits 1 on
 # CHANGED. --save writes the report to FILE (the ledger's recheck.md) and seals it (receipt.sh).
+# What you check by hand (a Gerrit review server) goes in recheck-notes.md beside it, unsealed.
 
 set -uo pipefail
 . "$(dirname "$0")/lib.sh"
