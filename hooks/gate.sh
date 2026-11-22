@@ -15,20 +15,25 @@ input=$(cat)
 cmd=$(printf '%s' "$input" | jq -r '.tool_input.command // empty')
 cwd=$(printf '%s' "$input" | jq -r '.cwd // empty')
 
-# A command word also starts inside a subshell or a quoted script: $(gh ...), (gh ...), bash -c "gh ...".
-B=$'(^|[;&|(`"\'[:space:]])' E=$'([;&|)`"\'[:space:]]|$)'
+# Where a command word starts and ends, defined once for every matcher below. A word also starts
+# inside a subshell or a quoted script, or after a path: $(gh ...), (gh ...), bash -c "gh ...",
+# /opt/homebrew/bin/gh. A command ends at ; & | or a newline (a backslash-newline continues it),
+# so each line of $commands is one.
+B=$'(^|[;&|(`"\'/[:space:]])' E=$'([;&|)`"\'[:space:]]|$)'
+commands=$(c=${cmd//$'\\\n'/ }; printf '%s' "$c" | tr ';&|' '\n\n\n')
 
 # Gerrit's equivalents of `gh pr create`: Chromium's `git cl upload`, Go's `git codereview mail`,
 # git-review (Wikimedia, Qt, OpenStack), Android's `repo upload`, and a plain push to refs/for/<branch>.
-GERRIT_RE='git[[:space:]]+cl[[:space:]]+upload|git[[:space:]]+codereview[[:space:]]+mail|git[[:space:]]+review|repo[[:space:]]+upload|git[[:space:]]+push[[:space:]][^;&|]*refs/for/[^[:space:];&|]*'
+GERRIT_RE='git[[:space:]]+cl[[:space:]]+upload|git[[:space:]]+codereview[[:space:]]+mail|git[[:space:]]+review|repo[[:space:]]+upload|git[[:space:]]+push[[:space:]].*refs/for/[^[:space:]]*'
+# git-review also downloads, lists, and compares changes; only its upload publishes anything,
+# so each command is checked on its own: `git review -l; git review` still uploads.
+GERRIT_READ_RE="${B}git[[:space:]]+review[[:space:]](.*[[:space:]])?(-[dxXNmls]|--(download|cherrypick|cherrypick-indicate|cherrypick-only|compare|list|setup))$E"
 gerrit=""
-printf '%s' "$cmd" | grep -q -E "$B($GERRIT_RE)$E" && gerrit=1
-# git-review also downloads, lists, and compares changes; only its upload publishes anything.
-printf '%s' "$cmd" | grep -q -E "git[[:space:]]+review[[:space:]](.*[[:space:]])?(-[dxXNmls]|--(download|cherrypick|cherrypick-indicate|cherrypick-only|compare|list|setup))$E" && gerrit=""
+printf '%s\n' "$commands" | grep -E "$B($GERRIT_RE)$E" | grep -q -v -E "$GERRIT_READ_RE" && gerrit=1
 
 api_opens_pr() {  # a `gh api` POST to repos/<owner>/<repo>/pulls: gh POSTs for any field or --input unless -X GET
   case "$cmd" in *gh*api*pulls*) ;; *) return 1 ;; esac
-  printf '%s' "$cmd" | tr '\n' ' ' | grep -o -E "${B}gh[[:space:]]+api[[:space:]][^;&|]*" \
+  printf '%s\n' "$commands" | grep -o -E "${B}gh[[:space:]]+api[[:space:]].*" \
     | grep -E "repos/[^/[:space:]]+/[^/[:space:]]+/pulls$E" \
     | grep -v -i -E -- '(-X|--method)[[:space:]=]*GET' \
     | grep -q -i -E -- '(-X|--method)[[:space:]=]*POST|[[:space:]](-f|--(raw-)?field|--input)'
@@ -158,7 +163,7 @@ ledger="$(git rev-parse --git-dir)/houseguest/$branch"
 if [ -n "$gerrit" ]; then
   top=$(git rev-parse --show-toplevel)
   [ -e "$top/codereview.settings" ] || [ -e "$top/codereview.cfg" ] || [ -e "$top/.gitreview" ] || [ -d "$ledger" ] \
-    || printf '%s' "$cmd" | grep -q -E 'repo[[:space:]]+upload' || exit 0
+    || printf '%s' "$cmd" | grep -q -E "${B}repo[[:space:]]+upload$E" || exit 0
 elif ! git remote get-url upstream >/dev/null 2>&1; then
   [ "$(gh repo view --json isFork -q .isFork 2>/dev/null)" = "true" ] || exit 0
 fi
