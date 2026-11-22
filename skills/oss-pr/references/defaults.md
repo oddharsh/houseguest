@@ -195,6 +195,8 @@ pstack tells owners to leave the design simpler than they found it and to hunt f
   Bad: `if user is None: return` Good: find why the caller passes `None`, and fix the caller.
 - **Reproduce first, then keep asking "why" until you reach the cause.**
   Why: a fix chosen before reproducing usually treats the symptom you happened to see.
+- **Before choosing a fix, read the repo's recent fixes near it** (`scripts/retro.sh --since <30 days back>`).
+  Why: a bug that keeps coming back has a cause no single fix removed. When yours joins a cluster, fix your instance at that cause, and name the cluster in the PR in one sentence with its commits. The design change that would end the cluster goes in an issue (`../practice/SKILL.md`, "Retro").
 - **Ship only lines that trace to evidence.**
   Why: a "might help" change is a hypothesis; when a run disproves it, revert what it motivated.
 - **When the root cause sits outside a reasonable scope, land the smallest correct fix and name the root cause in the PR.**
