@@ -78,7 +78,7 @@ emit() {  # emit LEVEL CODE FILE MESSAGE
 ext_of() { echo "${1##*.}" | tr 'A-Z' 'a-z'; }
 csyn() {  # comment syntax for a file: "//", "#", "--", or ""
   case "$(ext_of "$1")" in
-    js|jsx|ts|tsx|mjs|cjs|mts|cts|rs|go|c|h|cc|cpp|cxx|hpp|hh|java|kt|kts|swift|zig|scala|cs|dart|m|mm|php|css|scss) echo "//" ;;
+    js|jsx|ts|tsx|mjs|cjs|mts|cts|rs|go|c|h|cc|cpp|cxx|hpp|hh|c++|h++|java|kt|kts|swift|zig|scala|cs|dart|m|mm|php|css|scss) echo "//" ;;
     py|pyi|rb|sh|bash|zsh|yml|yaml|toml|pl|r|ex|exs|nix|cmake|mk|make|dockerfile|conf|ini|gd) echo "#" ;;
     lua|sql|hs|elm) echo "--" ;;
     *) case "$(basename "$1")" in Makefile|Dockerfile|*.mk) echo "#" ;; *) echo "" ;; esac ;;
@@ -96,7 +96,7 @@ toolfiles() {  # toolfiles <tool>: changed files that tool understands
     prettier|biome|dprint|deno) re='js|jsx|ts|tsx|mjs|cjs|mts|cts|json|jsonc|css|scss|md|mdx|yml|yaml|html|vue|svelte|astro' ;;
     eslint|oxlint) re='js|jsx|ts|tsx|mjs|cjs|mts|cts|vue|svelte' ;;
     gofmt) re='go' ;; ruff|black|isort|flake8|mypy) re='py|pyi' ;; zig-fmt) re='zig' ;;
-    clang-format) re='c|h|cc|cpp|cxx|hpp|hh|m|mm' ;; swift-format|swiftlint) re='swift' ;;
+    clang-format) re='c|h|cc|cpp|cxx|hpp|hh|c\+\+|h\+\+|m|mm' ;; swift-format|swiftlint) re='swift' ;;
     rubocop) re='rb' ;; ktlint) re='kt|kts' ;; markdownlint) re='md|mdx' ;; *) re='.*' ;;
   esac
   for f in $changed; do [ -f "$f" ] && echo "$f" | grep -q -i -E "\.($re)$" && printf '%s ' "$f"; done
@@ -319,7 +319,8 @@ fi
 # --- L: license headers ---------------------------------------------------------------
 for f in $added_files; do
   [ -f "$f" ] || continue; d=$(dirname "$f"); e=$(ext_of "$f")
-  sib=$(git ls-tree --name-only "$mb" "$d/" 2>/dev/null | grep -E "\.$e$" | head -12)
+  # A literal suffix match: grep -E reads the + in .c++ as a quantifier and errors.
+  sib=$(git ls-tree --name-only "$mb" "$d/" 2>/dev/null | awk -v e=".$e" 'substr($0, length($0) - length(e) + 1) == e' | head -12)
   n=0; h=0
   for s in $sib; do n=$((n+1)); git show "$mb:$s" 2>/dev/null | head -5 | grep -q -i -E 'SPDX-License-Identifier|copyright|licensed under' && h=$((h+1)); done
   if [ "$n" -ge 3 ] && [ $((h * 10)) -ge $((n * 8)) ] && ! head -5 "$f" | grep -q -i -E 'SPDX-License-Identifier|copyright|licensed under'; then

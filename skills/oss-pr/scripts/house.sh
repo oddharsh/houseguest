@@ -26,7 +26,7 @@ cd "$(git rev-parse --show-toplevel)" || exit 2
 
 all=$(git ls-files)
 if [ -n "$files_arg" ]; then mine=$(echo "$files_arg" | tr ',' '\n' | sed '/^$/d'); else mine=""; fi
-exts() { echo "${1:-$all}" | sed -n 's/.*\.\([A-Za-z0-9]*\)$/\1/p' | tr 'A-Z' 'a-z'; }
+exts() { echo "${1:-$all}" | sed -n 's/.*\.\([A-Za-z0-9+]*\)$/\1/p' | tr 'A-Z' 'a-z'; }
 has() { grep -q -E "$1" <<< "$all"; }
 pkg_has() { [ -f package.json ] && grep -q -E "$1" package.json; }
 dep() { [ -f package.json ] && jq -e --arg d "$1" '((.devDependencies // {}) + (.dependencies // {})) | has($d)' package.json >/dev/null 2>&1; }
@@ -216,7 +216,7 @@ if want 'py|pyi'; then
   if toml_has '^\[tool\.mypy\]' || has '(^|/)mypy\.ini$'; then add mypy "mypy $F"; fi
 fi
 if want 'zig'; then add zig-fmt "zig fmt --check $F"; fi
-if want 'c|h|cc|cpp|cxx|hpp|hh|m|mm'; then has '(^|/)\.clang-format$' && add clang-format "clang-format --dry-run --Werror $F"; fi
+if want 'c|h|cc|cpp|cxx|hpp|hh|c\+\+|h\+\+|m|mm'; then has '(^|/)\.clang-format$' && add clang-format "clang-format --dry-run --Werror $F"; fi
 if want 'swift'; then
   has '(^|/)\.swift-format$' && add swift-format "swift-format lint --strict $F"
   has '(^|/)\.swiftlint\.ya?ml$' && add swiftlint "swiftlint lint --strict $F"

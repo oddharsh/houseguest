@@ -299,6 +299,25 @@ export GH_PARENT=no
 gate 0 'gh pr create --fill'
 unset GH_PARENT
 
+# --- housecheck.sh: .c++ files get the C++ checks ----------------------------------------
+# workerd names its C++ sources .c++, which no extension pattern matched: clang-format never
+# ran, the width check used prettier's 80 columns, and the comment and license checks skipped the
+# file. A stub clang-format stands in for the real one, which isn't always installed.
+printf '#!/bin/bash\nexit 0\n' > "$W/bin/clang-format"; chmod +x "$W/bin/clang-format"
+repo "$W/cxx"
+printf 'ColumnLimit: 100\n' > .clang-format; printf '{"printWidth": 80}\n' > .prettierrc.json
+for n in 1 2 3; do printf '// Copyright (c) 2026 Example\nint f%s();\n' "$n" > "f$n.c++"; done
+git add .; git commit -q -m "init"
+git switch -q -c feat
+printf '// Copyright (c) 2026 Example\nint f1();\nint long_name_%s();\n' "$(printf 'x%.0s' $(seq 1 75))" > f1.c++
+printf '// now handles the empty case\nint g();\n' > g.c++
+git add .; git commit -q -m "Add g.c++"
+hc 'REVIEW (2 flag(s) to fix or acknowledge)' 'a 90-column line under ColumnLimit 100, a narrating comment, a new file without the license header' 'ok T:clang-format'
+cases=$((cases + 1))
+grep -q -F '**FLAG** C1 `g.c++:1`' .git/houseguest/feat/house.md && grep -q -F '**FLAG** L1 `g.c++`' .git/houseguest/feat/house.md \
+  && ! grep -q -F 'W4' .git/houseguest/feat/house.md || miss "house.md for .c++ files lacks the C1 or L1 flag, or has a W4 flag: $(grep -E 'FLAG|T:' .git/houseguest/feat/house.md)"
+rm "$W/bin/clang-format"
+
 # --- housecheck.sh: the files it checked have to be the files at HEAD --------------------
 if command -v ruff >/dev/null 2>&1; then
   repo "$W/py"
