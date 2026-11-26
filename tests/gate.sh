@@ -321,5 +321,15 @@ else
   echo "SKIP housecheck.sh cases: ruff isn't installed"
 fi
 
+# --- housecheck.sh: a tool house.sh can't run from the root reads NOT RUN, not FAIL --------
+repo "$W/ts"
+mkdir src && printf '{"include": ["**/*.ts"]}\n' > src/tsconfig.json
+git add .; git commit -q -m "init"
+git switch -q -c feat
+printf 'const one = 1;\n' > src/a.js; git add .; git commit -q -m "Add a.js"
+hc 'PASS' 'a .js file under a tsconfig that includes only .ts'
+printf 'const two = 2;\n' > src/b.ts; git add .; git commit -q -m "Add b.ts"
+hc 'INCOMPLETE (1 check(s) not run)' 'a .ts file under that nested tsconfig' '**NOT RUN** T:tsc: no tsconfig.json at the repo root, and your files sit under src/tsconfig.json'
+
 echo "$cases cases, $failed failed"
 [ "$failed" -eq 0 ]
