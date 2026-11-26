@@ -105,6 +105,9 @@ bash "$here/house.sh" --machine --files "$(echo "$changed" | tr '\n' ',')" > "$t
 cfg_width=$(awk -F'\t' '$1=="LINEWIDTH"{print $2}' "$tmp/tools"); sed -i.bak '/^LINEWIDTH	/d' "$tmp/tools"
 # Which toolchain each Rust tool runs on, and why (house.sh resolves it from the CI job running it).
 toolchain_note=$(awk -F'\t' '$1=="TOOLCHAINNOTE"{print $2}' "$tmp/tools"); sed -i.bak '/^TOOLCHAINNOTE	/d' "$tmp/tools"
+# Tools the repo uses but not from its root (a nested eslint config or tsconfig): no command to run.
+awk -F'\t' '$1=="NOTRUN"{print $2 "\t" $3}' "$tmp/tools" > "$tmp/skipped"; sed -i.bak '/^NOTRUN	/d' "$tmp/tools"
+while IFS=$'\t' read -r name why; do emit NOTRUN "T:$name" "" "$why"; done < "$tmp/skipped"
 owned=""   # files a configured formatter owns: width and indentation are its job
 while IFS=$'\t' read -r name cmd; do
   case "$name" in prettier|oxfmt|biome|dprint|deno|rustfmt|gofmt|ruff|black|zig-fmt|clang-format|swift-format|rubocop|ktlint) owned="$owned $(toolfiles "$name")" ;; esac

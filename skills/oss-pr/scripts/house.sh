@@ -94,9 +94,23 @@ if [ -f package.json ] && ! jq empty package.json 2>/dev/null; then
   pkgjson_bad="- package.json doesn't parse as JSON, so what it would say here is unknown, not absent"
   echo "house.sh: package.json doesn't parse as JSON; its scripts, packageManager, and engines are left out" >&2
 fi
-tools=""
+tools="" skipped=""
 add() { tools="$tools$1	$2
 "; }
+# notrun <tool> <why>: the repo uses the tool, but not in a way housecheck can run from the root,
+# so housecheck reports NOT RUN with the reason instead of a FAIL from a command with no config.
+notrun() { skipped="${skipped}NOTRUN	$1	$2
+"; }
+# above <name-regex>: tracked matches in a folder above any of my files (every match without --files),
+# as one space-separated line.
+above() {
+  local m d f
+  for m in $(echo "$all" | grep -E "(^|/)($1)$"); do
+    d=$(dirname "$m")
+    [ "$d" = . ] && { printf '%s ' "$m"; continue; }
+    for f in ${mine:-$m}; do case "$f" in "$d"/*) printf '%s ' "$m"; break ;; esac; done
+  done | sed 's/ $//'
+}
 
 # --- Formatters and linters, by what the repo configures ----------------------
 if want 'js|jsx|ts|tsx|mjs|cjs|mts|cts|json|jsonc|css|scss|md|mdx|yml|yaml|html|vue|svelte|astro'; then
@@ -107,9 +121,19 @@ if want 'js|jsx|ts|tsx|mjs|cjs|mts|cts|json|jsonc|css|scss|md|mdx|yml|yaml|html|
   if has '(^|/)deno\.jsonc?$'; then add deno "deno fmt --check $F && deno lint $F"; fi
 fi
 if want 'js|jsx|ts|tsx|mjs|cjs|mts|cts|vue|svelte'; then
-  if has '(^|/)(eslint\.config\.[a-z]+|\.eslintrc[^/]*)$' || pkg_has '"eslintConfig"' || dep eslint; then add eslint "$(jsrun eslint)$(withflags eslint '--cache') $F"; fi
+  # eslint run from the root loads a root flat config, a legacy .eslintrc* above each file,
+  # package.json's eslintConfig, or the -c the repo's own lint script passes. Without one it exits
+  # on "no configuration file" (workerd keeps tools/base.eslint.config.mjs for Bazel lint_test).
+  eslint_flags=$(withflags eslint '--cache'); eslint_nested=$(above '[^/]*eslint\.config\.[a-z]+')
+  if has '^eslint\.config\.[a-z]+$' || [ -n "$(up '\.eslintrc[^/]*')" ] || pkg_has '"eslintConfig"' \
+    || echo "$eslint_flags" | grep -q -E '(^|[[:space:]])(-c|--config)([[:space:]=]|$)'; then add eslint "$(jsrun eslint)$eslint_flags $F"
+  elif [ -n "$eslint_nested" ]; then notrun eslint "your files sit under $eslint_nested, which eslint doesn't load from the repo root; run eslint the way the repo does for that folder"; fi
   if has '(^|/)\.?oxlintrc\.json$|(^|/)oxlint\.json$' || dep oxlint; then add oxlint "$(jsrun oxlint)$(withflags oxlint) $F"; fi
-  if has '(^|/)tsconfig[^/]*\.json$'; then add tsc "$(jsrun tsc) --noEmit -p ."; fi
+  # tsc -p . needs a root tsconfig.json. A nested one covers only the TypeScript under it (workerd's
+  # src/workerd/api/tests/tsconfig.json includes **/*.ts with allowJs false).
+  tsc_nested=$(above 'tsconfig[^/]*\.json')
+  if has '^tsconfig\.json$'; then add tsc "$(jsrun tsc) --noEmit -p ."
+  elif [ -n "$tsc_nested" ] && want 'ts|tsx|mts|cts'; then notrun tsc "no tsconfig.json at the repo root, and your files sit under $tsc_nested; run tsc -p on the one that owns them"; fi
 fi
 # Rust: run each tool the way the CI job that runs it does, on that job's toolchain. Jobs differ
 # (jxl-rs formats with `cargo +nightly fmt` and lints with clippy on stable), and lints change
@@ -209,7 +233,7 @@ for spec in '\.editorconfig:max_line_length *= *([0-9]+)' '\.flake8|flake8\.ini|
   w=$(cat_tracked "$cf" | grep -m1 -E "${spec#*:}" | grep -o -E '[0-9]+' | tail -1)
   [ -n "$w" ] && { width="$w"; width_src="$cf"; break; }
 done
-if [ -n "$machine" ]; then printf '%s' "$tools"; [ -n "$width" ] && printf 'LINEWIDTH\t%s\n' "$width"; printf '%s' "$tcnotes" | sed 's/^/TOOLCHAINNOTE	/'; exit 0; fi
+if [ -n "$machine" ]; then printf '%s%s' "$tools" "$skipped"; [ -n "$width" ] && printf 'LINEWIDTH\t%s\n' "$width"; printf '%s' "$tcnotes" | sed 's/^/TOOLCHAINNOTE	/'; exit 0; fi
 
 echo "## House rules"
 echo
@@ -227,6 +251,7 @@ if [ -n "$tools" ]; then
 else
   echo "- none configured: fall back to the conventions of neighboring files, then \`references/defaults.md\`"
 fi
+printf '%s' "$skipped" | while IFS=$'\t' read -r _ name why; do [ -n "$name" ] && echo "- **$name**, not run from the root: $why"; done
 
 echo
 echo "### Scripts and CI steps that enforce style"
