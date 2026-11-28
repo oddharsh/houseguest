@@ -69,6 +69,12 @@ Each heading is also a handle. "Run the whole-rows sweep on `src/db`" is a compl
 - **Prompt:** "Differentially test `<new>` against `<old or reference>` over seeded, generated inputs, and close every gap."
 - **Check:** the differential run itself (`proof.md`, "Differential runs"), with the input count and seed.
 
+### Callers that drop a check's required flag
+
+- **Trigger:** the change adds a flag or mode to a check, differential, or recorder that some comparisons need, or a check reports every input as different at once.
+- **Prompt:** "Find every place in `<scope>` that runs or teaches `<the check>`: scripts, CI, docs, code comments, controls. Sort each by whether its inputs differ in `<the dimension the flag handles>`. Every caller in that group passes `<the flag>`; callers whose inputs share it don't need it. Then make the check record the flag and that dimension, and refuse a comparison that needs the flag and lacks it."
+- **Check:** a test that runs the check on inputs that differ without the flag and asserts the refusal, plus a planted control that removes the refusal and is caught. On aadhar.sh (2026-11-28), `check-minify-diff.ts record` without `--classes` read a minifier pick as 80 of 80 pages changed, since the build mints class names from the shipped scripts. With the flag it read 4 of 80, none from the pick, and gotcha 123 now refuses the plain comparison.
+
 ## Recording
 
 Phase 3 appends one entry to `$LEDGER/sweeps.md` per sweep it runs:
